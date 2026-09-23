@@ -1,0 +1,19 @@
+{
+  "name": "candidatures",
+  "version": "5.0.0",
+  "description": "Outil local de recherche d'emploi : collecte d'offres, suivi, CV adapté à chaque offre et envoi de candidatures.",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "setup": "npm install && npx playwright install chromium"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "express": "^4.19.2",
+    "nodemailer": "^6.9.13",
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.44.0",
+    "xlsx": "^0.18.5"
+  },
+  "private": true
+}

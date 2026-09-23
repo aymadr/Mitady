@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# System & OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+~$*
+
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Personal data: profile, offers, uploaded and generated CVs, SMTP password, API key.
+# Created on first launch; never committed.
+data/
+
+# Local editor / agent settings
+.claude/

@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Candidatures</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="nav">
+    <div class="nav-inner">
+      <a class="brand" href="#/">Candidatures</a>
+      <nav class="nav-links">
+        <a href="#/">Aujourd'hui</a>
+        <a href="#/offres">Offres</a>
+        <a href="#/profil">Profil</a>
+        <a href="#/reglages">Réglages</a>
+      </nav>
+      <button class="btn btn-primary btn-sm" id="search-btn">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="5"/><path d="m11 11 3.5 3.5"/></svg>
+        <span>Chercher<span class="label-long"> des offres</span></span>
+      </button>
+    </div>
+  </header>
+
+  <main id="view"></main>
+
+  <div id="sheet-root"></div>
+  <div id="modal-root"></div>
+
+  <div class="activity" id="activity" hidden>
+    <div class="row">
+      <span class="spinner" style="color: var(--accent)"></span>
+      <strong class="grow" id="activity-title">Recherche en cours</strong>
+    </div>
+    <div class="activity-log" id="activity-log"></div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

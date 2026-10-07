@@ -22,6 +22,8 @@ Pour les développeurs : `npm run setup` puis `npm start`.
 
 ## Comment ça marche
 
+Au tout premier lancement, un guide plein écran en cinq étapes te fait importer ton CV, choisir tes types de contrat, ton domaine et ton lieu, puis lance ta première recherche. Il se rouvre depuis l'écran d'accueil (« Ouvrir le guide pas à pas »).
+
 1. **Profil** : importe ton CV (PDF ou .docx), ou remplis tes rubriques à la main. Ton identité, ton parcours et tes compétences sont détectés, et tu les corriges si besoin. Choisis ton domaine, le lieu, les types de contrat (alternance, stage, CDI, CDD, freelance : plusieurs à la fois) et tes mots-clés.
 2. **Chercher des offres** : l'outil parcourt HelloWork, LinkedIn, Indeed, Welcome to the Jungle, Jobs That Make Sense et France Travail (Jobijoba, JobTeaser et L'Étudiant sont disponibles en option). Tu actives ou non chaque site dans Profil › Ce que tu cherches. Il écarte les organismes de formation qui publient de fausses offres. Une même offre publiée sur plusieurs sites, ou sous un titre légèrement différent, n'apparaît qu'une fois ; le bouton « Fusionner les doublons » nettoie aussi les offres déjà enregistrées.
 3. **Offres** : chaque offre affiche un score de correspondance calculé à partir des compétences citées dans l'annonce. Si l'annonce cite une compétence que tu maîtrises mais qui manque à ton profil, un clic l'y ajoute et les scores se recalculent partout.

@@ -1,5 +1,5 @@
 import { S, upsertApp, go } from '../main.js';
-import { html, mount, api, busy, fail, toast, icons, scoreClass, scoreText, relDate, norm } from '../lib.js';
+import { html, mount, api, busy, fail, toast, icons, avatar, miniRing, relDate, norm } from '../lib.js';
 import { openModal, closeModal } from './modal.js';
 
 const FILTERS = [
@@ -35,13 +35,14 @@ function rows(list) {
   }
   return list.map(
     (a) => html`<a class="item" href="#/offres/${a.id}">
+      ${avatar(a.company)}
       <div class="item-main">
         <div class="item-title">${a.title}</div>
         <div class="item-sub">${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
       </div>
       <div class="item-side">
         ${statusSide(a)}
-        <span class="score ${scoreClass(a.score)}" title="Correspondance avec ton profil">${scoreText(a.score)}</span>
+        ${miniRing(a.score)}
         ${icons.chevron}
       </div>
     </a>`,

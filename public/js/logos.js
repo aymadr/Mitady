@@ -9,7 +9,7 @@ const SITES = {
   'Welcome to the Jungle': { id: 'wttj', color: '#ffcd00', glyph: 'W', dark: true },
   'Jobs That Make Sense': { id: 'jtms', color: '#e8475f', glyph: 'm' },
   'France Travail': { id: 'francetravail', color: '#2d4ac4', glyph: 'FT', tight: true },
-  'Jobijoba': { id: 'jobijoba', color: '#16a085', glyph: 'J' },
+  'Jobijoba': { id: 'jobijoba', color: '#002977', glyph: 'J' },
   'JobTeaser': { id: 'jobteaser', color: '#7c3aed', glyph: 'JT', tight: true },
   "L'Étudiant": { id: 'letudiant', color: '#e5484d', glyph: 'É' },
 };
@@ -26,7 +26,7 @@ const FILES = {
   indeed: ['svg', 3.7],
   letudiant: ['svg', 5.2],
   wttj: ['png', 3],
-  jobijoba: ['png', 3.1],
+  jobijoba: ['png', 1, 'full'], // icon with its own background: fills the whole tile
 };
 
 export function siteLogo(name, size = 28) {
@@ -46,6 +46,6 @@ export function siteLogo(name, size = 28) {
     : `this.dataset.t?this.remove():(this.dataset.t=1,this.src='/logos/${id}.png')`;
   const onload = `this.parentNode.classList.add('has-img')`;
   return raw(
-    `<span class="slogo ${known?.dark ? 'dark' : ''} ${known?.tight ? 'tight' : ''} ${file ? 'has-img' : ''} ${wide ? 'wide' : ''}" style="--s:${size}px;--c:${color};--r:${ratio}" title="${name}" aria-hidden="true"><b>${glyph}</b>${drawnOnly ? '' : `<img src="${src}" alt="" onload="${onload}" onerror="${onerror}">`}</span>`,
+    `<span class="slogo ${known?.dark ? 'dark' : ''} ${known?.tight ? 'tight' : ''} ${file ? 'has-img' : ''} ${wide ? 'wide' : ''} ${file?.[2] || ''}" style="--s:${size}px;--c:${color};--r:${ratio}" title="${name}" aria-hidden="true"><b>${glyph}</b>${drawnOnly ? '' : `<img src="${src}" alt="" onload="${onload}" onerror="${onerror}">`}</span>`,
   );
 }

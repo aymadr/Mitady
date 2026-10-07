@@ -22,12 +22,22 @@ const PAIRS = [
 const TO_MASC = Object.fromEntries(PAIRS.map(([m, f]) => [f, m]));
 const TO_FEM = Object.fromEntries(PAIRS.map(([m, f]) => [m, f]));
 
+// Some boards append the company to the job title ("… en Alternance H/F IRIS"): drop it.
+function stripCompany(title = '', company = '') {
+  const c = String(company).trim();
+  if (!c || /^entreprise non pr/i.test(c)) return title;
+  const esc = c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const out = String(title).replace(new RegExp(`[\\s\\-–|·,]+${esc}\\s*$`, 'i'), '').trim();
+  return out.length >= 4 ? out : title;
+}
+
 // Cleans an offer title for use as a CV headline: drops "(H/F)" markers,
 // inclusive-writing suffixes, and agrees the title with the chosen gender.
-function adaptTitle(title, gender = 'neutre') {
+function adaptTitle(title, gender = 'neutre', company = '') {
   if (!title) return '';
-  let res = title
-    .replace(/\s*[([]?\s*\b(f\s*\/\s*h|h\s*\/\s*f|f\s*\/\s*m|m\s*\/\s*f)(\s*\/\s*[xn])?\b\s*[)\]]?/gi, '')
+  let res = stripCompany(title, company)
+    // The space before the marker is kept: "Alternance H/F IRIS" must not become "AlternanceIRIS".
+    .replace(/\s*[([]?\s*\b(f\s*\/\s*h|h\s*\/\s*f|f\s*\/\s*m|m\s*\/\s*f)(\s*\/\s*[xn])?\b\s*[)\]]?/gi, ' ')
     .replace(/\(e\)|\(es\)/gi, '')
     .replace(/[.·]e(s)?\b/gi, '')
     .replace(/(eur)[.·/]?(rice|euse)\b/gi, '$1');
@@ -60,4 +70,4 @@ function fill(template, vars) {
   return String(template || '').replace(/\{\{\s*(\w+)\s*\}\}/g, (_, k) => (vars[k] ?? '').toString());
 }
 
-module.exports = { adaptTitle, slug, escapeHtml, fill };
+module.exports = { stripCompany, adaptTitle, slug, escapeHtml, fill };

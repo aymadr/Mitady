@@ -1,6 +1,7 @@
 import { S, refreshNav } from '../main.js';
 import { siteLogo } from '../logos.js';
 import { mountPetEditor } from '../pet.js';
+import { openPhotoEditor } from './photo-editor.js';
 import { refreshPerches } from '../decorate.js';
 import { html, raw, mount, api, fail, toast, debounce, busy, chipInput, fileToBase64, longDate, norm, icons } from '../lib.js';
 
@@ -385,11 +386,11 @@ function cvStyleSection(p) {
             ${p.photo ? html`<img class="photo-thumb" src="/api/profile/photo?v=${Date.now()}" alt="Ta photo">` : ''}
             ${p.photo
               ? html`<label class="row small"><input type="checkbox" id="photo-on" ${cur.photo ? raw('checked') : ''}> Afficher sur le CV</label>
-                <button class="btn btn-plain small" id="photo-change">Changer</button><button class="btn btn-danger small" id="photo-remove">Retirer</button>`
+                <button class="btn btn-secondary btn-sm" id="photo-edit">Modifier</button><button class="btn btn-plain small" id="photo-change">Changer</button><button class="btn btn-danger small" id="photo-remove">Retirer</button>`
               : html`<button class="btn btn-secondary btn-sm" id="photo-change">Ajouter une photo</button>`}
             <input type="file" id="photo-file" accept="image/png,image/jpeg" hidden>
           </div>
-          ${p.photo ? html`<div style="margin-top:10px">${seg('photoShape', Object.entries(st.photoShapes), cur.photoShape)}</div>` : html`<p class="hint">JPG ou PNG. Elle apparaît sur le CV généré par l'app.</p>`}
+          ${p.photo ? '' : html`<p class="hint">JPG ou PNG. Tu pourras la recadrer, la zoomer, changer sa forme… Elle apparaît sur le CV généré par l'app.</p>`}
         </div>
       </div>
       <div class="preview"><div class="preview-page"><iframe id="style-preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></div>
@@ -447,18 +448,28 @@ function bindCvStyle(view) {
   view.querySelector('#photo-on')?.addEventListener('change', (e) => update({ cvStyle: { ...S.profile.cvStyle, photo: e.target.checked } }));
 
   const file = view.querySelector('#photo-file');
-  view.querySelector('#photo-change').addEventListener('click', () => file.click());
-  file.addEventListener('change', async () => {
-    const f = file.files[0];
-    if (!f) return;
+  // Opens the editor on a new file or on the saved original, then stores the result.
+  const editPhoto = async (f) => {
+    const out = await openPhotoEditor({ file: f, style: S.profile.cvStyle, crop: S.profile.photoCrop });
+    if (!out) return;
     try {
-      const res = await api('/profile/photo', { method: 'POST', body: { name: f.name, data: await fileToBase64(f) } });
-      S.profile = { ...S.profile, photo: res.profile.photo, cvStyle: { ...S.profile.cvStyle, photo: true } };
-      update({ cvStyle: S.profile.cvStyle });
+      const body = { name: 'photo.jpg', data: await fileToBase64(out.blob) };
+      if (out.original) body.original = { name: out.original.name, data: await fileToBase64(out.original) };
+      const res = await api('/profile/photo', { method: 'POST', body });
+      const cvStyle = { ...S.profile.cvStyle, ...out.style, photo: true };
+      S.profile = { ...S.profile, photo: res.profile.photo, photoOriginal: res.profile.photoOriginal, photoCrop: out.crop, cvStyle };
+      update({ cvStyle, photoCrop: out.crop });
       renderProfile(view);
     } catch (e) {
       fail(e);
     }
+  };
+  view.querySelector('#photo-change').addEventListener('click', () => file.click());
+  view.querySelector('#photo-edit')?.addEventListener('click', () => editPhoto(null));
+  file.addEventListener('change', () => {
+    const f = file.files[0];
+    file.value = '';
+    if (f) editPhoto(f);
   });
   view.querySelector('#photo-remove')?.addEventListener('click', async () => {
     try {

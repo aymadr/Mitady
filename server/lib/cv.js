@@ -294,10 +294,13 @@ const CV_STYLES = {
     gris: { label: 'Ardoise', color: '#3c4a5c' },
     noir: { label: 'Noir', color: '#111111' },
   },
-  photoShapes: { carre: 'Carrée', rond: 'Ronde' },
+  photoShapes: { carre: 'Carrée', arrondi: 'Arrondie', rond: 'Ronde' },
+  photoSizes: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
 };
 
-const DEFAULT_STYLE = { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre' };
+const DEFAULT_STYLE = { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false };
+// Photo box in mm, per size: portrait (4:5) for square and rounded, square for round.
+const PHOTO_MM = { s: [18, 22.5, 20], m: [22, 27.5, 25], l: [27, 34, 31] };
 
 function resolveStyle(style = {}) {
   const s = { ...DEFAULT_STYLE, ...style };
@@ -307,7 +310,9 @@ function resolveStyle(style = {}) {
     // A preset name, or any #rrggbb picked by the user.
     accent: /^#[0-9a-f]{6}$/i.test(s.accent) ? s.accent : (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
     photo: s.photo !== false,
-    round: s.photoShape === 'rond',
+    shape: ['carre', 'arrondi', 'rond'].includes(s.photoShape) ? s.photoShape : 'carre',
+    size: PHOTO_MM[s.photoSize] ? s.photoSize : 'm',
+    border: Boolean(s.photoBorder),
   };
 }
 
@@ -364,8 +369,7 @@ const LAYOUT_CSS = {
   .rail { position: fixed; left: 0; top: 0; bottom: 0; width: 66mm; background: var(--accent); z-index: -1; }
   aside { position: absolute; top: 0; left: 0; width: 66mm; color: #fff; padding: 12mm 7mm 8mm 8mm; }
   main { margin-left: 66mm; padding: 4mm 12mm 0 9mm; }
-  aside .photo { float: none; display: block; width: 36mm; height: 44mm; margin: 0 auto 7mm; border: 1.4pt solid #fff; }
-  aside .photo.round { width: 40mm; height: 40mm; }
+  aside .photo { float: none; display: block; width: calc(var(--pw) * 1.65); height: calc(var(--ph) * 1.65); margin: 0 auto 7mm; border: 1.4pt solid #fff; }
   aside h2 { color: #fff; border-bottom: 0.6pt solid rgba(255,255,255,.6); font-size: 9.6pt; letter-spacing: 0.08em; }
   aside .contact { font-size: 8.4pt; margin: 0 0 4pt; word-break: break-word; }
   aside .contact span { display: block; margin-bottom: 2pt; }
@@ -411,7 +415,7 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }
   const links = profile.links || [];
   const sections = (profile.sections || []).filter((s) => s.title && s.body);
   const skillsSection = sections.find(isSkills);
-  const photo = style.photo ? photoDataUri(profile.photo) : '';
+  const photo = style.photo ? profile.photoData || photoDataUri(profile.photo) : '';
 
   const skillsHtml = skillsSection
     ? renderSkills(skillsSection, skillsAdded)
@@ -427,7 +431,9 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }
     blocks.splice(at === -1 ? blocks.length : at, 0, { title: 'Compétences', html: skillsHtml });
   }
 
-  const photoTag = photo ? `<img class="photo${style.round ? ' round' : ''}" src="${photo}" alt="">` : '';
+  const [pw, ph, pr] = PHOTO_MM[style.size];
+  const round = style.shape === 'rond';
+  const photoTag = photo ? `<img class="photo ${style.shape}${style.border ? ' bordered' : ''}" style="--pw:${round ? pr : pw}mm;--ph:${round ? pr : ph}mm" src="${photo}" alt="">` : '';
   const idHtml = `<h1>${escapeHtml(profile.name || 'Ton nom')}</h1>${headline ? `<div class="headline">${escapeHtml(headline)}</div>` : ''}`;
   const contactHtml = `<div class="contact">${contact.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>${links.length ? `<div class="contact">${links.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}`;
   const section = (b) => `<section><h2>${escapeHtml(b.title)}</h2>${b.html}</section>`;
@@ -453,8 +459,10 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-family: ${style.font}; color: #000; font-size: 9.2pt; line-height: 1.24; }
   header { overflow: hidden; }
-  .photo { float: right; width: 21mm; height: 25mm; object-fit: cover; margin-left: 6mm; }
-  .photo.round { width: 24mm; height: 24mm; border-radius: 50%; }
+  .photo { float: right; width: var(--pw, 22mm); height: var(--ph, 27.5mm); object-fit: cover; margin-left: 6mm; }
+  .photo.arrondi { border-radius: 3.2mm; }
+  .photo.rond { border-radius: 50%; }
+  .photo.bordered { border: 0.55mm solid var(--accent); }
   h1 { font-size: 19pt; font-weight: 700; text-transform: uppercase; line-height: 1.1; }
   .headline { font-size: 12pt; font-weight: 700; color: var(--accent); margin-top: 2pt; }
   .contact { font-size: 8.6pt; margin-top: 4pt; }
@@ -527,6 +535,8 @@ async function generate(app, profile, { headline, summary, skillsAdded = [], tem
       newSummary: summary,
       skillsAnchor: profile.docx.skillsAnchor,
       skills: skillsAdded,
+      // The untouched CV as PDF: the tailored one must not have more pages than it.
+      referencePdf: await originalPdf(profile).catch(() => ''),
     };
     const jobFile = path.join(os.tmpdir(), `cv-job-${app.id}.json`);
     fs.writeFileSync(jobFile, JSON.stringify(job), 'utf8');
@@ -559,12 +569,18 @@ async function originalPdf(profile) {
   return out;
 }
 
-// The CV photo, taken from a Word file (none for PDFs).
+// The CV photo, taken from a Word file (none for PDFs). The current photo is only replaced
+// when one is found, so importing a PDF does not wipe a photo the user added.
 async function extractPhoto(filePath) {
-  for (const ext of ['.png', '.jpg', '.jpeg']) fs.rmSync(path.join(store.UPLOAD_DIR, 'photo' + ext), { force: true });
   if (path.extname(filePath).toLowerCase() !== '.docx') return null;
   try {
-    return (await runPython(['photo', filePath, path.join(store.UPLOAD_DIR, 'photo')])).photo;
+    const out = path.join(store.UPLOAD_DIR, 'photo-extracted');
+    const found = (await runPython(['photo', filePath, out])).photo;
+    if (!found) return null;
+    for (const ext of ['.png', '.jpg', '.jpeg', '.webp']) fs.rmSync(path.join(store.UPLOAD_DIR, 'photo' + ext), { force: true });
+    const target = path.join(store.UPLOAD_DIR, 'photo' + path.extname(found));
+    fs.renameSync(found, target);
+    return target;
   } catch {
     return null;
   }

@@ -42,9 +42,11 @@ function defaultProfile() {
     skills: [],
     sections: [],
     cvFile: null, // { name, path, type, uploadedAt }
-    photo: null, // path of the CV photo
+    photo: null, // path of the CV photo (edited)
+    photoOriginal: null, // path of the picture it was cropped from
+    photoCrop: null, // { zoom, x, y, rot, bw } to reopen the cropper where it was
     cvMode: 'own', // 'own' = keep my CV file, 'app' = use the app's templates
-    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre' },
+    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false },
     docx: { titleText: '', skillsAnchor: '' },
     search: {
       domain: '',
@@ -147,6 +149,11 @@ for (const a of db.applications) {
 const oldSearch = (db.profile || {}).search || {};
 if (oldSearch.contract && !oldSearch.contracts) oldSearch.contracts = [oldSearch.contract];
 delete oldSearch.contract;
+// Titles saved by earlier versions may end with the company name.
+{
+  const { stripCompany } = require('./text');
+  for (const a of db.applications) a.title = stripCompany(a.title, a.company);
+}
 db.profile = {
   ...defaultProfile(),
   ...db.profile,

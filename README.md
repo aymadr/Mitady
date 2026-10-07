@@ -55,7 +55,8 @@ Au tout premier lancement, un guide plein écran en cinq étapes te fait importe
 4. **CV** : tout CV est livré **en PDF**. Dans Profil › Ton CV tu choisis ce qui part par défaut, et tu peux changer pour chaque offre :
    - **Mon CV tel quel** : ton fichier, sans aucun changement (un Word est converti en PDF) ;
    - **Mon Word adapté** : la mise en page de ton fichier Word est conservée, seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
-   - **Modèle de l'app** : ton parcours est mis en page avec l'un des 7 modèles (Classique, Moderne, Compact, Élégant, Minimal en format ATS, une colonne et texte réel ; Bandeau et Colonne latérale, plus visuels), avec police, couleur et photo (carrée ou ronde, importée par toi ou reprise de ton Word).
+   - **Modèle de l'app** : ton parcours est mis en page avec l'un des 7 modèles (Classique, Moderne, Compact, Élégant, Minimal en format ATS, une colonne et texte réel ; Bandeau et Colonne latérale, plus visuels), avec police, couleur et photo (importée par toi ou reprise de ton Word). Un éditeur façon Flow CV permet de la recadrer (glisser, zoom), pivoter, passer en noir et blanc, choisir forme (carrée/arrondie/ronde), taille et cadre, avec aperçu en direct sur le CV ; l'original est gardé pour la recadrer plus tard.
+   - **Ton Word** : le PDF est ajusté au même nombre de pages que ton CV d'origine (plus de grand blanc ou de page en trop). Installe `pypdf` (`pip install pypdf`) pour un comptage exact ; `python-docx` reste requis.
    Pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct.
 5. **Candidature** : trouve un contact (profils publics), devine son adresse e-mail selon le format de l'entreprise, puis envoie le message avec le CV adapté joint.
 6. **Aujourd'hui** : les relances à faire (après 7 jours sans réponse, réglable), tes meilleures correspondances et tes statistiques.

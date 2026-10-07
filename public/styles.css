@@ -1256,3 +1256,17 @@ main:has(.board) { max-width: 1480px; }
 .kcard { overflow-wrap: break-word; }
 .kcard-foot { flex-wrap: wrap; row-gap: 4px; }
 .kcard-foot .tiny, .kcard-foot .kcard-kind { white-space: nowrap; }
+
+/* Photo editor */
+.pe-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(10, 12, 24, .55); backdrop-filter: blur(6px); display: grid; place-items: center; padding: 16px; }
+.pe { background: var(--surface, #fff); color: inherit; border-radius: 22px; box-shadow: 0 30px 80px rgba(0, 0, 0, .35); max-width: 760px; width: 100%; max-height: 92vh; overflow: auto; display: grid; grid-template-columns: 320px 1fr; gap: 20px; padding: 24px; }
+.pe h3 { margin: 0 0 10px; }
+.pe-stage { display: grid; place-items: center; background: repeating-conic-gradient(#0001 0 25%, transparent 0 50%) 0 0 / 16px 16px; border-radius: 14px; padding: 14px; }
+.pe-stage canvas { max-width: 100%; cursor: grab; touch-action: none; background: #fff; }
+.pe-stage canvas:active { cursor: grabbing; }
+.pe-row { display: flex; align-items: center; gap: 12px; margin-top: 12px; flex-wrap: wrap; }
+.pe-row > span { min-width: 48px; font-size: 13px; opacity: .7; }
+.pe-row input[type=range] { flex: 1; }
+.pe-side .preview { margin-top: 8px; }
+.pe-actions { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 10px; }
+@media (max-width: 700px) { .pe { grid-template-columns: 1fr; } }

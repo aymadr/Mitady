@@ -4,14 +4,21 @@ Un outil local pour chercher un poste sans s'épuiser : il collecte les offres, 
 
 ## Démarrer
 
-```bash
-npm run setup   # dépendances + navigateur Chromium (une seule fois)
-npm start
-```
+Aucun éditeur de code ni ligne de commande : télécharge le projet (bouton vert **Code › Download ZIP** sur GitHub), décompresse-le, puis double-clique sur :
 
-Ouvre ensuite http://localhost:3000. Le serveur n'écoute que sur ta machine.
+| Système | Fichier |
+| --- | --- |
+| Windows | `Lancer.bat` |
+| Mac | `Lancer.command` (au premier lancement : clic droit › Ouvrir) |
+| Linux | `lancer.sh` |
 
-Prérequis : Node.js 18 ou plus récent. Python 3 avec `python-docx` est nécessaire uniquement pour importer un CV Word (`pip install python-docx pywin32`) ; la conversion Word → PDF utilise Microsoft Word ou LibreOffice.
+Au premier lancement, l'outil installe tout seul ce qui manque (quelques minutes, une seule fois), puis ouvre l'application dans ton navigateur. Les fois suivantes, elle s'ouvre en quelques secondes. Pour arrêter, ferme la fenêtre noire.
+
+Le seul prérequis est [Node.js](https://nodejs.org) 18 ou plus récent : sous Windows, `Lancer.bat` l'installe pour toi s'il manque. Python 3 est facultatif : il ne sert qu'à importer un CV Word, et la conversion Word → PDF utilise Microsoft Word ou LibreOffice.
+
+Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `data/`.
+
+Pour les développeurs : `npm run setup` puis `npm start`.
 
 ## Comment ça marche
 

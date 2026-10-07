@@ -368,3 +368,8 @@ button.chip.suggest:hover { color: var(--accent-text); box-shadow: inset 0 0 0 1
 .tpl-name { font-size: 12px; font-weight: 600; }
 .tpl-tag { font-size: 10px; color: var(--text-3); }
 .tpl-tag.ats { color: #1d7a46; }
+
+.swatches { flex-wrap: wrap; }
+.swatch.custom { position: relative; overflow: hidden; background: conic-gradient(#e5484d, #f5a524, #46a758, #0090ff, #8e4ec6, #e5484d); }
+.swatch.custom[aria-pressed="true"] { background: var(--c); }
+.swatch.custom input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }

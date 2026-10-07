@@ -358,7 +358,8 @@ function cvStyleSection(p) {
         </div>
         <div class="field"><span class="label">Police</span>${seg('font', Object.entries(st.fonts).map(([k, v]) => [k, v.label]), cur.font)}</div>
         <div class="field"><span class="label">Couleur</span>
-          <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}</div>
+          <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}
+            <label class="swatch custom" title="Couleur personnalisée" style="--c:${/^#/.test(cur.accent) ? cur.accent : '#ffffff'}" aria-pressed="${/^#/.test(cur.accent)}"><input type="color" id="accent-custom" value="${/^#/.test(cur.accent) ? cur.accent : '#1f3a93'}"></label></div>
         </div>
         <div class="field"><span class="label">Photo</span>
           <div class="row wrap">
@@ -402,6 +403,11 @@ function bindCvStyle(view) {
   new ResizeObserver(() => (stylePreview.style.transform = `scale(${page.clientWidth / 794})`)).observe(page);
   refreshStylePreview();
 
+  view.querySelector('#accent-custom').addEventListener('input', (e) => {
+    view.querySelectorAll('[data-style="accent"] .swatch').forEach((x) => x.setAttribute('aria-pressed', x.contains(e.target)));
+    e.target.parentElement.style.setProperty('--c', e.target.value);
+    update({ cvStyle: { ...S.profile.cvStyle, accent: e.target.value } });
+  });
   segmented(view.querySelector('#cv-mode'), (v) => update({ cvMode: v }));
   const layouts = view.querySelector('#layouts');
   segmented(layouts, (v) => update({ cvStyle: { ...S.profile.cvStyle, layout: v } }));
@@ -414,6 +420,7 @@ function bindCvStyle(view) {
     group.querySelectorAll('[data-v]').forEach((b) =>
       b.addEventListener('click', () => {
         group.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+        group.querySelector('.custom')?.setAttribute('aria-pressed', false);
         update({ cvStyle: { ...S.profile.cvStyle, [group.dataset.style]: b.dataset.v } });
       }),
     ),

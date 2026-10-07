@@ -279,13 +279,20 @@ const CV_STYLES = {
   },
   accents: {
     bleu: { label: 'Bleu', color: '#1f3a93' },
-    noir: { label: 'Noir', color: '#111111' },
+    azur: { label: 'Azur', color: '#1c7ed6' },
+    marine: { label: 'Marine', color: '#14274e' },
+    turquoise: { label: 'Turquoise', color: '#0f6b73' },
     vert: { label: 'Vert', color: '#1d5e3a' },
-    bordeaux: { label: 'Bordeaux', color: '#7a1f3d' },
-    gris: { label: 'Ardoise', color: '#3c4a5c' },
-    violet: { label: 'Violet', color: '#5b2a86' },
-    teal: { label: 'Turquoise', color: '#0f6b73' },
+    olive: { label: 'Olive', color: '#5c6b2f' },
+    jaune: { label: 'Moutarde', color: '#a87b0a' },
     orange: { label: 'Terracotta', color: '#b24a1d' },
+    rouge: { label: 'Rouge', color: '#b3261e' },
+    bordeaux: { label: 'Bordeaux', color: '#7a1f3d' },
+    rose: { label: 'Rose', color: '#b83280' },
+    violet: { label: 'Violet', color: '#5b2a86' },
+    marron: { label: 'Chocolat', color: '#5a3a29' },
+    gris: { label: 'Ardoise', color: '#3c4a5c' },
+    noir: { label: 'Noir', color: '#111111' },
   },
   photoShapes: { carre: 'Carrée', rond: 'Ronde' },
 };
@@ -297,7 +304,8 @@ function resolveStyle(style = {}) {
   return {
     layout: CV_STYLES.layouts[s.layout] ? s.layout : 'classique',
     font: (CV_STYLES.fonts[s.font] || CV_STYLES.fonts.calibri).stack,
-    accent: (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
+    // A preset name, or any #rrggbb picked by the user.
+    accent: /^#[0-9a-f]{6}$/i.test(s.accent) ? s.accent : (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
     photo: s.photo !== false,
     round: s.photoShape === 'rond',
   };

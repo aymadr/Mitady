@@ -1,6 +1,7 @@
 import { S, refreshNav } from '../main.js';
 import { siteLogo } from '../logos.js';
 import { mountPetEditor } from '../pet.js';
+import { cvStudioSection, bindCvStudio, studioChanged } from './cv-studio.js';
 import { refreshPerches } from '../decorate.js';
 import { html, raw, mount, api, fail, toast, debounce, busy, chipInput, fileToBase64, longDate, norm, icons } from '../lib.js';
 
@@ -16,7 +17,6 @@ const flush = debounce(async () => {
     S.profile = { ...res.profile, ...queued }; // keep edits made while saving
     S.applications = res.applications;
     if (saveState) saveState.textContent = 'Enregistré';
-    refreshStylePreview(); // text edits reach the preview once saved
   } catch (e) {
     fail(e);
   }
@@ -28,10 +28,7 @@ function update(patch) {
   queued = { ...queued, ...patch };
   if (saveState) saveState.textContent = 'Enregistrement…';
   flush();
-  if (patch.cvStyle) {
-    refreshStylePreview();
-    refreshThumbs();
-  }
+  studioChanged(patch);
 }
 
 // Merges parsed CV data into the profile without overwriting what the user typed.
@@ -55,6 +52,7 @@ function applyParsed(parsed, { overwrite = false, previousText = null } = {}) {
     skills: [...fromCv, ...kept.filter((s) => !known.has(norm(s)))],
     sections: overwrite || !p.sections.length ? parsed.sections || p.sections : p.sections,
   };
+  if (next.sections !== p.sections) next.cvManaged = false; // the editor re-adds ids and the skills section
   // Pre-fills the Word template settings: the exact headline and profile paragraph
   // to swap, and where added skills go.
   const d = p.docx || {};
@@ -103,52 +101,7 @@ export function renderProfile(view) {
         <div class="card" id="avatar-editor"></div>
       </section>
 
-      <section class="section">
-        <div class="section-head"><h2 class="section-title">Identité</h2></div>
-        <div class="card">
-          <div class="grid-2">
-            <label class="field"><span class="label">Nom complet</span><input class="input" data-k="name" value="${p.name}"></label>
-            <label class="field"><span class="label">Titre actuel</span><input class="input" data-k="headline" value="${p.headline}" placeholder="Ex. Apprenti ingénieur cybersécurité"></label>
-            <label class="field"><span class="label">E-mail</span><input class="input" data-k="email" type="email" value="${p.email}"></label>
-            <label class="field"><span class="label">Téléphone</span><input class="input" data-k="phone" value="${p.phone}"></label>
-            <label class="field"><span class="label">Ville</span><input class="input" data-k="location" value="${p.location}"></label>
-            <label class="field"><span class="label">Liens</span><input class="input" id="links" value="${(p.links || []).join(', ')}" placeholder="LinkedIn, GitHub, portfolio"></label>
-          </div>
-          <div class="field" style="margin-top:20px"><span class="label">Accord des intitulés de poste sur ton CV</span>
-            <div class="segmented" id="gender">
-              ${[['masculin', 'Masculin'], ['feminin', 'Féminin'], ['neutre', 'Tel quel']].map(([v, l]) => html`<button data-v="${v}" aria-pressed="${p.titleGender === v}">${l}</button>`)}
-            </div>
-            <p class="hint">« Alternant(e) Ingénieur(e) H/F » devient « Alternant Ingénieur » ou « Alternante Ingénieure ».</p>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><h2 class="section-title">Résumé</h2></div>
-        <div class="card">
-          <textarea class="textarea" data-k="summary" rows="4" placeholder="Qui tu es, ce que tu sais faire, ce que tu cherches. Utilisé par défaut en tête de tes CV.">${p.summary}</textarea>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><h2 class="section-title">Compétences</h2><span class="section-note">${p.skills.length} au total</span></div>
-        <div class="card">
-          <div id="skills"></div>
-          <p class="hint">Entrée pour ajouter. Plus cette liste est juste, plus la correspondance avec les offres est fiable.</p>
-          ${suggestions.length
-            ? html`<div class="label" style="margin-top:20px">Souvent demandées en ${domain.label.toLowerCase()}</div>
-              <div class="chips" id="suggest">${suggestions.slice(0, 40).map((s) => html`<button class="chip suggest" data-s="${s}">${icons.plus} ${s}</button>`)}</div>`
-            : ''}
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-head"><h2 class="section-title">Parcours</h2><button class="btn btn-plain small" id="add-section">Ajouter une rubrique</button></div>
-        <div id="sections"></div>
-        <p class="hint" style="padding:0 4px">Repris sur le CV généré par l'app. Une ligne par information ; « - » en début de ligne pour une puce ; une date en fin de ligne (« 09/2024 - 06/2025 ») s'aligne à droite. Dans une rubrique « Compétences », écris « Catégorie : a, b, c ».</p>
-      </section>
-
-      ${cvStyleSection(p)}
+      ${cvStudioSection(p)}
 
       <section class="section" id="recherche">
         <div class="section-head"><h2 class="section-title">Ce que tu cherches</h2></div>
@@ -205,25 +158,8 @@ export function renderProfile(view) {
     },
   });
   bindUpload(view);
-  bindCvStyle(view);
+  bindCvStudio(view, { update });
 
-  view.querySelectorAll('[data-k]').forEach((el) => el.addEventListener('input', () => update({ [el.dataset.k]: el.value })));
-  view.querySelector('#links').addEventListener('input', (e) => update({ links: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }));
-  segmented(view.querySelector('#gender'), (v) => update({ titleGender: v }));
-
-  chipInput(view.querySelector('#skills'), [...p.skills], (skills) => update({ skills }), { placeholder: 'Ajouter une compétence' });
-  view.querySelectorAll('#suggest [data-s]').forEach((b) =>
-    b.addEventListener('click', () => {
-      update({ skills: [...S.profile.skills, b.dataset.s] });
-      renderProfile(view);
-    }),
-  );
-
-  renderSections(view.querySelector('#sections'));
-  view.querySelector('#add-section').addEventListener('click', () => {
-    update({ sections: [...S.profile.sections, { title: 'Nouvelle rubrique', body: '' }] });
-    renderSections(view.querySelector('#sections'));
-  });
 
   const search = (patch) => update({ search: { ...S.profile.search, ...patch } });
   view.querySelector('#domain').addEventListener('change', (e) => {
@@ -265,37 +201,6 @@ function segmented(group, onPick) {
       onPick(b.dataset.v);
     }),
   );
-}
-
-function renderSections(root) {
-  const sections = S.profile.sections;
-  mount(
-    root,
-    sections.length
-      ? html`${sections.map(
-          (s, i) => html`<div class="card" data-i="${i}">
-            <div class="row" style="margin-bottom:10px">
-              <input class="input grow" data-f="title" value="${s.title}" style="font-weight:600">
-              <button class="btn btn-danger small" data-remove>Retirer</button>
-            </div>
-            <textarea class="textarea" data-f="body" rows="${Math.min(14, Math.max(4, s.body.split('\n').length + 1))}">${s.body}</textarea>
-          </div>`,
-        )}`
-      : html`<div class="card empty"><strong>Aucune rubrique</strong>Importe ton CV pour les remplir, ou ajoute Expérience, Formation, Projets…</div>`,
-  );
-  root.querySelectorAll('[data-i]').forEach((card) => {
-    const i = Number(card.dataset.i);
-    card.querySelectorAll('[data-f]').forEach((el) =>
-      el.addEventListener('input', () => {
-        const next = S.profile.sections.map((s, j) => (j === i ? { ...s, [el.dataset.f]: el.value } : s));
-        update({ sections: next });
-      }),
-    );
-    card.querySelector('[data-remove]').addEventListener('click', () => {
-      update({ sections: S.profile.sections.filter((_, j) => j !== i) });
-      renderSections(root);
-    });
-  });
 }
 
 function bindUpload(view) {
@@ -345,128 +250,4 @@ function bindUpload(view) {
       }
     }),
   );
-}
-
-// ---------- CV layout (app template) ----------
-
-function cvStyleSection(p) {
-  const st = S.cvStyles;
-  const cur = p.cvStyle;
-  const seg = (group, entries, value) =>
-    html`<div class="segmented" data-style="${group}">${entries.map(([k, label]) => html`<button data-v="${k}" aria-pressed="${value === k}">${label}</button>`)}</div>`;
-  const hasFile = Boolean(p.cvFile);
-  const own = p.cvFile?.type === 'docx' ? 'ton fichier Word, adapté à chaque offre' : 'ton PDF tel quel';
-  return html`<section class="section">
-    <div class="section-head"><h2 class="section-title">Ton CV</h2><span class="section-note">Toujours envoyé en PDF</span></div>
-    <div class="card cv-style">
-      <div class="stack">
-        <div class="field"><span class="label">Quel CV utiliser ?</span>
-          <div class="segmented" id="cv-mode">
-            <button data-v="own" aria-pressed="${p.cvMode !== 'app' && hasFile}" ${hasFile ? '' : raw('disabled')}>Garder mon CV</button>
-            <button data-v="app" aria-pressed="${p.cvMode === 'app' || !hasFile}">Modèle de l'app (ATS)</button>
-          </div>
-          <p class="hint">${hasFile
-            ? html`${p.cvMode === 'app' ? 'Ton parcours est mis en page avec le modèle choisi ci-dessous.' : `Tes candidatures partent avec ${own}.`} Tu peux changer pour chaque offre.`
-            : "Importe ton CV plus haut pour pouvoir le garder tel quel. Sans fichier, l'app construit ton CV à partir de ton parcours."}</p>
-        </div>
-        <div class="field"><span class="label">Modèle</span>
-          <div class="templates" id="layouts">${Object.entries(st.layouts).map(([k, l]) => html`<button class="tpl" data-v="${k}" aria-pressed="${cur.layout === k}">
-            <span class="tpl-thumb"><iframe tabindex="-1" data-layout="${k}" title="${l.label}" sandbox="allow-same-origin"></iframe></span>
-            <span class="tpl-name">${l.label}</span><span class="tpl-tag ${l.ats ? 'ats' : ''}">${l.ats ? 'ATS' : 'Design'}</span></button>`)}</div>
-          <p class="hint">ATS : une colonne, texte simple, lu sans erreur par les logiciels de tri des candidatures. Design : plus visuel, à privilégier pour un envoi direct à une personne.</p>
-        </div>
-        <div class="field"><span class="label">Police</span>${seg('font', Object.entries(st.fonts).map(([k, v]) => [k, v.label]), cur.font)}</div>
-        <div class="field"><span class="label">Couleur</span>
-          <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}
-            <label class="swatch custom" title="Couleur personnalisée" style="--c:${/^#/.test(cur.accent) ? cur.accent : '#ffffff'}" aria-pressed="${/^#/.test(cur.accent)}"><input type="color" id="accent-custom" value="${/^#/.test(cur.accent) ? cur.accent : '#1f3a93'}"></label></div>
-        </div>
-        <div class="field"><span class="label">Photo</span>
-          <div class="row wrap">
-            ${p.photo ? html`<img class="photo-thumb" src="/api/profile/photo?v=${Date.now()}" alt="Ta photo">` : ''}
-            ${p.photo
-              ? html`<label class="row small"><input type="checkbox" id="photo-on" ${cur.photo ? raw('checked') : ''}> Afficher sur le CV</label>
-                <button class="btn btn-plain small" id="photo-change">Changer</button><button class="btn btn-danger small" id="photo-remove">Retirer</button>`
-              : html`<button class="btn btn-secondary btn-sm" id="photo-change">Ajouter une photo</button>`}
-            <input type="file" id="photo-file" accept="image/png,image/jpeg" hidden>
-          </div>
-          ${p.photo ? html`<div style="margin-top:10px">${seg('photoShape', Object.entries(st.photoShapes), cur.photoShape)}</div>` : html`<p class="hint">JPG ou PNG. Elle apparaît sur le CV généré par l'app.</p>`}
-        </div>
-      </div>
-      <div class="preview"><div class="preview-page"><iframe id="style-preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></div>
-    </div>
-  </section>`;
-}
-
-// Mini preview of one template, with the current font, color and photo.
-function refreshThumb(frame) {
-  api('/profile/cv-preview', { method: 'POST', body: { cvStyle: { ...S.profile.cvStyle, layout: frame.dataset.layout } } })
-    .then((doc) => (frame.srcdoc = doc))
-    .catch(() => {});
-}
-
-const refreshThumbs = debounce(() => document.querySelectorAll('#layouts iframe').forEach(refreshThumb), 500);
-
-let stylePreview = null;
-const refreshStylePreview = debounce(async () => {
-  if (!stylePreview?.isConnected) return;
-  try {
-    stylePreview.srcdoc = await api('/profile/cv-preview', { method: 'POST', body: { cvStyle: S.profile.cvStyle } });
-  } catch (e) {
-    fail(e);
-  }
-}, 700);
-
-function bindCvStyle(view) {
-  stylePreview = view.querySelector('#style-preview');
-  const page = stylePreview.parentElement;
-  new ResizeObserver(() => (stylePreview.style.transform = `scale(${page.clientWidth / 794})`)).observe(page);
-  refreshStylePreview();
-
-  view.querySelector('#accent-custom').addEventListener('input', (e) => {
-    view.querySelectorAll('[data-style="accent"] .swatch').forEach((x) => x.setAttribute('aria-pressed', x.contains(e.target)));
-    e.target.parentElement.style.setProperty('--c', e.target.value);
-    update({ cvStyle: { ...S.profile.cvStyle, accent: e.target.value } });
-  });
-  segmented(view.querySelector('#cv-mode'), (v) => update({ cvMode: v }));
-  const layouts = view.querySelector('#layouts');
-  segmented(layouts, (v) => update({ cvStyle: { ...S.profile.cvStyle, layout: v } }));
-  layouts.querySelectorAll('iframe').forEach((f) => {
-    f.style.transform = 'scale(0.17)';
-    refreshThumb(f);
-  });
-
-  view.querySelectorAll('[data-style]').forEach((group) =>
-    group.querySelectorAll('[data-v]').forEach((b) =>
-      b.addEventListener('click', () => {
-        group.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
-        group.querySelector('.custom')?.setAttribute('aria-pressed', false);
-        update({ cvStyle: { ...S.profile.cvStyle, [group.dataset.style]: b.dataset.v } });
-      }),
-    ),
-  );
-  view.querySelector('#photo-on')?.addEventListener('change', (e) => update({ cvStyle: { ...S.profile.cvStyle, photo: e.target.checked } }));
-
-  const file = view.querySelector('#photo-file');
-  view.querySelector('#photo-change').addEventListener('click', () => file.click());
-  file.addEventListener('change', async () => {
-    const f = file.files[0];
-    if (!f) return;
-    try {
-      const res = await api('/profile/photo', { method: 'POST', body: { name: f.name, data: await fileToBase64(f) } });
-      S.profile = { ...S.profile, photo: res.profile.photo, cvStyle: { ...S.profile.cvStyle, photo: true } };
-      update({ cvStyle: S.profile.cvStyle });
-      renderProfile(view);
-    } catch (e) {
-      fail(e);
-    }
-  });
-  view.querySelector('#photo-remove')?.addEventListener('click', async () => {
-    try {
-      await api('/profile/photo', { method: 'DELETE' });
-      S.profile.photo = null;
-      renderProfile(view);
-    } catch (e) {
-      fail(e);
-    }
-  });
 }

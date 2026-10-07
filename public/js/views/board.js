@@ -1,7 +1,7 @@
 // "Suivi": a board with one column per stage. Drag an application from a column to another to
 // change its status. Cards follow the pointer with a tilt, and the others slide into place.
 import { S, upsertApp, go } from '../main.js';
-import { html, mount, api, fail, toast, avatar, miniRing, relDate, norm } from '../lib.js';
+import { html, mount, api, fail, toast, avatar, miniRing, relDate, norm, icons } from '../lib.js';
 import { siteLogo } from '../logos.js';
 import { cheerStatus } from '../mascot.js';
 import { petSvg, petOf } from '../pet.js';
@@ -20,7 +20,7 @@ let view = null;
 function card(a) {
   return html`<article class="kcard" data-id="${a.id}" tabindex="0" aria-label="${a.title}, ${a.company}">
     <div class="kcard-top">${avatar(a.company)}<div class="grow"><b>${a.title}</b><small>${a.company}${a.location ? ` · ${a.location}` : ''}</small></div>${miniRing(a.score)}</div>
-    <div class="kcard-foot">${siteLogo(a.source, 18)}<span>${a.contract || a.source}</span>${a.followUpDue ? html`<span class="badge orange">À relancer</span>` : ''}${a.status === 'applied' && a.appliedAt ? html`<span class="tiny">${relDate(a.appliedAt)}</span>` : ''}</div>
+    <div class="kcard-foot">${siteLogo(a.source, 18)}<span class="kcard-kind">${a.contract || a.source}</span>${a.followUpDue ? html`<span class="badge orange">À relancer</span>` : ''}${a.status === 'applied' && a.appliedAt ? html`<span class="tiny">${relDate(a.appliedAt)}</span>` : ''}${a.link ? html`<a class="klink" href="${a.link}" target="_blank" rel="noopener" title="Voir l'annonce" aria-label="Voir l'annonce">${icons.external}</a>` : ''}</div>
   </article>`;
 }
 
@@ -92,7 +92,7 @@ function bind() {
 }
 
 function startPress(e, cardEl) {
-  if (e.button !== 0) return;
+  if (e.button !== 0 || e.target.closest('a')) return;
   const startX = e.clientX;
   const startY = e.clientY;
   let dragging = false;

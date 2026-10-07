@@ -272,13 +272,17 @@ function renderCv(body, a) {
                 <button aria-pressed="${d.template === 'builtin'}" data-v="builtin">Modèle de l'app</button>
               </div>
               <p class="hint">${{
-                original: "Ton fichier, sans aucun changement (converti en PDF si c'est un Word). Le titre et le résumé ci-dessous ne sont pas utilisés.",
+                original: "Ton fichier, sans aucun changement (converti en PDF si c'est un Word). Rien à générer : il est joint tel quel.",
                 docx: "Ton fichier Word, mise en page conservée : seuls le titre, le paragraphe de profil et les compétences ajoutées changent. Livré en PDF.",
                 builtin: "Le CV est reconstruit avec le modèle et la photo choisis dans ton profil. Livré en PDF.",
               }[d.template]}</p>
             </div>`
           : html`<p class="hint" style="margin-bottom:12px">CV généré par l'app (PDF). Importe ton propre CV dans ton profil pour pouvoir aussi l'envoyer tel quel.</p>`}
-        <label class="field"><span class="label">Titre du CV</span><input class="input" id="headline" value="${d.headline}"></label>
+        ${d.template === 'original'
+          ? html`<div class="file-row"><div class="grow"><strong>${S.profile.cvFile.name}</strong>Ce CV est joint tel quel à ta candidature, rien à générer.</div>
+              <a class="btn btn-secondary btn-sm" href="/api/profile/cv/pdf" target="_blank">Ouvrir</a>
+              <a class="btn btn-secondary btn-sm" href="/api/profile/cv/pdf?download=1">Télécharger</a></div>`
+          : html`<label class="field"><span class="label">Titre du CV</span><input class="input" id="headline" value="${d.headline}"></label>
         <label class="field"><span class="label">Résumé de profil</span><textarea class="textarea" id="summary" rows="4" placeholder="2 à 3 phrases qui répondent à l'offre.">${d.summary}</textarea></label>
         <div class="field">
           <span class="label">Compétences à ajouter pour cette offre</span>
@@ -289,10 +293,10 @@ function renderCv(body, a) {
         </div>
         <div class="form-foot">
           <button class="btn btn-primary" id="generate" data-busy="Génération…">${generated ? 'Régénérer le PDF' : 'Générer le PDF'}</button>
-        </div>
+        </div>`}
       </section>
 
-      ${generated
+      ${generated && d.template !== 'original'
         ? html`<div class="file-row">
             <div class="grow"><strong>CV prêt</strong>Généré ${relDate(a.cv.generatedAt)} · joint automatiquement à ta candidature</div>
             <a class="btn btn-secondary btn-sm" href="/api/applications/${a.id}/cv" target="_blank">Ouvrir</a>
@@ -300,7 +304,9 @@ function renderCv(body, a) {
           </div>`
         : ''}
 
-      ${d.template === 'builtin'
+      ${d.template === 'original'
+        ? html`<section class="preview"><iframe class="pdf-frame" title="Ton CV" src="/api/profile/cv/pdf#toolbar=0&view=FitH"></iframe></section>`
+        : d.template === 'builtin'
         ? html`<section class="preview"><div class="preview-page"><iframe id="preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></section>`
         : generated
           ? html`<section class="preview"><iframe class="pdf-frame" title="CV généré" src="/api/applications/${a.id}/cv?v=${a.cv.generatedAt}#toolbar=0&view=FitH"></iframe></section>`
@@ -329,7 +335,7 @@ function renderCv(body, a) {
     persist();
     refreshPreview();
   };
-  body.querySelector('#headline').addEventListener('input', (e) => {
+  body.querySelector('#headline')?.addEventListener('input', (e) => {
     draft.headline = e.target.value;
     onEdit();
   });
@@ -354,7 +360,7 @@ function renderCv(body, a) {
       render();
     }),
   );
-  body.querySelector('#generate').addEventListener('click', (e) =>
+  body.querySelector('#generate')?.addEventListener('click', (e) =>
     busy(e.currentTarget, async () => {
       const w = working({ text: 'Je prépare ton CV…', mood: 'write', i: 3 });
       try {
@@ -399,7 +405,8 @@ async function renderApply(body, a) {
   if (!emailDrafts.has(a.id)) {
     try {
       const d = await api(`/applications/${a.id}/email-draft`);
-      emailDrafts.set(a.id, { ...d, attach: a.cv?.file ? 'tailored' : S.profile.cvFile ? 'original' : 'none' });
+      const tpl = a.cv?.templateChosen ? a.cv.template : defaultTemplate();
+      emailDrafts.set(a.id, { ...d, attach: tpl !== 'original' && a.cv?.file ? 'tailored' : S.profile.cvFile ? 'original' : a.cv?.file ? 'tailored' : 'none' });
     } catch (e) {
       return fail(e);
     }

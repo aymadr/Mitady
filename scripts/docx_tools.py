@@ -8,7 +8,10 @@
 
     python docx_tools.py tailor <job.json>
         job.json = {"source", "output", "titleText", "newTitle", "summaryText", "newSummary",
-                    "skillsAnchor", "skills": []}
+                    "skillsAnchor", "skills": [], "referencePdf"}
+        With "referencePdf" (the untouched CV as PDF), the result is tightened slightly until it
+        has no more pages than the original, so a longer title never pushes a few lines onto
+        a second page.
         -> writes a tailored copy, as PDF when "output" ends with .pdf and Word
            (or LibreOffice) is available, otherwise as .docx. Prints {"output": path}.
 
@@ -16,11 +19,13 @@ The layout of the original file is kept: only the text of existing runs is chang
 """
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 
 import docx
+from docx.shared import Cm, Pt
 from docx.text.paragraph import Paragraph
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -109,6 +114,84 @@ def list_end_after(doc, p):
     return last
 
 
+def pdf_pages(path):
+    """Number of pages of a PDF: exact with pypdf when installed, otherwise a rough count. 0 if unknown."""
+    try:
+        import pypdf  # noqa: WPS433
+
+        return len(pypdf.PdfReader(path).pages)
+    except Exception:
+        pass
+    try:
+        with open(path, "rb") as f:
+            return len(re.findall(rb"/Type\s*/Page(?![s\w])", f.read()))
+    except Exception:
+        return 0
+
+
+def _scaled(length, k):
+    return None if length is None else Pt(round(length.pt * k * 2) / 2)
+
+
+def tighten(doc, level):
+    """Shrinks fonts by up to ~10 %, paragraph gaps and top/bottom margins a little more with each
+    level, so a CV that overflows by a few lines goes back to its original page count."""
+    font = max(0.9, 1 - 0.018 * level)
+    gap = max(0.15, 1 - 0.2 * level)
+    for st in doc.styles:
+        try:
+            if st.font is not None and st.font.size:
+                st.font.size = _scaled(st.font.size, font)
+            pf = getattr(st, "paragraph_format", None)
+            if pf is not None:
+                if pf.space_before:
+                    pf.space_before = _scaled(pf.space_before, gap)
+                if pf.space_after:
+                    pf.space_after = _scaled(pf.space_after, gap)
+        except Exception:
+            continue
+    for p in all_paragraphs(doc):
+        for r in p.runs:
+            if r.font.size:
+                r.font.size = _scaled(r.font.size, font)
+        pf = p.paragraph_format
+        if pf.space_before:
+            pf.space_before = _scaled(pf.space_before, gap)
+        if pf.space_after:
+            pf.space_after = _scaled(pf.space_after, gap)
+        if isinstance(pf.line_spacing, float) and pf.line_spacing > 1.0:
+            pf.line_spacing = max(1.0, round(pf.line_spacing - 0.02 * level, 2))
+    for sec in doc.sections:
+        for side in ("top_margin", "bottom_margin"):
+            cur = getattr(sec, side)
+            if cur:
+                setattr(sec, side, max(Cm(0.8), cur - Cm(0.08) * level))
+
+
+def fit_pages(base_docx, out_pdf, target):
+    """PDF of base_docx, tightened step by step until it has at most `target` pages.
+    Returns (pdf path or None, tightening level used)."""
+    pdf = to_pdf(base_docx, out_pdf)
+    if not pdf or not target:
+        return pdf, 0
+    if pdf_pages(pdf) <= target:
+        return pdf, 0
+    for level in range(1, 7):
+        d = docx.Document(base_docx)
+        tighten(d, level)
+        tmp_docx = out_pdf[:-4] + ".fit.docx"
+        d.save(tmp_docx)
+        tmp_pdf = to_pdf(tmp_docx, out_pdf[:-4] + ".fit.pdf")
+        os.remove(tmp_docx)
+        if not tmp_pdf:
+            break
+        if pdf_pages(tmp_pdf) <= target:
+            shutil.move(tmp_pdf, out_pdf)
+            return out_pdf, level
+        os.remove(tmp_pdf)
+    return pdf, 0
+
+
 def tailor(job):
     doc = docx.Document(job["source"])
     title_text = (job.get("titleText") or "").strip()
@@ -161,10 +244,14 @@ def tailor(job):
 
     result = {"output": docx_path, "titleReplaced": replaced, "summaryReplaced": summary_replaced, "skillsAdded": added}
     if want_pdf:
-        pdf = to_pdf(docx_path, out)
+        ref = job.get("referencePdf")
+        target = pdf_pages(ref) if ref and os.path.exists(ref) else 0
+        pdf, level = fit_pages(docx_path, out, target)
         if pdf:
             os.remove(docx_path)
             result["output"] = pdf
+            result["pages"] = pdf_pages(pdf)
+            result["tightened"] = level
         else:
             result["warning"] = "Conversion PDF indisponible (Word ou LibreOffice requis) : fichier .docx conservé."
     return result

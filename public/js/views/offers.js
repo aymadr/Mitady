@@ -43,6 +43,7 @@ function rows(list) {
       </div>
       <div class="item-side">
         ${statusSide(a)}
+        ${a.link ? html`<button class="icon-btn item-open" data-open="${a.link}" title="Voir l'annonce" aria-label="Voir l'annonce">${icons.external}</button>` : ''}
         ${miniRing(a.score)}
         ${icons.chevron}
       </div>
@@ -85,6 +86,14 @@ export function renderOffers(view) {
   );
 
   const list = view.querySelector('#list');
+  // The small arrow opens the original listing without opening the offer sheet.
+  list.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-open]');
+    if (!b) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.open(b.dataset.open, '_blank', 'noopener');
+  });
   view.querySelector('#dedupe').addEventListener('click', (e) =>
     busy(e.currentTarget, async () => {
       try {

@@ -2,6 +2,7 @@
 // (or ANTHROPIC_API_KEY is set). Everything else in the app works without it.
 const Anthropic = require('@anthropic-ai/sdk');
 const store = require('./store');
+const { sectionText } = require('./cv');
 
 const MODEL = 'claude-opus-5';
 
@@ -50,7 +51,7 @@ function profileBlock(profile) {
     `Titre actuel : ${profile.headline}`,
     `Résumé : ${profile.summary}`,
     `Compétences : ${(profile.skills || []).join(', ')}`,
-    ...(profile.sections || []).map((s) => `## ${s.title}\n${s.body}`),
+    ...(profile.sections || []).map((s) => `## ${s.title}\n${sectionText(s)}`),
   ].join('\n');
 }
 

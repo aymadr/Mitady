@@ -5,7 +5,7 @@ const XLSX = require('xlsx');
 
 const store = require('./lib/store');
 const { analyzeOffer, domainList, norm } = require('./lib/skills');
-const { adaptTitle, fill } = require('./lib/text');
+const { adaptTitle, stripCompany, fill } = require('./lib/text');
 const cv = require('./lib/cv');
 const ai = require('./lib/ai');
 const scraper = require('./lib/scraper');
@@ -41,7 +41,7 @@ function enrich(a) {
   const analysis = analyzeOffer(a, profile);
   const since = a.lastFollowUpAt || a.appliedAt;
   const followUpDue = a.status === 'applied' && since && daysBetween(since, store.today()) >= settings.followUpDays;
-  return { ...a, ...analysis, followUpDue, suggestedHeadline: adaptTitle(a.title, profile.titleGender) };
+  return { ...a, ...analysis, followUpDue, suggestedHeadline: adaptTitle(a.title, profile.titleGender, a.company) };
 }
 
 function findApp(id) {
@@ -68,7 +68,7 @@ app.get('/api/state', (req, res) => {
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'avatar', 'pet'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'details', 'skillLevels', 'cvManaged', 'avatar', 'pet', 'photoCrop'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
 
 app.put('/api/profile', route((req, res) => {
@@ -98,7 +98,13 @@ app.post('/api/profile/cv', route(async (req, res) => {
   const previousText = p.cvText || '';
   p.cvFile = { name, path: target, type: ext.slice(1), uploadedAt: new Date().toISOString() };
   p.cvText = text;
-  p.photo = await cv.extractPhoto(target);
+  const extracted = await cv.extractPhoto(target);
+  if (extracted) {
+    // The photo of a Word CV becomes the profile photo (its original too, so it can be re-cropped).
+    p.photo = extracted;
+    p.photoOriginal = null;
+    p.photoCrop = null;
+  }
   store.save();
   res.json({ profile: p, parsed: cv.parseCvText(text), previousText });
 }));
@@ -109,36 +115,73 @@ app.post('/api/profile/cv/ai', route(async (req, res) => {
   res.json({ parsed: await ai.parseCv(text) });
 }));
 
-// Photo shown on the app's CV template (taken from a Word CV, or uploaded here).
+// Photo shown on the app's CV template. The edited (cropped) picture is what the CV uses; the
+// original is kept so it can be re-cropped later. Sent by the photo editor, or taken from a Word CV.
+const PHOTO_EXTS = ['.png', '.jpg', '.jpeg', '.webp'];
+const dropPhotoFiles = (base) => PHOTO_EXTS.forEach((e) => fs.rmSync(path.join(store.UPLOAD_DIR, base + e), { force: true }));
+const extOf = (name = '') => path.extname(name).toLowerCase().replace('.jpeg', '.jpg');
+
 app.post('/api/profile/photo', route((req, res) => {
-  const ext = path.extname(req.body.name || '').toLowerCase().replace('.jpeg', '.jpg');
-  if (!['.jpg', '.png'].includes(ext)) throw fail(400, 'Choisis une image JPG ou PNG.');
-  for (const old of ['.png', '.jpg', '.jpeg']) fs.rmSync(path.join(store.UPLOAD_DIR, 'photo' + old), { force: true });
+  const { name, data, original } = req.body;
+  const ext = extOf(name);
+  if (!['.jpg', '.png'].includes(ext) || !data) throw fail(400, 'Choisis une image JPG ou PNG.');
+  const p = store.db.profile;
+  dropPhotoFiles('photo');
   const target = path.join(store.UPLOAD_DIR, 'photo' + ext);
-  fs.writeFileSync(target, Buffer.from(req.body.data, 'base64'));
-  store.db.profile.photo = target;
+  fs.writeFileSync(target, Buffer.from(data, 'base64'));
+  p.photo = target;
+  if (original?.data) {
+    dropPhotoFiles('photo-original');
+    const oext = extOf(original.name) === '.png' ? '.png' : '.jpg';
+    const otarget = path.join(store.UPLOAD_DIR, 'photo-original' + oext);
+    fs.writeFileSync(otarget, Buffer.from(original.data, 'base64'));
+    p.photoOriginal = otarget;
+  }
   store.save();
-  res.json({ profile: store.db.profile });
+  res.json({ profile: p });
 }));
 
 app.delete('/api/profile/photo', route((req, res) => {
   const p = store.db.profile;
-  if (p.photo) fs.rmSync(p.photo, { force: true });
+  dropPhotoFiles('photo');
+  dropPhotoFiles('photo-original');
   p.photo = null;
+  p.photoOriginal = null;
+  p.photoCrop = null;
   store.save();
   res.json({ profile: p });
 }));
 
 app.get('/api/profile/photo', route((req, res) => {
-  const f = store.db.profile.photo;
+  const p = store.db.profile;
+  const f = req.query.original && p.photoOriginal && fs.existsSync(p.photoOriginal) ? p.photoOriginal : p.photo;
   if (!f || !fs.existsSync(f)) throw fail(404, 'Aucune photo.');
   res.sendFile(f);
 }));
 
+const PREVIEW_FIELDS = ['name', 'email', 'phone', 'location', 'links', 'summary', 'skills', 'sections', 'details', 'skillLevels', 'cvManaged', 'headline'];
+
 // Preview of the app template with the profile as it is, style included.
 app.post('/api/profile/cv-preview', route((req, res) => {
   const p = { ...store.db.profile, cvStyle: { ...store.db.profile.cvStyle, ...(req.body.cvStyle || {}) } };
-  res.type('html').send(cv.renderCvHtml(p, { headline: p.headline, summary: p.summary, skills: p.skills }));
+  // Unsaved edits sent by the editor, so the preview follows every keystroke.
+  for (const k of PREVIEW_FIELDS) if (req.body.profile && k in req.body.profile) p[k] = req.body.profile[k];
+  if (req.body.photoData) p.photoData = req.body.photoData; // a picture being edited, not saved yet
+  res.type('html').send(cv.renderCvHtml(p, { headline: p.headline, summary: p.summary, skills: p.skills || [], preview: true }));
+}));
+
+// The user's own CV as a PDF (a Word file is converted), shown and attached as is.
+app.get('/api/profile/cv/pdf', route(async (req, res) => {
+  const file = await cv.originalPdf(store.db.profile);
+  if (req.query.download) return res.download(file, 'CV.pdf');
+  res.type('pdf').sendFile(file);
+}));
+
+// A sample CV in the user's style, for the guided demo (never touches the real profile).
+app.post('/api/demo/cv-preview', route((req, res) => {
+  const p = store.db.profile;
+  const style = { ...p.cvStyle, ...(req.body.cvStyle || {}) };
+  res.type('html').send(cv.renderCvHtml({ cvStyle: style, photo: p.photo, sections: [] }, { headline: req.body.headline || '', summary: req.body.summary || '', skills: [], preview: true }));
 }));
 
 app.get('/api/profile/cv', route((req, res) => {
@@ -179,7 +222,7 @@ app.get('/api/applications', (req, res) => res.json(store.db.applications.map(en
 function newApplication(fields) {
   return {
     id: store.newId(),
-    title: fields.title || 'Poste sans titre',
+    title: stripCompany(fields.title || 'Poste sans titre', fields.company),
     company: fields.company || 'Entreprise non précisée',
     link: fields.link || '',
     location: fields.location || '',
@@ -247,7 +290,7 @@ function defaultTemplate(profile) {
 function cvOptions(a, body) {
   const { profile } = store.db;
   return {
-    headline: body.headline ?? a.cv?.headline ?? adaptTitle(a.title, profile.titleGender),
+    headline: body.headline ?? a.cv?.headline ?? adaptTitle(a.title, profile.titleGender, a.company),
     summary: body.summary ?? a.cv?.summary ?? profile.summary,
     skillsAdded: body.skillsAdded ?? a.cv?.skillsAdded ?? [],
     template: body.template || (a.cv?.templateChosen && a.cv.template) || defaultTemplate(profile),
@@ -261,7 +304,7 @@ app.post('/api/applications/:id/cv/preview', route((req, res) => {
   const { profile } = store.db;
   const { skills: offerSkills } = analyzeOffer(a, profile);
   const skills = cv.orderSkills(profile.skills, offerSkills, opts.skillsAdded);
-  res.type('html').send(cv.renderCvHtml(profile, { headline: opts.headline, summary: opts.summary, skills, skillsAdded: opts.skillsAdded }));
+  res.type('html').send(cv.renderCvHtml(profile, { headline: opts.headline, summary: opts.summary, skills, skillsAdded: opts.skillsAdded, preview: true }));
 }));
 
 app.post('/api/applications/:id/cv', route(async (req, res) => {
@@ -301,12 +344,12 @@ function emailVars(a) {
   const { profile } = store.db;
   return {
     contact: a.contact?.name || '',
-    poste: adaptTitle(a.title, profile.titleGender),
+    poste: adaptTitle(a.title, profile.titleGender, a.company),
     entreprise: a.company,
     nom: profile.name,
     email: profile.email,
     telephone: profile.phone,
-    titre: a.cv?.headline || adaptTitle(a.title, profile.titleGender),
+    titre: a.cv?.headline || adaptTitle(a.title, profile.titleGender, a.company),
     resume: a.cv?.summary || profile.summary,
   };
 }
@@ -383,7 +426,7 @@ app.get('/api/search', async (req, res) => {
     store.db.applications.unshift(...added);
     const merged = dedupeTodo();
     store.save();
-    send('done', { added: added.length - merged.filter((a) => added.includes(a)).length, merged: merged.length });
+    send('done', { added: added.length - merged.filter((a) => added.includes(a)).length, merged: merged.length, stopped: Boolean(jobs.stopped) });
   } catch (e) {
     send('error', { message: e.message });
   } finally {
@@ -391,6 +434,10 @@ app.get('/api/search', async (req, res) => {
     res.end();
   }
 });
+
+app.post('/api/search/stop', route((req, res) => {
+  res.json({ ok: scraper.stop() });
+}));
 
 // ---------- Export ----------
 

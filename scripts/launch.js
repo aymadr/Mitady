@@ -25,7 +25,7 @@ if (!fs.existsSync(marker)) {
   // Optional: reading a Word CV needs python-docx. Not fatal if Python is missing.
   say('Module Word (facultatif)…');
   for (const py of WIN ? ['python'] : ['python3', 'python']) {
-    const args = ['-m', 'pip', 'install', '--quiet', 'python-docx', ...(WIN ? ['pywin32'] : [])];
+    const args = ['-m', 'pip', 'install', '--quiet', 'python-docx', 'pypdf', ...(WIN ? ['pywin32'] : [])];
     if (spawnSync(py, args, { stdio: 'ignore', shell: WIN }).status === 0) break;
   }
   fs.writeFileSync(marker, new Date().toISOString());

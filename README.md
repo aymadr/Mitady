@@ -30,6 +30,7 @@ Tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le pr�
 
 - **Suivi** : un tableau par étape (À traiter, Envoyées, Entretiens, Offres reçues, Refusées). Tu fais glisser une offre d'une colonne à l'autre ; la carte s'incline et les confettis partent quand tu postules.
 - **Recherche** : un écran plein écran où des animaux en pixel art, dont ton compagnon, portent chacun le logo d'un site et jouent à saute-mouton. Quand un site trouve des offres, son animal lance le logo en l'air et le rattrape, avec une bulle « +4 ». Des compteurs montrent offres vues, doublons écartés et nouvelles offres. Tu peux le réduire.
+- **Arrêter une recherche** : le bouton « Arrêter la recherche » (sur l'écran de recherche et sur la petite carte réduite) stoppe tout de suite et garde les offres déjà trouvées.
 - **Jalons** : une petite fête pour ta première candidature, puis la 5ᵉ, la 10ᵉ, la 25ᵉ et la 50ᵉ, et à chaque entretien ou offre.
 
 ## Logos des sites
@@ -39,6 +40,10 @@ Chaque site d'emploi a une tuile 3D dessinée par Mitady. Pour afficher les logo
 ## Apparence
 
 Le bouton soleil / lune en haut à droite bascule entre mode clair et mode sombre (la bascule s'étend en cercle depuis le bouton). Le choix est mémorisé ; sans choix, l'appli suit le réglage de ton ordinateur.
+
+## La démo avec le robot
+
+Le bouton **?** en haut ouvre le guide, et « Voir la démo en direct » lance la démonstration : ton compagnon prend les commandes du vrai site, avec un curseur visible, une lumière sur ce qu'il montre et des sous-titres. Il tape dans la recherche, ouvre une offre, ajoute une compétence, prépare un CV, envoie une candidature, déplace des cartes dans le suivi, passe en mode sombre, lance une recherche et change de compagnon. Tout se passe sur des offres d'exemple : **tes vraies données ne sont jamais touchées**. Pause avec la barre d'espace, Échap pour quitter.
 
 ## Comment ça marche
 
@@ -50,7 +55,8 @@ Au tout premier lancement, un guide plein écran en cinq étapes te fait importe
 4. **CV** : tout CV est livré **en PDF**. Dans Profil › Ton CV tu choisis ce qui part par défaut, et tu peux changer pour chaque offre :
    - **Mon CV tel quel** : ton fichier, sans aucun changement (un Word est converti en PDF) ;
    - **Mon Word adapté** : la mise en page de ton fichier Word est conservée, seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
-   - **Modèle de l'app** : ton parcours est mis en page avec l'un des 7 modèles (Classique, Moderne, Compact, Élégant, Minimal en format ATS, une colonne et texte réel ; Bandeau et Colonne latérale, plus visuels), avec police, couleur et photo (carrée ou ronde, importée par toi ou reprise de ton Word).
+   - **Modèle de l'app** : un éditeur façon Flow CV (Profil → « Modifier mon CV »), avec aperçu en direct. *Contenu* : infos personnelles (photo recadrable, liens, permis…), rubriques réordonnables (glisser, masquer, renommer) faites de fiches (Expérience, Formation, Projets, Certifications, Distinctions, Associations…), compétences avec niveaux, langues, centres d'intérêt, texte libre. *Design* : 7 modèles (5 ATS, une colonne et texte réel ; 2 plus visuels), 20 polices (sans, serif, mono), taille du texte, interligne, marges, espacements, couleur, en-tête centré, icônes et logos (e-mail, téléphone, LinkedIn, GitHub), style des titres, format des dates, compétences en pastilles/barres/points, une ou deux colonnes. Pour chaque offre, seul le titre du poste change. Les polices Google se chargent en ligne ; hors connexion, une police système de même famille les remplace.
+   - **Ton Word** : le PDF est ajusté au même nombre de pages que ton CV d'origine (plus de grand blanc ou de page en trop). Installe `pypdf` (`pip install pypdf`) pour un comptage exact ; `python-docx` reste requis.
    Pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct.
 5. **Candidature** : trouve un contact (profils publics), devine son adresse e-mail selon le format de l'entreprise, puis envoie le message avec le CV adapté joint.
 6. **Aujourd'hui** : les relances à faire (après 7 jours sans réponse, réglable), tes meilleures correspondances et tes statistiques.

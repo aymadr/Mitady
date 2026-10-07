@@ -2,17 +2,20 @@
 // an icon before each section title, an illustration in empty states.
 // Idempotent, and re-run whenever the page content changes.
 import { tile, art } from './brand.js';
+import { petSvg, petOf } from './pet.js';
+import { S } from './main.js';
 import { norm } from './lib.js';
 
 const PAGE_ART = {
   '': ['search', 'doc', 'target'],
+  suivi: ['target', 'send', 'chat'],
   profil: ['user', 'doc', 'sparkles'],
   reglages: ['gear', 'mail', 'key'],
 };
 
 const SECTION_ICON = [
   [/^ton cv|fichier word/, 'doc'],
-  [/identite|avatar/, 'user'],
+  [/identite|compagnon/, 'user'],
   [/resume/, 'sparkles'],
   [/competences/, 'layers'],
   [/parcours/, 'briefcase'],
@@ -40,15 +43,32 @@ export function decorate(view) {
     if (hit) el.insertAdjacentHTML('afterbegin', tile(hit[1], { size: 30, cls: 'inline' }).toString());
   });
 
+  // Empty states get a creature whose mood matches the message.
   view.querySelectorAll('.empty:not([data-i3d])').forEach((el) => {
     el.dataset.i3d = '1';
-    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${tile('inbox', { size: 76, cls: 'float' })}${tile('search', { size: 44, cls: 'float' })}</div>`);
+    const t = norm(el.querySelector('strong')?.textContent || '');
+    const mood = /tout est traite/.test(t) ? 'party' : /aucun resultat|injoignable/.test(t) ? 'think' : /aucune|rien/.test(t) ? 'sleep' : 'wave';
+    const i = [...t].reduce((a, c) => (a + c.charCodeAt(0)) % 6, 0);
+    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${petSvg(petOf(S.profile), { size: 112, mood: mood === 'wave' ? 'idle' : mood })}</div>`);
   });
 
   view.querySelectorAll('.dropzone:not([data-i3d])').forEach((el) => {
     el.dataset.i3d = '1';
-    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${tile('doc', { size: 68, cls: 'float' })}</div>`);
+    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${tile('doc', { size: 68, cls: 'float' })}${petSvg(petOf(S.profile), { size: 84, mood: 'idle' })}</div>`);
   });
+
+  // The user's companion, perched on the edge of each search field: asleep until you click it.
+  view.querySelectorAll('.search-field:not([data-perch])').forEach((el) => {
+    el.dataset.perch = '1';
+    el.insertAdjacentHTML('beforeend', `<span class="perch">${petSvg(petOf(S.profile), { size: 46, mood: 'sleep' })}</span>`);
+  });
+}
+
+// After the companion is edited: redraw the perched ones.
+export function refreshPerches() {
+  document.querySelectorAll('.perch').forEach((p) => p.remove());
+  document.querySelectorAll('.search-field[data-perch]').forEach((el) => delete el.dataset.perch);
+  decorate(document.getElementById('view'));
 }
 
 export function watch(view) {

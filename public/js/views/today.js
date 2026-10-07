@@ -2,7 +2,7 @@ import { S, startSearch, refreshPage, upsertApp } from '../main.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, miniRing, relDate } from '../lib.js';
 import { startOnboarding } from './onboarding.js';
 import { tile, marquee } from '../brand.js';
-import { avatarBadge } from '../avatar.js';
+import { petSvg, petOf } from '../pet.js';
 
 // Numbers count up from zero when the page opens.
 function countUp(root) {
@@ -60,6 +60,22 @@ function onboarding(view) {
   view.querySelector('[data-search]')?.addEventListener('click', startSearch);
 }
 
+// "3 candidatures cette semaine · série de 2 jours"
+function streakChip(apps) {
+  const days = new Set(apps.map((a) => a.appliedAt).filter(Boolean));
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const week = apps.filter((a) => a.appliedAt && (Date.now() - new Date(a.appliedAt)) / 86400000 < 7).length;
+  let streak = 0;
+  const d = new Date();
+  if (!days.has(iso(d))) d.setDate(d.getDate() - 1);
+  while (days.has(iso(d))) {
+    streak += 1;
+    d.setDate(d.getDate() - 1);
+  }
+  if (!week) return '';
+  return html`<div class="streak">${tile('rocket', { size: 30, cls: 'inline' })}<span><b>${week} candidature${week > 1 ? 's' : ''}</b> cette semaine${streak > 1 ? html` · <b>série de ${streak} jours</b>` : ''}</span></div>`;
+}
+
 export function renderToday(view) {
   const apps = S.applications;
   const ready = S.profile.skills.length && (S.profile.search.domain || S.profile.search.keywords.length);
@@ -102,11 +118,12 @@ export function renderToday(view) {
 
   mount(
     view,
-    html`<div class="page-head"><div class="greet">${S.profile.avatar ? avatarBadge(S.profile, 104) : ''}<div>
+    html`<div class="page-head"><div class="greet"><span class="greet-pet">${petSvg(petOf(S.profile), { size: 104, mood: 'idle', label: petOf(S.profile).name })}</span><div>
         <div class="eyebrow">${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1 class="page-title">Bonjour${firstName ? html` <span class="grad">${firstName}</span>` : ''}.</h1>
         <p class="page-sub">${summary[0].toUpperCase() + summary.slice(1)}</p>
-        <p style="margin-top:22px"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></p>
+        ${streakChip(apps)}
+        <div class="cta-row"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></div>
       </div></div></div>
 
       ${marquee()}

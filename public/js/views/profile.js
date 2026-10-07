@@ -1,6 +1,7 @@
 import { S, refreshNav } from '../main.js';
 import { siteLogo } from '../logos.js';
-import { mountAvatarEditor } from '../avatar.js';
+import { mountPetEditor } from '../pet.js';
+import { refreshPerches } from '../decorate.js';
 import { html, raw, mount, api, fail, toast, debounce, busy, chipInput, fileToBase64, longDate, norm, icons } from '../lib.js';
 
 const CONTRACTS = ['Alternance', 'Stage', 'CDI', 'CDD', 'Freelance'];
@@ -98,7 +99,7 @@ export function renderProfile(view) {
       </section>
 
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Ton avatar</h2><span class="section-note">Sert aussi à accorder l'intitulé du poste</span></div>
+        <div class="section-head"><h2 class="section-title">Ton compagnon</h2><span class="section-note">Il se perche sur tes barres de recherche</span></div>
         <div class="card" id="avatar-editor"></div>
       </section>
 
@@ -192,14 +193,14 @@ export function renderProfile(view) {
   );
 
   saveState = view.querySelector('#saved');
-  mountAvatarEditor(view.querySelector('#avatar-editor'), {
-    avatar: p.avatar,
+  mountPetEditor(view.querySelector('#avatar-editor'), {
+    pet: p.pet,
     gender: p.titleGender || 'neutre',
     big: false,
-    onChange: (avatar, gender) => {
-      if (JSON.stringify(avatar) === JSON.stringify(S.profile.avatar) && gender === S.profile.titleGender) return;
-      update({ avatar, titleGender: gender });
+    onChange: (pet, gender) => {
+      update({ pet, titleGender: gender });
       refreshNav();
+      refreshPerches();
       view.querySelectorAll('#gender [data-v]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === gender));
     },
   });

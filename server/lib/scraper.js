@@ -254,7 +254,9 @@ async function fetchLinkedInDescription(context, job) {
   }
 }
 
-async function run(profile, existing, log = () => {}) {
+// `progress` receives structured events for the search screen:
+// start, search (one per keyword and contract), filter, dedupe, read.
+async function run(profile, existing, log = () => {}, progress = () => {}) {
   const search = profile.search || {};
   const { keywords, hints } = searchPlan(search);
   if (!keywords.length) throw new Error('Choisis un domaine ou ajoute des mots-clés dans ton profil.');
@@ -268,6 +270,10 @@ async function run(profile, existing, log = () => {}) {
   const context = await browser.newContext({ userAgent: UA, locale: 'fr-FR' });
   try {
     let found = [];
+    const total = contracts.length * kws.length;
+    const perSource = Object.fromEntries(sources.map((s) => [s.label, 0]));
+    let batchNo = 0;
+    progress({ stage: 'start', sources: sources.map((s) => ({ id: s.id, label: s.label })), batches: total });
     for (const contract of contracts) {
       for (const kw of kws) {
         log(`Recherche « ${kw} » · ${contract}`);
@@ -281,13 +287,19 @@ async function run(profile, existing, log = () => {}) {
         for (const s of sources.filter((x) => x.site)) viaEngine.push([s, await viaSearchEngine(context, kw, contract, search, s)]);
         const batches = [...(await Promise.all(direct)), ...viaEngine];
         log('  ' + batches.map(([s, jobs]) => `${s.label} ${jobs.length}`).join(' · '));
-        for (const [, jobs] of batches) found.push(...jobs.map((j) => ({ ...j, contract: detectContract(j) || contract })));
+        for (const [src, jobs] of batches) {
+          found.push(...jobs.map((j) => ({ ...j, contract: detectContract(j) || contract })));
+          perSource[src.label] += jobs.length;
+        }
+        batchNo += 1;
+        progress({ stage: 'search', batch: batchNo, batches: total, keyword: kw, contract, perSource: { ...perSource }, seen: found.length });
       }
     }
 
     const before = found.length;
     found = found.filter((j) => j.title.length > 4 && relevant(j.title, hints) && !isExcluded(j.company, search.excluded));
     log(`${before - found.length} offres écartées (hors sujet ou organismes de formation)`);
+    progress({ stage: 'filter', before, kept: found.length });
 
     const fresh = [];
     let dupes = 0;
@@ -296,13 +308,16 @@ async function run(profile, existing, log = () => {}) {
       else fresh.push(job);
     }
     log(`${dupes} doublons ignorés (même offre sur plusieurs sites ou déjà dans ta liste)`);
+    progress({ stage: 'dedupe', dupes, fresh: Math.min(fresh.length, MAX_NEW) });
     const batch = fresh.slice(0, MAX_NEW);
     log(`${fresh.length} nouvelles offres${fresh.length > MAX_NEW ? `, ${MAX_NEW} analysées cette fois` : ''}`);
 
     for (let i = 0; i < batch.length; i += 4) {
       log(`Lecture des annonces ${i + 1}–${Math.min(i + 4, batch.length)} sur ${batch.length}`);
+      progress({ stage: 'read', done: i, total: batch.length });
       await Promise.all(batch.slice(i, i + 4).map(async (job) => ((job.source === 'LinkedIn' && (await fetchLinkedInDescription(context, job))) ? null : fetchDescription(context, job))));
     }
+    progress({ stage: 'read', done: batch.length, total: batch.length });
     return batch;
   } finally {
     await browser.close();

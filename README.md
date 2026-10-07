@@ -20,9 +20,17 @@ Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `
 
 Pour les développeurs : `npm run setup` puis `npm start`.
 
-## Avatar et accord du genre
+## Ton compagnon et l'accord du genre
 
-À l'accueil, tu crées ton avatar 3D (peau, coiffure, barbe, lunettes, tenue, fond) et tu indiques si tu es un homme, une femme ou si tu préfères ne pas le préciser. Ce choix accorde l'intitulé du poste sur ton CV : une offre « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ». Tu peux le modifier dans Profil › Ton avatar.
+À l'accueil, tu choisis ton compagnon en pixel art : un animal (chat, chien, renard, lapin, ours, grenouille, pingouin ou hibou), sa couleur, un accessoire et un nom. Il se perche sur le bord des barres de recherche : il dort tant que tu n'écris pas, se réveille quand tu cliques, suit ton texte des yeux, saute sur Entrée et fait une tête perplexe s'il n'y a aucun résultat. Tu le retrouves dans l'en-tête, sur l'accueil et dans les écrans vides. Modifiable dans Profil › Ton compagnon.
+
+Tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le préciser : ça accorde l'intitulé du poste sur ton CV. Une offre « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ».
+
+## Suivi, recherche et petits moments de joie
+
+- **Suivi** : un tableau par étape (À traiter, Envoyées, Entretiens, Offres reçues, Refusées). Tu fais glisser une offre d'une colonne à l'autre ; la carte s'incline et les confettis partent quand tu postules.
+- **Recherche** : un écran plein écran où de petites créatures portant le logo de chaque site jouent à saute-mouton. Chacune réagit quand son site trouve des offres, et des compteurs montrent offres vues, doublons écartés et nouvelles offres. Tu peux le réduire.
+- **Jalons** : une petite fête pour ta première candidature, puis la 5ᵉ, la 10ᵉ, la 25ᵉ et la 50ᵉ, et à chaque entretien ou offre.
 
 ## Logos des sites
 

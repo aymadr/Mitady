@@ -68,7 +68,7 @@ app.get('/api/state', (req, res) => {
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'avatar'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'avatar', 'pet'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
 
 app.put('/api/profile', route((req, res) => {
@@ -378,7 +378,7 @@ app.get('/api/search', async (req, res) => {
   }
   searching = true;
   try {
-    const jobs = await scraper.run(store.db.profile, store.db.applications, (line) => send('log', { line }));
+    const jobs = await scraper.run(store.db.profile, store.db.applications, (line) => send('log', { line }), (event) => send('progress', event));
     const added = jobs.map((j) => newApplication(j));
     store.db.applications.unshift(...added);
     const merged = dedupeTodo();

@@ -1,10 +1,11 @@
 // First-run experience: a full-screen, five-step guided setup.
 // Welcome → CV → contract types → field and place → ready. Everything it collects
 // goes through the same API as the Profile page, so it can be redone at any time.
-import { S, startSearch } from '../main.js';
+import { S, startSearch, refreshNav } from '../main.js';
 import { html, raw, mount, api, fail, toast, fileToBase64, chipInput, icons } from '../lib.js';
 import { logo, tile, marquee } from '../brand.js';
-import { mountAvatarEditor, avatarSvg, defaultAvatar } from '../avatar.js';
+import { celebrate } from '../fx.js';
+import { mountPetEditor, petSvg, petOf, defaultPet } from '../pet.js';
 import { siteLogo } from '../logos.js';
 import { toggleHtml } from '../theme.js';
 
@@ -154,6 +155,9 @@ function welcome(stage) {
       <div class="ob-marquee">${marquee()}</div>
       <div class="ob-visual" aria-hidden="true">
         <div class="ob-orb" data-depth="14"></div>
+        <span class="t3 hero-mon" data-depth="22">${petSvg(defaultPet('renard'), { size: 118, mood: 'wave' })}</span>
+        <span class="t3 hero-mon2" data-depth="30">${petSvg(defaultPet('hibou'), { size: 92, mood: 'idle' })}</span>
+        <span class="t3 hero-mon3" data-depth="18">${petSvg(defaultPet('grenouille'), { size: 76, mood: 'party' })}</span>
         ${[
           ['Analyste SOC en alternance', 'Orange Cyberdefense', 91, 'c1', 22, 262],
           ['Stage Data Analyst', 'Alan', 84, 'c2', 40, 160],
@@ -200,6 +204,7 @@ function cv(stage) {
         <span class="ob-drop-icon">${raw('<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.500 8.500 12 4l4.500 4.500M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>')}</span>
         <strong>Glisse ton CV ici</strong>
         <small>PDF ou Word · ou clique pour choisir un fichier</small>
+        <span class="ob-peek">${petSvg(petOf(S.profile), { size: 84, mood: 'wave' })}</span>
         <input type="file" id="ob-file" accept=".pdf,.docx" hidden>
       </label>
       <button class="ob-link" id="ob-manual">Je n'ai pas de CV, je remplis moi-même</button>`}
@@ -385,7 +390,7 @@ function ready(stage) {
   mount(
     stage,
     html`<section class="ob-step ob-ready">
-      <div class="ob-burst" aria-hidden="true">${Array.from({ length: 18 }, (_, i) => html`<i style="--a:${i * 20}deg;--d:${0.05 * i}s;--h:${(i * 47) % 360}"></i>`)}</div>
+      <div class="ob-crowd" aria-hidden="true">${['grenouille', 'renard', null, 'hibou', 'lapin'].map((a, i) => html`<span style="--i:${i}">${petSvg(a ? defaultPet(a) : petOf(S.profile), { size: a ? 92 : 120, mood: 'party' })}</span>`)}</div>
       <div class="ob-kicker"><span></span>C'est prêt</div>
       <h2 class="ob-title big">Tout est en place${first ? html`, <em>${first}</em>` : ''}.</h2>
       <ul class="ob-checks">
@@ -398,12 +403,13 @@ function ready(stage) {
       <p class="ob-hint">La recherche dure quelques minutes. Tu peux continuer à naviguer pendant ce temps.</p>
     </section>`,
   );
+  setTimeout(() => celebrate({ y: innerHeight * 0.42, count: 130, power: 1.2 }), 350);
   stage.querySelector('#ob-go').addEventListener('click', () => finish({ search: true }));
   stage.querySelector('#ob-explore').addEventListener('click', () => finish());
 }
 
 
-// ---------- 2. You (gender + avatar) ----------
+// ---------- 2. You (companion + gender) ----------
 
 function you(stage) {
   const p = S.profile;
@@ -411,30 +417,31 @@ function you(stage) {
     stage,
     html`<section class="ob-step ob-you">
       <div class="ob-kicker"><span></span>01 · Toi</div>
-      <h2 class="ob-title sm">Crée <em>ton</em> avatar.</h2>
-      <p class="ob-lead tight">Il te représente dans l'appli. Et ton choix sert aussi à accorder l'intitulé du poste sur ton CV : « alternant » pour un homme, « alternante » pour une femme.</p>
-      <div id="ob-avatar"></div>
+      <h2 class="ob-title sm">Choisis <em>ton</em> compagnon.</h2>
+      <p class="ob-lead tight">Un petit animal à ton image : il se perche sur tes barres de recherche et t'accompagne dans l'appli. Dis-nous aussi si tu es un homme ou une femme : ça accorde l'intitulé du poste sur ton CV (« alternant » ou « alternante »).</p>
+      <div id="ob-pet"></div>
       <div class="ob-note" id="ob-gender-note"></div>
       ${nav(true, true, 'Continuer')}
     </section>`,
   );
-  let state = { avatar: p.avatar || defaultAvatar(p.titleGender || 'neutre'), gender: p.titleGender || 'neutre' };
+  let state = { pet: petOf(p), gender: p.titleGender || 'neutre' };
   const note = stage.querySelector('#ob-gender-note');
-  const demo = { masculin: ['Alternant Ingénieur Cybersécurité', 'masculin'], feminin: ['Alternante Ingénieure Cybersécurité', 'feminin'], neutre: ['Alternant(e) Ingénieur(e) Cybersécurité', 'neutre'] };
+  const demo = { masculin: 'Alternant Ingénieur Cybersécurité', feminin: 'Alternante Ingénieure Cybersécurité', neutre: 'Alternant(e) Ingénieur(e) Cybersécurité' };
   const sync = () => {
-    note.innerHTML = `<span>Sur ton CV, l'offre « Alternant(e) Ingénieur(e) Cybersécurité » deviendra</span> <b>${demo[state.gender][0]}</b>`;
+    note.innerHTML = `<span>Sur ton CV, l'offre « Alternant(e) Ingénieur(e) Cybersécurité » deviendra</span> <b>${demo[state.gender]}</b>`;
   };
-  mountAvatarEditor(stage.querySelector('#ob-avatar'), {
-    avatar: state.avatar,
+  mountPetEditor(stage.querySelector('#ob-pet'), {
+    pet: state.pet,
     gender: state.gender,
-    onChange: (avatar, gender) => {
-      state = { avatar, gender };
+    onChange: (pet, gender) => {
+      state = { pet, gender };
       sync();
     },
   });
   sync();
   stage.querySelector('[data-next]').addEventListener('click', async () => {
-    await patch({ titleGender: state.gender, avatar: state.avatar }).catch(fail);
+    await patch({ titleGender: state.gender, pet: state.pet }).catch(fail);
+    refreshNav();
     go(step + 1);
   });
 }
@@ -446,7 +453,7 @@ const TOUR = [
     icon: 'search', title: 'Chercher', sub: 'Tous les sites, une recherche',
     text: "Lance une recherche : Mitady parcourt LinkedIn, Indeed, HelloWork, Welcome to the Jungle, France Travail et d'autres. Alternance et stage en même temps, et la même offre vue sur trois sites n'apparaît qu'une fois.",
     art: () => html`<div class="tour-logos">${['LinkedIn', 'Indeed', 'HelloWork', 'Welcome to the Jungle', 'France Travail', 'Jobs That Make Sense'].map((n, i) => html`<span style="--i:${i}">${siteLogo(n, 44)}<small>${n}</small></span>`)}</div>
-      <div class="tour-badges"><span class="badge blue">Alternance</span><span class="badge blue">Stage</span><span class="badge green">Doublons fusionnés</span></div>`,
+      <div class="tour-badges"><span class="badge blue">Alternance</span><span class="badge blue">Stage</span><span class="badge green">Doublons fusionnés</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 80, mood: 'wave' })}</span>`,
   },
   {
     icon: 'target', title: 'Correspondance', sub: 'Ton score pour chaque offre',
@@ -470,12 +477,12 @@ const TOUR = [
     icon: 'bell', title: 'Suivi & relances', sub: 'Rien ne tombe dans l\'oubli',
     text: "Suis chaque candidature (à traiter, envoyée, entretien, offre) et reçois une relance quand une réponse tarde. Tout s'exporte en Excel.",
     art: () => html`<div class="pipeline-bar"><span style="flex:5;background:#8b8aa3"></span><span style="flex:3;background:#5b5bf0"></span><span style="flex:2;background:#a259f7"></span><span style="flex:1;background:#14b87d"></span></div>
-      <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div>`,
+      <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 80, mood: 'party' })}</span>`,
   },
   {
     icon: 'sparkles', title: 'À ta façon', sub: 'Sombre, Claude, avatar',
     text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar depuis le profil, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
-    art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div>`,
+    art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 84, mood: 'idle' })}</span>`,
   },
 ];
 

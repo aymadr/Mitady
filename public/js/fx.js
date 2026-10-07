@@ -140,7 +140,49 @@ function reveal() {
   });
 }
 
+// The creature on a search field: wakes on focus, follows the text with its eyes, hops on Enter,
+// looks puzzled when nothing matches, and falls asleep again on blur.
+function perch() {
+  const mon = (t) => t.closest('.search-field')?.querySelector('.perch .pet');
+  const field = (e) => e.target.matches?.('.search-field input') && mon(e.target);
+  document.addEventListener('focusin', (e) => {
+    const m = field(e);
+    if (m) m.classList.remove('sleep');
+  });
+  document.addEventListener('focusout', (e) => {
+    const m = field(e);
+    if (m) {
+      m.classList.add('sleep');
+      m.classList.remove('think');
+      m.style.setProperty('--look', 0);
+    }
+  });
+  document.addEventListener('input', (e) => {
+    const m = field(e);
+    if (!m) return;
+    const len = e.target.value.length;
+    m.style.setProperty('--look', Math.max(-1, Math.min(1, (len % 26) / 13 - 1)));
+    m.classList.remove('tick');
+    void m.offsetWidth;
+    m.classList.add('tick');
+    // Once the list has redrawn: nothing found?
+    setTimeout(() => {
+      const none = len > 0 && /aucun r/i.test(document.querySelector('.empty strong')?.textContent || '');
+      m.classList.toggle('think', none);
+    }, 140);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const m = field(e);
+    if (!m) return;
+    m.classList.remove('hop');
+    void m.offsetWidth;
+    m.classList.add('hop');
+  });
+}
+
 export function initFx() {
+  perch();
   if (reduced) return;
   let queued = false;
   const scan = () => {
@@ -160,4 +202,68 @@ export function initFx() {
     pointer();
   }
   scan();
+}
+
+// ---------- Celebration: confetti burst from a point ----------
+const COLORS = ['#5b5bf0', '#8b5cf6', '#ee5fa7', '#14b87d', '#ffcd00', '#35c8ff', '#ff8a3d'];
+let confettiCanvas = null;
+let confettiParts = [];
+let confettiRaf = 0;
+
+function confettiLoop() {
+  const ctx = confettiCanvas.getContext('2d');
+  ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+  confettiParts = confettiParts.filter((p) => p.life > 0 && p.y < confettiCanvas.height + 40);
+  for (const p of confettiParts) {
+    p.vy += 0.32;
+    p.vx *= 0.992;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.r += p.vr;
+    p.life -= 1;
+    ctx.save();
+    ctx.translate(p.x, p.y);
+    ctx.rotate(p.r);
+    ctx.globalAlpha = Math.min(1, p.life / 30);
+    ctx.fillStyle = p.c;
+    if (p.shape === 0) ctx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2);
+    else if (p.shape === 1) {
+      ctx.beginPath();
+      ctx.arc(0, 0, p.s / 2.4, 0, 6.3);
+      ctx.fill();
+    } else {
+      ctx.beginPath();
+      for (let i = 0; i < 4; i++) ctx.lineTo(Math.cos((i * Math.PI) / 2) * p.s * 0.7, Math.sin((i * Math.PI) / 2) * p.s * 0.7), ctx.lineTo(Math.cos((i * Math.PI) / 2 + Math.PI / 4) * p.s * 0.2, Math.sin((i * Math.PI) / 2 + Math.PI / 4) * p.s * 0.2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+  if (confettiParts.length) confettiRaf = requestAnimationFrame(confettiLoop);
+  else {
+    confettiCanvas.remove();
+    confettiCanvas = null;
+    confettiRaf = 0;
+  }
+}
+
+// celebrate({ x, y }) bursts from a screen point; without one, from the top centre.
+export function celebrate({ x = innerWidth / 2, y = innerHeight * 0.35, count = 90, power = 1 } = {}) {
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (!confettiCanvas) {
+    confettiCanvas = document.createElement('canvas');
+    confettiCanvas.className = 'confetti';
+    const dpr = 1;
+    confettiCanvas.width = innerWidth * dpr;
+    confettiCanvas.height = innerHeight * dpr;
+    document.body.append(confettiCanvas);
+  }
+  for (let i = 0; i < count; i++) {
+    const a = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 1.1;
+    const v = (6 + Math.random() * 9) * power;
+    confettiParts.push({
+      x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, r: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+      s: 7 + Math.random() * 8, c: COLORS[(Math.random() * COLORS.length) | 0], shape: (Math.random() * 3) | 0, life: 110 + Math.random() * 60,
+    });
+  }
+  if (!confettiRaf) confettiRaf = requestAnimationFrame(confettiLoop);
 }

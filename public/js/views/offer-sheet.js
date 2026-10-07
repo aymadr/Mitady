@@ -1,5 +1,6 @@
 import { S, upsertApp, go, refreshPage } from '../main.js';
 import { siteLogo } from '../logos.js';
+import { working, cheerStatus, isSent } from '../mascot.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, longDate, relDate, norm, STATUS } from '../lib.js';
 
 const TABS = [
@@ -84,8 +85,10 @@ function render() {
 
   el.querySelector('#status').addEventListener('change', async (e) => {
     try {
+      const was = isSent(a.status);
       await save({ status: e.target.value });
       toast(`Statut : ${STATUS[e.target.value]}`);
+      cheerStatus(e.target.value, { wasSent: was, sent: S.applications.filter((x) => isSent(x.status)).length, at: { x: innerWidth * 0.3, y: innerHeight * 0.5 } });
       refreshPage();
       render();
     } catch (err) {
@@ -211,11 +214,14 @@ function bindAi(body, a) {
   if (!btn) return;
   btn.addEventListener('click', () =>
     busy(btn, async () => {
+      const w = working({ text: 'Claude lit l’offre…', mood: 'think', i: 5 });
       try {
         upsertApp(await api(`/applications/${a.id}/ai`, { method: 'POST' }));
         emailDrafts.delete(a.id);
+        w.done('Analyse terminée !');
         render();
       } catch (e) {
+        w.fail('Claude n’a pas répondu');
         fail(e);
       }
     }),
@@ -350,12 +356,15 @@ function renderCv(body, a) {
   );
   body.querySelector('#generate').addEventListener('click', (e) =>
     busy(e.currentTarget, async () => {
+      const w = working({ text: 'Je prépare ton CV…', mood: 'write', i: 3 });
       try {
         const res = await api(`/applications/${a.id}/cv`, { method: 'POST', body: draft });
         upsertApp(res.application);
+        res.warning ? w.fail('CV généré, avec une remarque') : w.done('CV prêt en PDF !');
         toast(res.warning || 'CV généré', { error: Boolean(res.warning) });
         render();
       } catch (err) {
+        w.fail('Oups, ça n’a pas marché');
         fail(err);
       }
     }),
@@ -511,8 +520,10 @@ async function renderApply(body, a) {
 
   $('#applied-elsewhere')?.addEventListener('click', async () => {
     try {
+      const was = isSent(a.status);
       await save({ status: 'applied' });
       toast('Marquée comme envoyée');
+      cheerStatus('applied', { wasSent: was, sent: S.applications.filter((x) => isSent(x.status)).length, at: { x: innerWidth * 0.3, y: innerHeight * 0.5 } });
       refreshPage();
       render();
     } catch (e) {
@@ -523,13 +534,18 @@ async function renderApply(body, a) {
   $('#send').addEventListener('click', (e) => {
     if (!draft.to) return toast('Indique le destinataire.');
     busy(e.currentTarget, async () => {
+      const w = working({ text: 'J’envoie ta candidature…', mood: 'send', i: 0 });
+      const was = isSent(a.status);
       try {
         upsertApp(await api(`/applications/${a.id}/send`, { method: 'POST', body: draft }));
         emailDrafts.delete(a.id);
+        w.done('Candidature envoyée !');
+        cheerStatus('applied', { wasSent: was, sent: S.applications.filter((x) => isSent(x.status)).length, at: { x: innerWidth * 0.3, y: innerHeight * 0.45 } });
         toast('Candidature envoyée');
         refreshPage();
         render();
       } catch (err) {
+        w.fail('L’envoi a échoué');
         fail(err);
       }
     });

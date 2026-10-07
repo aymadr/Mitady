@@ -4,6 +4,8 @@
 import { S, startSearch } from '../main.js';
 import { html, raw, mount, api, fail, toast, fileToBase64, chipInput, icons } from '../lib.js';
 import { logo, tile, marquee } from '../brand.js';
+import { mountAvatarEditor, avatarSvg, defaultAvatar } from '../avatar.js';
+import { siteLogo } from '../logos.js';
 import { toggleHtml } from '../theme.js';
 
 const KEY = 'candidatures.onboarded';
@@ -34,13 +36,16 @@ const CONTRACTS = [
   ['Freelance', 'Tes missions, tes tarifs, ton agenda.'],
 ];
 
-const STEPS = ['welcome', 'cv', 'contract', 'field', 'ready'];
+const FULL = ['welcome', 'you', 'cv', 'contract', 'field', 'tour', 'ready'];
+let STEPS = FULL;
+let tourOnly = false;
 
 let root = null;
 let step = 0;
 let leaving = false;
 const draft = { parsed: null };
 let parallax = null;
+let tourTimer = null;
 
 function patch(body) {
   return api('/profile', { method: 'PUT', body }).then((res) => {
@@ -49,8 +54,11 @@ function patch(body) {
   });
 }
 
-export function startOnboarding() {
+// { tour: true } opens only the feature guide (from the header or the home page).
+export function startOnboarding({ tour = false } = {}) {
   if (root) return;
+  tourOnly = tour;
+  STEPS = tour ? ['tour'] : FULL;
   step = 0;
   root = document.createElement('div');
   root.className = 'ob';
@@ -58,8 +66,8 @@ export function startOnboarding() {
     <div class="ob-bg"><i class="ob-blob b1"></i><i class="ob-blob b2"></i><i class="ob-blob b3"></i></div>
     <header class="ob-top">
       <div class="ob-brand"><span class="brand-mark">${logo(32)}</span>Mitady</div>
-      <div class="ob-progress" aria-hidden="true">${STEPS.map(() => '<i><b></b></i>').join('')}</div>
-      <span class="ob-right">${toggleHtml}<button class="ob-skip" id="ob-skip">Passer</button></span>
+      <div class="ob-progress" aria-hidden="true" ${tour ? 'hidden' : ''}>${STEPS.map(() => '<i><b></b></i>').join('')}</div>
+      <span class="ob-right">${toggleHtml}<button class="ob-skip" id="ob-skip">${tour ? 'Fermer' : 'Passer'}</button></span>
     </header>
     <div class="ob-stage" id="ob-stage"></div>`;
   document.body.append(root);
@@ -71,6 +79,7 @@ export function startOnboarding() {
 
 function finish({ search = false } = {}) {
   markSeen();
+  clearInterval(tourTimer);
   document.removeEventListener('keydown', onKey);
   document.removeEventListener('pointermove', parallax);
   root.classList.add('out');
@@ -78,6 +87,7 @@ function finish({ search = false } = {}) {
   const el = root;
   root = null;
   setTimeout(() => el.remove(), 600);
+  if (tourOnly) return;
   if (search === true) setTimeout(startSearch, 450);
   else location.hash = '#/';
   window.dispatchEvent(new HashChangeEvent('hashchange'));
@@ -103,7 +113,7 @@ function go(to) {
 
 function progress() {
   root.querySelectorAll('.ob-progress i').forEach((el, i) => el.classList.toggle('on', i < step + 1));
-  root.querySelector('#ob-skip').hidden = step === STEPS.length - 1;
+  root.querySelector('#ob-skip').hidden = !tourOnly && step === STEPS.length - 1;
 }
 
 const nav = (back, next, nextLabel = 'Continuer', disabled = false) => html`<div class="ob-nav">
@@ -115,7 +125,8 @@ function render() {
   progress();
   const stage = root.querySelector('#ob-stage');
   document.removeEventListener('pointermove', parallax);
-  ({ welcome, cv, contract, field, ready })[STEPS[step]](stage);
+  clearInterval(tourTimer);
+  ({ welcome, you, cv, contract, field, tour, ready })[STEPS[step]](stage);
   stage.querySelector('[data-back]')?.addEventListener('click', () => go(step - 1));
   stage.scrollTo?.(0, 0);
 }
@@ -161,7 +172,7 @@ function welcome(stage) {
       </div>
     </section>`,
   );
-  stage.querySelector('[data-next]').addEventListener('click', () => go(1));
+  stage.querySelector('[data-next]').addEventListener('click', () => go(step + 1));
   parallax = (e) => {
     const x = e.clientX / innerWidth - 0.5;
     const y = e.clientY / innerHeight - 0.5;
@@ -181,7 +192,7 @@ function cv(stage) {
   mount(
     stage,
     html`<section class="ob-step ob-narrow">
-      <div class="ob-kicker"><span></span>01 · Ton CV</div>
+      <div class="ob-kicker"><span></span>02 · Ton CV</div>
       <h2 class="ob-title">On part de <em>ton</em> CV.</h2>
       <p class="ob-lead">Dépose-le, l'appli lit ton identité, ton parcours et tes compétences. Tu pourras tout corriger ensuite.</p>
       ${done ? '' : html`<label class="ob-drop" id="ob-drop" tabindex="0">
@@ -274,7 +285,7 @@ function bindCv(stage) {
     if (name && name.value.trim()) {
       await patch({ name: name.value.trim(), headline: stage.querySelector('#ob-headline').value.trim() }).catch(fail);
     }
-    go(2);
+    go(step + 1);
   });
 }
 
@@ -285,7 +296,7 @@ function contract(stage) {
   mount(
     stage,
     html`<section class="ob-step">
-      <div class="ob-kicker"><span></span>02 · Le contrat</div>
+      <div class="ob-kicker"><span></span>03 · Le contrat</div>
       <h2 class="ob-title">Tu cherches <em>quoi</em> ?</h2>
       <p class="ob-lead">Choisis-en plusieurs : alternance et stage, par exemple. L'appli cherche tout en même temps.</p>
       <div class="ob-cards" id="ob-contracts">
@@ -309,7 +320,7 @@ function contract(stage) {
   next.addEventListener('click', async () => {
     const contracts = [...group.querySelectorAll('[aria-pressed="true"]')].map((b) => b.dataset.v);
     await patch({ search: { contracts } }).catch(fail);
-    go(3);
+    go(step + 1);
   });
 }
 
@@ -323,7 +334,7 @@ function field(stage) {
   mount(
     stage,
     html`<section class="ob-step">
-      <div class="ob-kicker"><span></span>03 · Le domaine</div>
+      <div class="ob-kicker"><span></span>04 · Le domaine</div>
       <h2 class="ob-title sm">Dans quel <em>domaine</em> ?</h2>
       <div class="ob-cards dense" id="ob-domains">
         ${domains.map((d, i) => html`<button class="ob-choice" data-v="${d.id}" aria-pressed="${domain === d.id}" style="--i:${i}">
@@ -355,7 +366,7 @@ function field(stage) {
   );
   next.addEventListener('click', async () => {
     await patch({ search: { domain, keywords, location: stage.querySelector('#ob-where').value.trim() } }).catch(fail);
-    go(4);
+    go(step + 1);
   });
 }
 
@@ -389,4 +400,127 @@ function ready(stage) {
   );
   stage.querySelector('#ob-go').addEventListener('click', () => finish({ search: true }));
   stage.querySelector('#ob-explore').addEventListener('click', () => finish());
+}
+
+
+// ---------- 2. You (gender + avatar) ----------
+
+function you(stage) {
+  const p = S.profile;
+  mount(
+    stage,
+    html`<section class="ob-step ob-you">
+      <div class="ob-kicker"><span></span>01 · Toi</div>
+      <h2 class="ob-title sm">Crée <em>ton</em> avatar.</h2>
+      <p class="ob-lead tight">Il te représente dans l'appli. Et ton choix sert aussi à accorder l'intitulé du poste sur ton CV : « alternant » pour un homme, « alternante » pour une femme.</p>
+      <div id="ob-avatar"></div>
+      <div class="ob-note" id="ob-gender-note"></div>
+      ${nav(true, true, 'Continuer')}
+    </section>`,
+  );
+  let state = { avatar: p.avatar || defaultAvatar(p.titleGender || 'neutre'), gender: p.titleGender || 'neutre' };
+  const note = stage.querySelector('#ob-gender-note');
+  const demo = { masculin: ['Alternant Ingénieur Cybersécurité', 'masculin'], feminin: ['Alternante Ingénieure Cybersécurité', 'feminin'], neutre: ['Alternant(e) Ingénieur(e) Cybersécurité', 'neutre'] };
+  const sync = () => {
+    note.innerHTML = `<span>Sur ton CV, l'offre « Alternant(e) Ingénieur(e) Cybersécurité » deviendra</span> <b>${demo[state.gender][0]}</b>`;
+  };
+  mountAvatarEditor(stage.querySelector('#ob-avatar'), {
+    avatar: state.avatar,
+    gender: state.gender,
+    onChange: (avatar, gender) => {
+      state = { avatar, gender };
+      sync();
+    },
+  });
+  sync();
+  stage.querySelector('[data-next]').addEventListener('click', async () => {
+    await patch({ titleGender: state.gender, avatar: state.avatar }).catch(fail);
+    go(step + 1);
+  });
+}
+
+// ---------- 6. Tour ----------
+
+const TOUR = [
+  {
+    icon: 'search', title: 'Chercher', sub: 'Tous les sites, une recherche',
+    text: "Lance une recherche : Mitady parcourt LinkedIn, Indeed, HelloWork, Welcome to the Jungle, France Travail et d'autres. Alternance et stage en même temps, et la même offre vue sur trois sites n'apparaît qu'une fois.",
+    art: () => html`<div class="tour-logos">${['LinkedIn', 'Indeed', 'HelloWork', 'Welcome to the Jungle', 'France Travail', 'Jobs That Make Sense'].map((n, i) => html`<span style="--i:${i}">${siteLogo(n, 58)}<small>${n}</small></span>`)}</div>
+      <div class="tour-badges"><span class="badge blue">Alternance</span><span class="badge blue">Stage</span><span class="badge green">Doublons fusionnés</span></div>`,
+  },
+  {
+    icon: 'target', title: 'Correspondance', sub: 'Ton score pour chaque offre',
+    text: "Chaque offre reçoit un score calculé à partir des compétences que l'annonce demande. Il manque une compétence que tu maîtrises ? Un clic l'ajoute à ton profil et tous les scores se mettent à jour.",
+    art: () => html`<div class="tour-score"><span class="mini-ring high" style="--p:84;--s:96px"><b>84</b></span>
+      <div class="chips"><span class="chip have">${icons.check} Splunk</span><span class="chip have">${icons.check} Python</span><span class="chip have">${icons.check} SIEM</span><span class="chip gap">${icons.plus} MITRE ATT&amp;CK</span></div></div>`,
+  },
+  {
+    icon: 'doc', title: 'CV en PDF', sub: 'Le tien ou un modèle',
+    text: "Pour chaque offre, tu choisis : garder ton CV tel quel, adapter ton fichier Word, ou utiliser l'un des 7 modèles avec ta photo et ta couleur. Le titre est accordé à ton genre, et le CV est toujours livré en PDF.",
+    art: () => html`<div class="tour-cv">${['Classique', 'Bandeau', 'Colonne'].map((n, i) => html`<div class="mini-cv v${i}" style="--i:${i}"><i></i><i></i><i class="s"></i><i></i><i class="s"></i><small>${n}</small></div>`)}</div>
+      <div class="tour-badges"><span class="badge">Mon CV tel quel</span><span class="badge">Mon Word adapté</span><span class="badge blue">Modèle Mitady</span></div>`,
+  },
+  {
+    icon: 'send', title: 'Candidature', sub: 'Contact, e-mail, pièce jointe',
+    text: "Trouve un contact chez l'entreprise, devine son adresse e-mail, puis envoie ton message avec le CV adapté en pièce jointe, directement depuis l'appli.",
+    art: () => html`<div class="tour-mail"><div><small>À</small><b>prenom.nom@entreprise.fr</b></div><div><small>Objet</small><b>Candidature Alternant Ingénieur · Camille Martin</b></div>
+      <p>Bonjour, je vous adresse ma candidature pour le poste…</p><span class="badge green">${icons.check} CV_Camille_Martin.pdf</span></div>`,
+  },
+  {
+    icon: 'bell', title: 'Suivi & relances', sub: 'Rien ne tombe dans l\'oubli',
+    text: "Suis chaque candidature (à traiter, envoyée, entretien, offre) et reçois une relance quand une réponse tarde. Tout s'exporte en Excel.",
+    art: () => html`<div class="pipeline-bar"><span style="flex:5;background:#8b8aa3"></span><span style="flex:3;background:#5b5bf0"></span><span style="flex:2;background:#a259f7"></span><span style="flex:1;background:#14b87d"></span></div>
+      <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div>`,
+  },
+  {
+    icon: 'sparkles', title: 'À ta façon', sub: 'Sombre, Claude, avatar',
+    text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar depuis le profil, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
+    art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div>`,
+  },
+];
+
+function tour(stage) {
+  let cur = 0;
+  mount(
+    stage,
+    html`<section class="ob-step ob-tour">
+      <div class="ob-kicker"><span></span>${tourOnly ? 'Le guide' : '05 · Le guide'}</div>
+      <h2 class="ob-title sm">Tout ce que Mitady <em>sait faire</em>.</h2>
+      <div class="tour">
+        <div class="tour-tabs" role="tablist">
+          ${TOUR.map((t, i) => html`<button class="tour-tab" role="tab" data-i="${i}" aria-selected="${i === 0}">${tile(t.icon, { size: 44 })}<span><b>${t.title}</b><small>${t.sub}</small></span><i class="tour-bar"><u></u></i></button>`)}
+        </div>
+        <div class="tour-panel" id="tour-panel" aria-live="polite"></div>
+      </div>
+      ${tourOnly
+        ? html`<div class="ob-nav"><span></span><button class="ob-cta" id="tour-done">Terminer</button></div>`
+        : nav(true, true, 'Continuer')}
+    </section>`,
+  );
+  const panel = stage.querySelector('#tour-panel');
+  const show = (i) => {
+    cur = i;
+    stage.querySelectorAll('.tour-tab').forEach((b, j) => {
+      b.setAttribute('aria-selected', j === i);
+      b.classList.remove('run');
+      void b.offsetWidth;
+      if (j === i) b.classList.add('run');
+    });
+    const t = TOUR[i];
+    panel.classList.remove('swap');
+    void panel.offsetWidth;
+    panel.innerHTML = html`<div class="tour-art">${t.art()}</div><div class="tour-copy"><h3>${t.title}</h3><p>${t.text}</p></div>`.toString();
+    panel.classList.add('swap');
+  };
+  stage.querySelectorAll('.tour-tab').forEach((b) =>
+    b.addEventListener('click', () => {
+      clearInterval(tourTimer);
+      stage.querySelectorAll('.tour-tab').forEach((x) => x.classList.add('manual'));
+      show(Number(b.dataset.i));
+    }),
+  );
+  stage.querySelector('#tour-done')?.addEventListener('click', () => finish());
+  stage.querySelector('[data-next]')?.addEventListener('click', () => go(step + 1));
+  show(0);
+  tourTimer = setInterval(() => show((cur + 1) % TOUR.length), 7000);
 }

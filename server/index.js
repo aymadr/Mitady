@@ -68,7 +68,7 @@ app.get('/api/state', (req, res) => {
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'avatar'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
 
 app.put('/api/profile', route((req, res) => {
@@ -301,7 +301,7 @@ function emailVars(a) {
   const { profile } = store.db;
   return {
     contact: a.contact?.name || '',
-    poste: adaptTitle(a.title),
+    poste: adaptTitle(a.title, profile.titleGender),
     entreprise: a.company,
     nom: profile.name,
     email: profile.email,

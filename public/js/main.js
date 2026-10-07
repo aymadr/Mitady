@@ -6,9 +6,16 @@ import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
 import { needsOnboarding, startOnboarding } from './views/onboarding.js';
 import { watch } from './decorate.js';
+import { avatarBadge } from './avatar.js';
 
 // Shared client state, loaded once and kept in sync with server responses.
 export const S = { profile: null, settings: null, secrets: null, domains: [], applications: [] };
+
+// The avatar in the header follows the profile.
+export function refreshNav() {
+  const el = document.getElementById('nav-avatar');
+  if (el && S.profile) el.innerHTML = avatarBadge(S.profile, 38).toString();
+}
 
 export function upsertApp(app) {
   const i = S.applications.findIndex((a) => a.id === app.id);
@@ -119,6 +126,8 @@ document.addEventListener('keydown', (e) => {
   try {
     Object.assign(S, await api('/state'));
     watch(document.getElementById('view'));
+    refreshNav();
+    document.getElementById('guide-btn').addEventListener('click', () => startOnboarding({ tour: true }));
     route();
     booted = true;
     if (needsOnboarding()) startOnboarding();

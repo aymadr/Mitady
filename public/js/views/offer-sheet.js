@@ -1,4 +1,5 @@
 import { S, upsertApp, go, refreshPage } from '../main.js';
+import { siteLogo } from '../logos.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, longDate, relDate, norm, STATUS } from '../lib.js';
 
 const TABS = [
@@ -64,7 +65,7 @@ function render() {
         </div>
         <div class="sheet-meta">
           ${a.location ? html`<span>${a.location}</span>` : ''}
-          <span>${a.source}${a.contract ? ` · ${a.contract}` : ''}</span>
+          <span class="src">${siteLogo(a.source, 18)}${a.source}${a.contract ? ` · ${a.contract}` : ''}</span>
           <span>Ajoutée ${relDate(a.addedAt)}</span>
           ${a.link ? html`<a href="${a.link}" target="_blank" rel="noopener">Voir l'annonce ${icons.external}</a>` : ''}
         </div>

@@ -38,6 +38,7 @@ function defaultProfile() {
     links: [],
     summary: '',
     titleGender: 'neutre',
+    avatar: null, // look of the user's avatar, see public/js/avatar.js
     skills: [],
     sections: [],
     cvFile: null, // { name, path, type, uploadedAt }

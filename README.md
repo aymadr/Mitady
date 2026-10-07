@@ -20,6 +20,14 @@ Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `
 
 Pour les développeurs : `npm run setup` puis `npm start`.
 
+## Avatar et accord du genre
+
+À l'accueil, tu crées ton avatar 3D (peau, coiffure, barbe, lunettes, tenue, fond) et tu indiques si tu es un homme, une femme ou si tu préfères ne pas le préciser. Ce choix accorde l'intitulé du poste sur ton CV : une offre « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ». Tu peux le modifier dans Profil › Ton avatar.
+
+## Logos des sites
+
+Chaque site d'emploi a une tuile 3D dessinée par Mitady. Pour afficher les logos officiels à la place, dépose un fichier par site dans `public/logos/` (voir `public/logos/README.md`).
+
 ## Apparence
 
 Le bouton soleil / lune en haut à droite bascule entre mode clair et mode sombre (la bascule s'étend en cercle depuis le bouton). Le choix est mémorisé ; sans choix, l'appli suit le réglage de ton ordinateur.

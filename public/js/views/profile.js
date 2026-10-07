@@ -1,4 +1,6 @@
-import { S } from '../main.js';
+import { S, refreshNav } from '../main.js';
+import { siteLogo } from '../logos.js';
+import { mountAvatarEditor } from '../avatar.js';
 import { html, raw, mount, api, fail, toast, debounce, busy, chipInput, fileToBase64, longDate, norm, icons } from '../lib.js';
 
 const CONTRACTS = ['Alternance', 'Stage', 'CDI', 'CDD', 'Freelance'];
@@ -96,6 +98,11 @@ export function renderProfile(view) {
       </section>
 
       <section class="section">
+        <div class="section-head"><h2 class="section-title">Ton avatar</h2><span class="section-note">Sert aussi à accorder l'intitulé du poste</span></div>
+        <div class="card" id="avatar-editor"></div>
+      </section>
+
+      <section class="section">
         <div class="section-head"><h2 class="section-title">Identité</h2></div>
         <div class="card">
           <div class="grid-2">
@@ -159,7 +166,7 @@ export function renderProfile(view) {
             <p class="hint">Coche plusieurs types pour chercher en même temps, par exemple alternance et stage.</p>
           </div>
           <div class="field"><span class="label">Sites de recherche</span>
-            <div class="chips" id="sources">${S.sources.map((src) => html`<button class="chip ${activeSources(p).includes(src.id) ? 'on' : 'suggest'}" data-v="${src.id}" aria-pressed="${activeSources(p).includes(src.id)}">${src.label}</button>`)}</div>
+            <div class="chips" id="sources">${S.sources.map((src) => html`<button class="chip ${activeSources(p).includes(src.id) ? 'on' : 'suggest'}" data-v="${src.id}" aria-pressed="${activeSources(p).includes(src.id)}">${siteLogo(src.label, 20)}${src.label}</button>`)}</div>
             <p class="hint">Plus tu actives de sites, plus la recherche est longue. Une même offre publiée sur plusieurs sites n'apparaît qu'une fois.</p>
           </div>
           <div class="field"><span class="label">Mots-clés de recherche</span><div id="keywords"></div>
@@ -185,6 +192,17 @@ export function renderProfile(view) {
   );
 
   saveState = view.querySelector('#saved');
+  mountAvatarEditor(view.querySelector('#avatar-editor'), {
+    avatar: p.avatar,
+    gender: p.titleGender || 'neutre',
+    big: false,
+    onChange: (avatar, gender) => {
+      if (JSON.stringify(avatar) === JSON.stringify(S.profile.avatar) && gender === S.profile.titleGender) return;
+      update({ avatar, titleGender: gender });
+      refreshNav();
+      view.querySelectorAll('#gender [data-v]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === gender));
+    },
+  });
   bindUpload(view);
   bindCvStyle(view);
 

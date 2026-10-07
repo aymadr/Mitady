@@ -12,7 +12,7 @@ const PAGE_ART = {
 
 const SECTION_ICON = [
   [/^ton cv|fichier word/, 'doc'],
-  [/identite/, 'user'],
+  [/identite|avatar/, 'user'],
   [/resume/, 'sparkles'],
   [/competences/, 'layers'],
   [/parcours/, 'briefcase'],

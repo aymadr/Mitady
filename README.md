@@ -29,7 +29,7 @@ Tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le pr�
 ## Suivi, recherche et petits moments de joie
 
 - **Suivi** : un tableau par étape (À traiter, Envoyées, Entretiens, Offres reçues, Refusées). Tu fais glisser une offre d'une colonne à l'autre ; la carte s'incline et les confettis partent quand tu postules.
-- **Recherche** : un écran plein écran où de petites créatures portant le logo de chaque site jouent à saute-mouton. Chacune réagit quand son site trouve des offres, et des compteurs montrent offres vues, doublons écartés et nouvelles offres. Tu peux le réduire.
+- **Recherche** : un écran plein écran où des animaux en pixel art, dont ton compagnon, portent chacun le logo d'un site et jouent à saute-mouton. Quand un site trouve des offres, son animal lance le logo en l'air et le rattrape, avec une bulle « +4 ». Des compteurs montrent offres vues, doublons écartés et nouvelles offres. Tu peux le réduire.
 - **Jalons** : une petite fête pour ta première candidature, puis la 5ᵉ, la 10ᵉ, la 25ᵉ et la 50ᵉ, et à chaque entretien ou offre.
 
 ## Logos des sites

@@ -30,6 +30,13 @@ const FILES = {
   jobijoba: ['png', 1, 'full'], // icon with its own background: fills the whole tile
 };
 
+// Width / height of a site's logo tile (1 for an icon), to lay wide logos out without overlap.
+export function logoRatio(name) {
+  const id = SITES[name]?.id;
+  const r = FILES[id]?.[1] ?? 1;
+  return r > 1.3 ? r * 0.82 + 0.5 : 1;
+}
+
 export function siteLogo(name, size = 28) {
   const known = SITES[name];
   const id = known?.id || slug(name) || 'site';

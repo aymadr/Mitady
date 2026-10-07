@@ -263,7 +263,7 @@ export function petSvg(pet, { size = 64, mood = 'idle', label = '' } = {}) {
   const a = art(pet);
   const name = (pet.name || '').trim();
   return raw(
-    `<span class="pet ${mood}" style="--pet:${size}px" ${name ? `title="${name.replace(/"/g, '')}"` : ''} aria-hidden="true">` +
+    `<span class="pet ${mood}" style="--pet:${size}px;--bd:-${(Math.random() * 4.6).toFixed(2)}s" ${name ? `title="${name.replace(/"/g, '')}"` : ''} aria-hidden="true">` +
       `<svg viewBox="0 0 16 16" width="100%" height="100%" shape-rendering="crispEdges">` +
       `<g class="pet-body">${a.base}${a.shine}<g class="pet-open">${a.open}</g><g class="pet-closed">${a.closed}</g>${a.accHtml}</g></svg>` +
       `<i class="pet-sh"></i><span class="pet-z z1">z</span><span class="pet-z z2">z</span><span class="pet-q">?</span>` +

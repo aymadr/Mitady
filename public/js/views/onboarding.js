@@ -420,25 +420,17 @@ function you(stage) {
       <h2 class="ob-title sm">Choisis <em>ton</em> compagnon.</h2>
       <p class="ob-lead tight">Un petit animal à ton image : il se perche sur tes barres de recherche et t'accompagne dans l'appli. Dis-nous aussi si tu es un homme ou une femme : ça accorde l'intitulé du poste sur ton CV (« alternant » ou « alternante »).</p>
       <div id="ob-pet"></div>
-      <div class="ob-note" id="ob-gender-note"></div>
       ${nav(true, true, 'Continuer')}
     </section>`,
   );
   let state = { pet: petOf(p), gender: p.titleGender || 'neutre' };
-  const note = stage.querySelector('#ob-gender-note');
-  const demo = { masculin: 'Alternant Ingénieur Cybersécurité', feminin: 'Alternante Ingénieure Cybersécurité', neutre: 'Alternant(e) Ingénieur(e) Cybersécurité' };
-  const sync = () => {
-    note.innerHTML = `<span>Sur ton CV, l'offre « Alternant(e) Ingénieur(e) Cybersécurité » deviendra</span> <b>${demo[state.gender]}</b>`;
-  };
   mountPetEditor(stage.querySelector('#ob-pet'), {
     pet: state.pet,
     gender: state.gender,
     onChange: (pet, gender) => {
       state = { pet, gender };
-      sync();
     },
   });
-  sync();
   stage.querySelector('[data-next]').addEventListener('click', async () => {
     await patch({ titleGender: state.gender, pet: state.pet }).catch(fail);
     refreshNav();

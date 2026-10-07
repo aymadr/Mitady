@@ -1,7 +1,7 @@
 import { S, startSearch, refreshPage, upsertApp } from '../main.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, miniRing, relDate } from '../lib.js';
 import { startOnboarding } from './onboarding.js';
-import { tile } from '../brand.js';
+import { tile, marquee } from '../brand.js';
 
 // Numbers count up from zero when the page opens.
 function countUp(root) {
@@ -107,7 +107,9 @@ export function renderToday(view) {
         <p style="margin-top:22px"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></p>
       </div></div>
 
-      <div class="stats">
+      ${marquee()}
+
+      <div class="stats" style="margin-top:34px">
         <div class="stat hero">${tile('inbox', { size: 44 })}<div class="stat-value" data-count="${todo.length}">0</div><div class="stat-label">À traiter</div></div>
         <div class="stat">${tile('send', { size: 44 })}<div class="stat-value" data-count="${sentEver.length}">0</div><div class="stat-label">Candidatures envoyées</div></div>
         <div class="stat">${tile('chat', { size: 44 })}<div class="stat-value" data-count="${interviews.length}">0</div><div class="stat-label">Entretiens en cours</div></div>

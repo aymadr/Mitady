@@ -24,19 +24,26 @@ const routes = {
 };
 
 let currentPage = null;
+let booted = false;
 
 // Hash routes: #/offres, #/offres/<id>, #/profil, #/reglages
 export function route() {
   const [page = '', id, tab] = location.hash.replace(/^#\/?/, '').split('/');
   const view = document.getElementById('view');
   if (page !== currentPage || !id) {
+    const changed = page !== currentPage;
     currentPage = page;
-    (routes[page] || renderToday)(view);
-    document.querySelectorAll('.nav-links a').forEach((a) => {
-      const target = a.getAttribute('href').replace(/^#\/?/, '');
-      if (target === page) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
-    });
+    const draw = () => {
+      (routes[page] || renderToday)(view);
+      document.querySelectorAll('.nav-links a').forEach((a) => {
+        const target = a.getAttribute('href').replace(/^#\/?/, '');
+        if (target === page) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+    };
+    // Pages cross-fade (View Transitions) once the app is up; the first paint is immediate.
+    if (changed && !id && booted && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(draw);
+    else draw();
   }
   if (page === 'offres' && id) openOffer(id, tab);
   else closeOffer();
@@ -113,6 +120,7 @@ document.addEventListener('keydown', (e) => {
     Object.assign(S, await api('/state'));
     watch(document.getElementById('view'));
     route();
+    booted = true;
     if (needsOnboarding()) startOnboarding();
   } catch (e) {
     document.getElementById('view').innerHTML = `<div class="empty"><strong>Serveur injoignable</strong>Lance « npm start » puis recharge la page.</div>`;

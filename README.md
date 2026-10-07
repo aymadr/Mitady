@@ -20,6 +20,10 @@ Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `
 
 Pour les développeurs : `npm run setup` puis `npm start`.
 
+## Apparence
+
+Le bouton soleil / lune en haut à droite bascule entre mode clair et mode sombre (la bascule s'étend en cercle depuis le bouton). Le choix est mémorisé ; sans choix, l'appli suit le réglage de ton ordinateur.
+
 ## Comment ça marche
 
 Au tout premier lancement, un guide plein écran en cinq étapes te fait importer ton CV, choisir tes types de contrat, ton domaine et ton lieu, puis lance ta première recherche. Il se rouvre depuis l'écran d'accueil (« Ouvrir le guide pas à pas »).

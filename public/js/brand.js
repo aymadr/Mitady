@@ -83,3 +83,12 @@ export function art(names) {
 }
 
 export { PATH as GLYPHS };
+
+const SOURCES = ['HelloWork', 'LinkedIn', 'Indeed', 'Welcome to the Jungle', 'Jobs That Make Sense', 'France Travail', 'Jobijoba', 'JobTeaser', "L'Étudiant"];
+
+// Endless strip of the job boards Mitady reads.
+export function marquee() {
+  const pill = (n) => `<span class="mq" style="--h:${[...n].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7)}"><i>${n[0]}</i>${n}</span>`;
+  const row = SOURCES.map(pill).join('');
+  return raw(`<div class="marquee" aria-hidden="true"><div class="marquee-track">${row}${row}</div></div>`);
+}

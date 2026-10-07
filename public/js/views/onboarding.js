@@ -3,7 +3,8 @@
 // goes through the same API as the Profile page, so it can be redone at any time.
 import { S, startSearch } from '../main.js';
 import { html, raw, mount, api, fail, toast, fileToBase64, chipInput, icons } from '../lib.js';
-import { logo, tile } from '../brand.js';
+import { logo, tile, marquee } from '../brand.js';
+import { toggleHtml } from '../theme.js';
 
 const KEY = 'candidatures.onboarded';
 const seen = () => {
@@ -58,7 +59,7 @@ export function startOnboarding() {
     <header class="ob-top">
       <div class="ob-brand"><span class="brand-mark">${logo(32)}</span>Mitady</div>
       <div class="ob-progress" aria-hidden="true">${STEPS.map(() => '<i><b></b></i>').join('')}</div>
-      <button class="ob-skip" id="ob-skip">Passer</button>
+      <span class="ob-right">${toggleHtml}<button class="ob-skip" id="ob-skip">Passer</button></span>
     </header>
     <div class="ob-stage" id="ob-stage"></div>`;
   document.body.append(root);
@@ -139,6 +140,7 @@ function welcome(stage) {
           <li><b>PDF</b><span>un CV adapté<br>à chaque offre</span></li>
         </ul>
       </div>
+      <div class="ob-marquee">${marquee()}</div>
       <div class="ob-visual" aria-hidden="true">
         <div class="ob-orb" data-depth="14"></div>
         ${[

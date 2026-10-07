@@ -26,6 +26,7 @@ const FILES = {
   indeed: ['svg', 3.7],
   letudiant: ['svg', 5.2],
   wttj: ['png', 3],
+  jtms: ['png', 1.18],
   jobijoba: ['png', 1, 'full'], // icon with its own background: fills the whole tile
 };
 
@@ -36,7 +37,7 @@ export function siteLogo(name, size = 28) {
   const color = known?.color || `hsl(${hue} 70% 52%)`;
   const glyph = known?.glyph || String(name || '?')[0].toUpperCase();
   const file = FILES[id];
-  const drawnOnly = id === 'jtms'; // no official file yet: the tile is the logo
+  const drawnOnly = false; // every site now has an official file; the drawn tile only backs up a missing one
   // Shipped logo: shown at once. Otherwise try a dropped-in file (.svg then .png) over the drawn tile.
   const src = file ? `/logos/${id}.${file[0]}` : `/logos/${id}.svg`;
   const ratio = file ? file[1] : 1;

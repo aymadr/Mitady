@@ -1,4 +1,4 @@
-import { api, fail, toast } from './lib.js';
+import { api, fail, toast, hooks } from './lib.js';
 import { renderToday } from './views/today.js';
 import { renderOffers } from './views/offers.js';
 import { renderBoard } from './views/board.js';
@@ -7,7 +7,7 @@ import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
 import { needsOnboarding, startOnboarding } from './views/onboarding.js';
 import { watch } from './decorate.js';
-import { openSearch, handleProgress, finishSearch, abortSearch, isSearching, isMinimized, progressInfo } from './views/searching.js';
+import { openSearch, handleProgress, finishSearch, abortSearch, isSearching, isMinimized, progressInfo, stopSearch } from './views/searching.js';
 import { petHead, petOf } from './pet.js';
 
 // Shared client state, loaded once and kept in sync with server responses.
@@ -89,6 +89,7 @@ export function startSearch() {
   const title = document.getElementById('activity-title');
   const btn = document.getElementById('search-btn');
   title.textContent = 'Recherche en cours';
+  document.getElementById('activity-stop').onclick = stopSearch;
   log.textContent = '';
   btn.disabled = true;
 
@@ -110,7 +111,7 @@ export function startSearch() {
     hideCard();
   };
 
-  source = new EventSource('/api/search');
+  source = hooks.fakeSearch ? hooks.fakeSearch() : new EventSource('/api/search');
   source.addEventListener('log', (e) => {
     const line = document.createElement('div');
     line.textContent = JSON.parse(e.data).line;
@@ -122,11 +123,11 @@ export function startSearch() {
     title.textContent = `Recherche en cours · ${progressInfo().pct.toFixed(0)} %`;
   });
   source.addEventListener('done', async (e) => {
-    const { added, merged = 0 } = JSON.parse(e.data);
+    const { added, merged = 0, stopped = false } = JSON.parse(e.data);
     finish();
     S.applications = await api('/applications');
     refreshPage();
-    finishSearch({ added, merged, onSee: () => go('#/offres') });
+    finishSearch({ added, merged, stopped, onSee: () => go('#/offres') });
   });
   source.addEventListener('error', (e) => {
     const msg = e.data ? JSON.parse(e.data).message : 'La recherche a été interrompue.';

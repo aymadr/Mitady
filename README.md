@@ -30,6 +30,7 @@ Tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le pr�
 
 - **Suivi** : un tableau par étape (À traiter, Envoyées, Entretiens, Offres reçues, Refusées). Tu fais glisser une offre d'une colonne à l'autre ; la carte s'incline et les confettis partent quand tu postules.
 - **Recherche** : un écran plein écran où des animaux en pixel art, dont ton compagnon, portent chacun le logo d'un site et jouent à saute-mouton. Quand un site trouve des offres, son animal lance le logo en l'air et le rattrape, avec une bulle « +4 ». Des compteurs montrent offres vues, doublons écartés et nouvelles offres. Tu peux le réduire.
+- **Arrêter une recherche** : le bouton « Arrêter la recherche » (sur l'écran de recherche et sur la petite carte réduite) stoppe tout de suite et garde les offres déjà trouvées.
 - **Jalons** : une petite fête pour ta première candidature, puis la 5ᵉ, la 10ᵉ, la 25ᵉ et la 50ᵉ, et à chaque entretien ou offre.
 
 ## Logos des sites
@@ -39,6 +40,10 @@ Chaque site d'emploi a une tuile 3D dessinée par Mitady. Pour afficher les logo
 ## Apparence
 
 Le bouton soleil / lune en haut à droite bascule entre mode clair et mode sombre (la bascule s'étend en cercle depuis le bouton). Le choix est mémorisé ; sans choix, l'appli suit le réglage de ton ordinateur.
+
+## La démo avec le robot
+
+Le bouton **?** en haut ouvre le guide, et « Voir la démo en direct » lance la démonstration : ton compagnon prend les commandes du vrai site, avec un curseur visible, une lumière sur ce qu'il montre et des sous-titres. Il tape dans la recherche, ouvre une offre, ajoute une compétence, prépare un CV, envoie une candidature, déplace des cartes dans le suivi, passe en mode sombre, lance une recherche et change de compagnon. Tout se passe sur des offres d'exemple : **tes vraies données ne sont jamais touchées**. Pause avec la barre d'espace, Échap pour quitter.
 
 ## Comment ça marche
 

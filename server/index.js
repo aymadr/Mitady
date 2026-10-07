@@ -141,6 +141,20 @@ app.post('/api/profile/cv-preview', route((req, res) => {
   res.type('html').send(cv.renderCvHtml(p, { headline: p.headline, summary: p.summary, skills: p.skills }));
 }));
 
+// The user's own CV as a PDF (a Word file is converted), shown and attached as is.
+app.get('/api/profile/cv/pdf', route(async (req, res) => {
+  const file = await cv.originalPdf(store.db.profile);
+  if (req.query.download) return res.download(file, 'CV.pdf');
+  res.type('pdf').sendFile(file);
+}));
+
+// A sample CV in the user's style, for the guided demo (never touches the real profile).
+app.post('/api/demo/cv-preview', route((req, res) => {
+  const p = store.db.profile;
+  const style = { ...p.cvStyle, ...(req.body.cvStyle || {}) };
+  res.type('html').send(cv.renderCvHtml({ cvStyle: style, photo: p.photo, sections: [] }, { headline: req.body.headline || '', summary: req.body.summary || '', skills: [] }));
+}));
+
 app.get('/api/profile/cv', route((req, res) => {
   const f = store.db.profile.cvFile;
   if (!f || !fs.existsSync(f.path)) throw fail(404, 'Aucun CV importé.');
@@ -383,7 +397,7 @@ app.get('/api/search', async (req, res) => {
     store.db.applications.unshift(...added);
     const merged = dedupeTodo();
     store.save();
-    send('done', { added: added.length - merged.filter((a) => added.includes(a)).length, merged: merged.length });
+    send('done', { added: added.length - merged.filter((a) => added.includes(a)).length, merged: merged.length, stopped: Boolean(jobs.stopped) });
   } catch (e) {
     send('error', { message: e.message });
   } finally {
@@ -391,6 +405,10 @@ app.get('/api/search', async (req, res) => {
     res.end();
   }
 });
+
+app.post('/api/search/stop', route((req, res) => {
+  res.json({ ok: scraper.stop() });
+}));
 
 // ---------- Export ----------
 

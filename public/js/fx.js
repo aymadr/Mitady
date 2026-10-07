@@ -63,8 +63,8 @@ function pointer() {
       const dx = e.clientX - (r.left + r.width / 2);
       const dy = e.clientY - (r.top + r.height / 2);
       const near = Math.hypot(dx, dy) < Math.max(r.width, r.height) * 0.9 + 24;
-      b.style.setProperty('--magx', near ? `${(dx * 0.22).toFixed(1)}px` : '0px');
-      b.style.setProperty('--magy', near ? `${(dy * 0.3).toFixed(1)}px` : '0px');
+      b.style.setProperty('--magx', near ? `${(dx * 0.1).toFixed(1)}px` : '0px');
+      b.style.setProperty('--magy', near ? `${(dy * 0.14).toFixed(1)}px` : '0px');
     });
   }, { passive: true });
 }

@@ -31,7 +31,14 @@ export function mount(el, tpl) {
   return el;
 }
 
+// During the guided demo, `hooks.demo` answers API calls from sample data, so nothing real is touched.
+export const hooks = { demo: null, fakeSearch: null };
+
 export async function api(path, { method = 'GET', body } = {}) {
+  if (hooks.demo) {
+    const r = await hooks.demo(path, { method, body });
+    if (r !== undefined) return r;
+  }
   const res = await fetch(`/api${path}`, {
     method,
     headers: body ? { 'Content-Type': 'application/json' } : undefined,

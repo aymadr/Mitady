@@ -254,6 +254,15 @@ async function fetchLinkedInDescription(context, job) {
   }
 }
 
+// One search at a time; stop() ends it early and keeps what was found so far.
+let current = null;
+function stop() {
+  if (!current) return false;
+  current.stopped = true;
+  current.browser.close().catch(() => {});
+  return true;
+}
+
 // `progress` receives structured events for the search screen:
 // start, search (one per keyword and contract), filter, dedupe, read.
 async function run(profile, existing, log = () => {}, progress = () => {}) {
@@ -267,6 +276,8 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
   const kws = keywords.slice(0, contracts.length > 1 ? 4 : 6);
 
   const browser = await chromium.launch({ headless: true });
+  const ctl = { stopped: false, browser };
+  current = ctl;
   const context = await browser.newContext({ userAgent: UA, locale: 'fr-FR' });
   try {
     let found = [];
@@ -274,8 +285,11 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
     const perSource = Object.fromEntries(sources.map((s) => [s.label, 0]));
     let batchNo = 0;
     progress({ stage: 'start', sources: sources.map((s) => ({ id: s.id, label: s.label })), batches: total });
+    try {
     for (const contract of contracts) {
+      if (ctl.stopped) break;
       for (const kw of kws) {
+        if (ctl.stopped) break;
         log(`Recherche « ${kw} » · ${contract}`);
         // Direct sites run side by side; search-engine queries go one at a time.
         const direct = sources.filter((s) => s.direct).map(async (s) => {
@@ -296,6 +310,11 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
       }
     }
 
+    } catch (e) {
+      // Closing the browser to stop makes the pending page calls fail: that is expected.
+      if (!ctl.stopped) throw e;
+    }
+
     const before = found.length;
     found = found.filter((j) => j.title.length > 4 && relevant(j.title, hints) && !isExcluded(j.company, search.excluded));
     log(`${before - found.length} offres écartées (hors sujet ou organismes de formation)`);
@@ -312,15 +331,22 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
     const batch = fresh.slice(0, MAX_NEW);
     log(`${fresh.length} nouvelles offres${fresh.length > MAX_NEW ? `, ${MAX_NEW} analysées cette fois` : ''}`);
 
-    for (let i = 0; i < batch.length; i += 4) {
+    try {
+    for (let i = 0; i < batch.length && !ctl.stopped; i += 4) {
       log(`Lecture des annonces ${i + 1}–${Math.min(i + 4, batch.length)} sur ${batch.length}`);
       progress({ stage: 'read', done: i, total: batch.length });
       await Promise.all(batch.slice(i, i + 4).map(async (job) => ((job.source === 'LinkedIn' && (await fetchLinkedInDescription(context, job))) ? null : fetchDescription(context, job))));
     }
+    } catch (e) {
+      if (!ctl.stopped) throw e;
+    }
+    for (const job of batch) job.description ||= job.snippet || '';
+    ctl.result = batch;
     progress({ stage: 'read', done: batch.length, total: batch.length });
-    return batch;
+    return Object.assign(batch, { stopped: ctl.stopped });
   } finally {
-    await browser.close();
+    current = null;
+    await browser.close().catch(() => {});
   }
 }
 
@@ -360,4 +386,4 @@ async function findContacts(company, title = '') {
   }
 }
 
-module.exports = { run, findContacts, isDuplicate, SOURCES, CONTRACTS, detectContract };
+module.exports = { run, stop, findContacts, isDuplicate, SOURCES, CONTRACTS, detectContract };

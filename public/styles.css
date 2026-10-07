@@ -1198,3 +1198,61 @@ body.dragging, body.dragging * { cursor: grabbing !important; user-select: none;
 
 .pet.busy .pet-body { animation: pet-tick 0.32s steps(3) infinite; }
 .lf-pet .pet.air .pet-body { animation: none; }
+
+/* Board: cards stay inside their column and move less */
+.kcol { min-width: 0; }
+.kcol-body { grid-template-columns: minmax(0, 1fr); }
+.kcard { min-width: 0; overflow-wrap: anywhere; }
+.kcard-top .grow { min-width: 0; }
+.kcard:hover { transform: translateY(-1px); box-shadow: var(--shadow-lift), 0 0 0 1px var(--line-strong); }
+.kcard-foot .kcard-kind { white-space: nowrap; }
+.klink { margin-left: auto; width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; color: var(--text-3); transition: background 0.2s, color 0.2s; }
+.klink:hover { background: var(--fill-strong); color: var(--accent-text); text-decoration: none; }
+.kcard-foot .badge + .klink, .kcard-foot .tiny + .klink { margin-left: 0; }
+.item-open { width: 30px; height: 30px; }
+.item-open:hover { transform: none; color: var(--accent-text); }
+.srch-top { position: absolute; top: 22px; right: 28px; z-index: 3; display: flex; gap: 10px; }
+.srch-top .srch-min { position: static; }
+.srch-stop { padding: 9px 18px; border-radius: 99px; font-size: 13.5px; font-weight: 600; color: var(--red); background: var(--red-soft); box-shadow: inset 0 0 0 1px rgba(230, 40, 70, 0.25); transition: background 0.2s, transform 0.3s var(--spring); }
+.srch-stop:hover { background: rgba(230, 40, 70, 0.18); transform: translateY(-1px); }
+.srch-stop:disabled { opacity: 0.6; pointer-events: none; }
+#activity-stop { color: var(--red); }
+
+
+/* =====================================================================
+   The robot demo (demo.js)
+   ===================================================================== */
+.tour-demo { display: flex; align-items: center; gap: 22px; margin-top: 22px; padding: 16px 20px 16px 22px; border-radius: 24px; background: var(--grad-soft); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.tour-demo b { font-family: var(--font-display); font-size: 18px; letter-spacing: -0.03em; }
+.tour-demo p { font-size: 13.5px; color: var(--text-2); margin-top: 2px; max-width: 560px; }
+.tour-demo .ob-cta { flex: none; height: 48px; padding: 0 22px; }
+@media (max-width: 760px) { .tour-demo { flex-direction: column; align-items: flex-start; } }
+.robot { position: fixed; inset: 0; z-index: 500; pointer-events: none; transition: opacity 0.4s; }
+.robot.out { opacity: 0; }
+.robot-shield { position: fixed; inset: 0; pointer-events: auto; background: transparent; }
+.robot-spot { position: fixed; border-radius: 22px; pointer-events: none; opacity: 0; box-shadow: 0 0 0 9999px rgba(12, 8, 36, 0.42), 0 0 0 3px var(--accent), 0 0 44px 8px rgba(130, 100, 255, 0.55); transition: left 0.6s var(--ease), top 0.6s var(--ease), width 0.6s var(--ease), height 0.6s var(--ease), opacity 0.4s; }
+.robot-spot.on { opacity: 1; }
+.robot-cursor { position: fixed; left: 0; top: 0; z-index: 2; margin: -4px 0 0 -4px; transition: transform 0.8s cubic-bezier(0.5, 0, 0.2, 1); filter: drop-shadow(0 5px 7px rgba(20, 10, 80, 0.5)); }
+.robot-click { position: fixed; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; border: 3px solid var(--accent-3); animation: rclick 0.7s ease-out forwards; }
+@keyframes rclick { to { transform: scale(5); opacity: 0; } }
+.robot-caption { position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%); width: min(800px, calc(100vw - 28px)); pointer-events: auto; display: flex; gap: 16px; align-items: center; padding: 14px 18px 14px 14px; border-radius: 30px; background: var(--surface-raised); box-shadow: var(--shadow-lift), 0 0 0 1px var(--line-strong); }
+.robot-caption.swap .robot-words { animation: rise 0.5s var(--ease) both; }
+.robot-pet { flex: none; width: 88px; height: 88px; display: grid; place-items: end center; padding-bottom: 6px; border-radius: 26px; background: var(--grad-soft); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.robot-words { min-width: 0; }
+.robot-words b { display: block; font-family: var(--font-display); font-size: 19px; font-weight: 800; letter-spacing: -0.03em; }
+.robot-words p { margin-top: 3px; font-size: 14.5px; line-height: 1.45; color: var(--text-2); }
+.robot-controls { margin-left: auto; display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex: none; }
+.robot-controls button { padding: 6px 14px; border-radius: 99px; font-size: 12.5px; font-weight: 600; background: var(--fill); transition: background 0.2s; }
+.robot-controls button:hover { background: var(--fill-strong); }
+.robot-controls #rb-quit { color: var(--red); }
+.robot-count { font-size: 12px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.robot.paused .robot-pet { filter: grayscale(0.6); }
+body.demo .toast, body.demo .working { z-index: 520; }
+@media (max-width: 640px) { .robot-caption { flex-wrap: wrap; } .robot-pet { display: none; } }
+
+/* Suivi gets more room, and its card text breaks at word boundaries */
+main:has(.board) { max-width: 1480px; }
+.board { grid-template-columns: repeat(5, minmax(230px, 1fr)); }
+.kcard { overflow-wrap: break-word; }
+.kcard-foot { flex-wrap: wrap; row-gap: 4px; }
+.kcard-foot .tiny, .kcard-foot .kcard-kind { white-space: nowrap; }

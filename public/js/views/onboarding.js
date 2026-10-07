@@ -491,8 +491,12 @@ function tour(stage) {
         </div>
         <div class="tour-panel" id="tour-panel" aria-live="polite"></div>
       </div>
+      <div class="tour-demo">
+        <div><b>Envie de le voir en vrai ?</b><p>Mon compagnon prend les commandes du site, sur des offres d'exemple : il cherche, ouvre une offre, prépare un CV, déplace une candidature… Tes vraies données ne sont pas touchées.</p></div>
+        <button class="ob-cta" id="tour-demo">Voir la démo en direct</button>
+      </div>
       ${tourOnly
-        ? html`<div class="ob-nav"><span></span><button class="ob-cta" id="tour-done">Terminer</button></div>`
+        ? html`<div class="ob-nav"><span></span><button class="ob-link" id="tour-done">Fermer</button></div>`
         : nav(true, true, 'Continuer')}
     </section>`,
   );
@@ -519,6 +523,10 @@ function tour(stage) {
     }),
   );
   stage.querySelector('#tour-done')?.addEventListener('click', () => finish());
+  stage.querySelector('#tour-demo').addEventListener('click', () => {
+    finish();
+    setTimeout(() => import('../demo.js').then((m) => m.startDemo()), 700);
+  });
   stage.querySelector('[data-next]')?.addEventListener('click', () => go(step + 1));
   show(0);
   tourTimer = setInterval(() => show((cur + 1) % TOUR.length), 7000);

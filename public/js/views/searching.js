@@ -2,7 +2,7 @@
 // Each animal carries its site's logo above its head and tosses it in the air when the site finds offers.
 // Your own companion is always one of them.
 import { S } from '../main.js';
-import { html } from '../lib.js';
+import { html, api, fail } from '../lib.js';
 import { siteLogo, logoRatio } from '../logos.js';
 import { celebrate } from '../fx.js';
 import { petSvg, petOf, defaultPet, ANIMALS } from '../pet.js';
@@ -51,7 +51,7 @@ export function openSearch({ onMinimize } = {}) {
   root.className = 'srch';
   root.innerHTML = html`
     <div class="srch-bg"><i class="ob-blob b1"></i><i class="ob-blob b2"></i><i class="ob-blob b3"></i></div>
-    <button class="srch-min" id="srch-min">Réduire</button>
+    <div class="srch-top"><button class="srch-stop" id="srch-stop">Arrêter la recherche</button><button class="srch-min" id="srch-min">Réduire</button></div>
     <div class="srch-body">
       <div class="ob-kicker"><span></span>Recherche en cours</div>
       <h2 class="srch-title">Mitady <em>cherche</em> pour toi.</h2>
@@ -75,6 +75,7 @@ export function openSearch({ onMinimize } = {}) {
     minimize();
     onMinimize?.();
   });
+  root.querySelector('#srch-stop').addEventListener('click', stopSearch);
 
   // The cast: one animal per site, each carrying its logo.
   const row = root.querySelector('#lf-row');
@@ -99,6 +100,21 @@ export function openSearch({ onMinimize } = {}) {
   if (!reduced) {
     running = true;
     hopLoop();
+  }
+}
+
+// Stops the search on the server; what was found so far is kept.
+export async function stopSearch() {
+  const btn = root?.querySelector('#srch-stop');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'J’arrête…';
+  }
+  set('#srch-action', 'J’arrête la recherche et je garde ce que j’ai trouvé…');
+  try {
+    await api('/search/stop', { method: 'POST' });
+  } catch (e) {
+    fail(e);
   }
 }
 
@@ -292,7 +308,7 @@ function minimize() {
 }
 
 // Called when the search ends. `onSee` runs when the user clicks "Voir les offres".
-export async function finishSearch({ added, merged = 0, onSee }) {
+export async function finishSearch({ added, merged = 0, stopped = false, onSee }) {
   if (!root) return;
   running = false;
   cast.forEach((c) => {
@@ -306,9 +322,9 @@ export async function finishSearch({ added, merged = 0, onSee }) {
   minimized = false;
   setPct(100);
   count(root.querySelector('[data-stat="fresh"]'), added);
-  set('#srch-action', added ? 'Terminé ! Voici ce que j\'ai trouvé.' : 'Terminé : rien de nouveau pour le moment.');
-  root.querySelector('.srch-title').innerHTML = added ? `<em>${added}</em> nouvelle${added > 1 ? 's' : ''} offre${added > 1 ? 's' : ''} !` : 'Rien de <em>nouveau</em>.';
-  root.querySelector('#srch-min').hidden = true;
+  set('#srch-action', stopped ? 'Recherche arrêtée : je garde ce que j’ai déjà trouvé.' : added ? 'Terminé ! Voici ce que j\'ai trouvé.' : 'Terminé : rien de nouveau pour le moment.');
+  root.querySelector('.srch-title').innerHTML = added ? `<em>${added}</em> nouvelle${added > 1 ? 's' : ''} offre${added > 1 ? 's' : ''} !` : stopped ? 'Recherche <em>arrêtée</em>.' : 'Rien de <em>nouveau</em>.';
+  root.querySelector('.srch-top').hidden = true;
   const foot = root.querySelector('#srch-foot');
   foot.innerHTML = `<button class="ob-cta" id="srch-see">${added ? 'Voir les offres' : 'Fermer'}</button>${merged ? `<span class="hint">${merged} doublon${merged > 1 ? 's' : ''} déjà en liste fusionné${merged > 1 ? 's' : ''}.</span>` : ''}`;
   const close = () => {

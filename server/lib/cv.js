@@ -270,12 +270,30 @@ const CV_STYLES = {
     bandeau: { label: 'Bandeau', ats: false },
     lateral: { label: 'Colonne latérale', ats: false },
   },
+  // `g` = Google Fonts family: loaded when online, otherwise the fallback stack is used.
   fonts: {
-    calibri: { label: 'Calibri', stack: 'Calibri, Carlito, "Segoe UI", Arial, sans-serif' },
-    arial: { label: 'Arial', stack: 'Arial, "Liberation Sans", Helvetica, sans-serif' },
-    georgia: { label: 'Georgia', stack: 'Georgia, "Times New Roman", serif' },
-    garamond: { label: 'Garamond', stack: 'Garamond, "EB Garamond", "Palatino Linotype", Georgia, serif' },
-    trebuchet: { label: 'Trebuchet', stack: '"Trebuchet MS", "Fira Sans", Verdana, sans-serif' },
+    calibri: { label: 'Calibri', group: 'Sans', stack: 'Calibri, Carlito, "Segoe UI", Arial, sans-serif' },
+    arial: { label: 'Arial', group: 'Sans', stack: 'Arial, "Liberation Sans", Helvetica, sans-serif' },
+    trebuchet: { label: 'Trebuchet', group: 'Sans', stack: '"Trebuchet MS", "Fira Sans", Verdana, sans-serif' },
+    inter: { label: 'Inter', group: 'Sans', g: 'Inter:wght@400;600;700', stack: 'Inter, "Segoe UI", Arial, sans-serif' },
+    opensans: { label: 'Open Sans', group: 'Sans', g: 'Open+Sans:wght@400;600;700', stack: '"Open Sans", "Segoe UI", Arial, sans-serif' },
+    roboto: { label: 'Roboto', group: 'Sans', g: 'Roboto:wght@400;500;700', stack: 'Roboto, "Segoe UI", Arial, sans-serif' },
+    lato: { label: 'Lato', group: 'Sans', g: 'Lato:wght@400;700', stack: 'Lato, Carlito, Arial, sans-serif' },
+    sourcesans: { label: 'Source Sans', group: 'Sans', g: 'Source+Sans+3:wght@400;600;700', stack: '"Source Sans 3", "Source Sans Pro", Arial, sans-serif' },
+    montserrat: { label: 'Montserrat', group: 'Sans', g: 'Montserrat:wght@400;600;700', stack: 'Montserrat, Verdana, sans-serif' },
+    poppins: { label: 'Poppins', group: 'Sans', g: 'Poppins:wght@400;500;700', stack: 'Poppins, Verdana, sans-serif' },
+    worksans: { label: 'Work Sans', group: 'Sans', g: 'Work+Sans:wght@400;600;700', stack: '"Work Sans", Arial, sans-serif' },
+    georgia: { label: 'Georgia', group: 'Serif', stack: 'Georgia, "Times New Roman", serif' },
+    garamond: { label: 'Garamond', group: 'Serif', stack: 'Garamond, "EB Garamond", "Palatino Linotype", Georgia, serif' },
+    times: { label: 'Times', group: 'Serif', stack: '"Times New Roman", "Liberation Serif", Times, serif' },
+    cambria: { label: 'Cambria', group: 'Serif', stack: 'Cambria, Caladea, Georgia, serif' },
+    merriweather: { label: 'Merriweather', group: 'Serif', g: 'Merriweather:wght@400;700', stack: 'Merriweather, Georgia, serif' },
+    lora: { label: 'Lora', group: 'Serif', g: 'Lora:wght@400;600;700', stack: 'Lora, Georgia, serif' },
+    playfair: { label: 'Playfair Display', group: 'Serif', g: 'Playfair+Display:wght@400;600;700', stack: '"Playfair Display", Georgia, serif' },
+    baskerville: { label: 'Libre Baskerville', group: 'Serif', g: 'Libre+Baskerville:wght@400;700', stack: '"Libre Baskerville", Baskerville, Georgia, serif' },
+    plexmono: { label: 'IBM Plex Mono', group: 'Mono', g: 'IBM+Plex+Mono:wght@400;600;700', stack: '"IBM Plex Mono", "Courier New", monospace' },
+    robotomono: { label: 'Roboto Mono', group: 'Mono', g: 'Roboto+Mono:wght@400;600;700', stack: '"Roboto Mono", "Courier New", monospace' },
+    courier: { label: 'Courier', group: 'Mono', stack: '"Courier New", "Liberation Mono", monospace' },
   },
   accents: {
     bleu: { label: 'Bleu', color: '#1f3a93' },
@@ -296,24 +314,76 @@ const CV_STYLES = {
   },
   photoShapes: { carre: 'Carrée', arrondi: 'Arrondie', rond: 'Ronde' },
   photoSizes: { s: 'Petite', m: 'Moyenne', l: 'Grande' },
+  get sectionTypes() { return SECTION_TYPES; },
+  levels: ['Notions', 'Intermédiaire', 'Courant', 'Bilingue', 'Langue maternelle'],
 };
 
-const DEFAULT_STYLE = { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false };
+// 0 / '' = the template's own value. Only what the user changes overrides the template.
+const DEFAULT_STYLE = {
+  layout: 'classique', font: 'calibri', accent: 'bleu',
+  photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false,
+  fontSize: 0, lineHeight: 0, margin: 0, gap: 0, nameSize: 0,
+  headStyle: '', headCaps: '', dateFormat: 'mmyyyy', skillStyle: 'text', langStyle: 'text',
+  icons: false, linkIcons: false, align: '', columns: 'one', summary: true,
+};
 // Photo box in mm, per size: portrait (4:5) for square and rounded, square for round.
 const PHOTO_MM = { s: [18, 22.5, 20], m: [22, 27.5, 25], l: [27, 34, 31] };
+const clampNum = (v, lo, hi) => (Number(v) > 0 ? Math.min(hi, Math.max(lo, Number(v))) : 0);
+const oneOf = (v, list, d = '') => (list.includes(v) ? v : d);
 
 function resolveStyle(style = {}) {
   const s = { ...DEFAULT_STYLE, ...style };
+  const font = CV_STYLES.fonts[s.font] || CV_STYLES.fonts.calibri;
   return {
     layout: CV_STYLES.layouts[s.layout] ? s.layout : 'classique',
-    font: (CV_STYLES.fonts[s.font] || CV_STYLES.fonts.calibri).stack,
+    font: font.stack,
+    fontImport: font.g ? `https://fonts.googleapis.com/css2?family=${font.g}&display=swap` : '',
     // A preset name, or any #rrggbb picked by the user.
     accent: /^#[0-9a-f]{6}$/i.test(s.accent) ? s.accent : (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
     photo: s.photo !== false,
     shape: ['carre', 'arrondi', 'rond'].includes(s.photoShape) ? s.photoShape : 'carre',
     size: PHOTO_MM[s.photoSize] ? s.photoSize : 'm',
     border: Boolean(s.photoBorder),
+    fontSize: clampNum(s.fontSize, 7.5, 12),
+    lineHeight: clampNum(s.lineHeight, 1, 1.8),
+    margin: clampNum(s.margin, 6, 24),
+    gap: clampNum(s.gap, 2, 20),
+    nameSize: clampNum(s.nameSize, 14, 34),
+    headStyle: oneOf(s.headStyle, ['line', 'plain', 'accent', 'bar', 'box']),
+    headCaps: oneOf(s.headCaps, ['on', 'off']),
+    dateFormat: oneOf(s.dateFormat, ['mmyyyy', 'mmm', 'yyyy'], 'mmyyyy'),
+    skillStyle: oneOf(s.skillStyle, ['text', 'chips', 'bars', 'dots'], 'text'),
+    langStyle: oneOf(s.langStyle, ['text', 'bars', 'dots'], 'text'),
+    icons: Boolean(s.icons),
+    linkIcons: Boolean(s.linkIcons),
+    align: oneOf(s.align, ['center']),
+    columns: s.columns === 'two' ? 'two' : 'one',
+    summary: s.summary !== false,
   };
+}
+
+// CSS for the options the user changed, appended after the template's own CSS.
+function customCss(st) {
+  const free = !['bandeau', 'lateral'].includes(st.layout);
+  const c = [];
+  if (st.fontSize) c.push(`body { font-size: ${st.fontSize}pt; }`);
+  if (st.lineHeight) c.push(`body { line-height: ${st.lineHeight}; }`);
+  if (st.gap) c.push(`section { margin-top: ${st.gap}pt; }`);
+  if (st.nameSize) c.push(`h1 { font-size: ${st.nameSize}pt; }`);
+  if (st.margin && free) c.push(`@page { margin: ${Math.max(6, st.margin - 3)}mm ${st.margin}mm; }`);
+  const heads = {
+    line: 'main h2, body > section h2, .side h2 { border-bottom: 0.8pt solid #000; color: #000; }',
+    plain: 'main h2, body > section h2, .side h2 { border: 0; color: var(--accent); }',
+    accent: 'main h2, body > section h2, .side h2 { border-bottom: 0.8pt solid var(--accent); color: var(--accent); }',
+    bar: 'main h2, body > section h2, .side h2 { border: 0; border-left: 3pt solid var(--accent); padding-left: 6pt; color: #000; }',
+    box: 'main h2, body > section h2, .side h2 { border: 0; background: var(--accent); color: #fff; padding: 2pt 6pt; }',
+  };
+  if (st.headStyle) c.push(heads[st.headStyle]);
+  if (st.headCaps) c.push(`h2 { text-transform: ${st.headCaps === 'on' ? 'uppercase' : 'none'}; }`);
+  if (st.align === 'center' && st.layout !== 'lateral' && st.layout !== 'bandeau') {
+    c.push('header { text-align: center; } header .photo { float: none; display: block; margin: 0 auto 5pt; } header .contact { justify-content: center; }');
+  }
+  return c.join('\n  ');
 }
 
 const LAYOUT_CSS = {
@@ -359,6 +429,7 @@ const LAYOUT_CSS = {
   h1 { font-size: 23pt; }
   .headline { color: #fff; font-weight: 400; opacity: 0.95; }
   .contact { color: #fff; }
+  header .ic { color: #fff; }
   main { padding: 0 14mm; }
   h2 { color: var(--accent); border-bottom: 0.8pt solid var(--accent); }
   section { margin-top: 7pt; }`,
@@ -396,10 +467,135 @@ const SAMPLE = {
   ],
 };
 
+// What each kind of section holds. `kind` drives the editor and the rendering.
+const SECTION_TYPES = {
+  employment: { label: 'Expérience professionnelle', kind: 'entries', f: { title: 'Poste', subtitle: 'Employeur', location: 'Lieu' } },
+  education: { label: 'Formation', kind: 'entries', f: { title: 'Diplôme', subtitle: 'École', location: 'Lieu' } },
+  projects: { label: 'Projets', kind: 'entries', f: { title: 'Projet', subtitle: 'Rôle ou technologies', location: 'Lieu' } },
+  certificates: { label: 'Certifications', kind: 'entries', f: { title: 'Certification', subtitle: 'Organisme', location: 'Lieu' } },
+  courses: { label: 'Formations complémentaires', kind: 'entries', f: { title: 'Formation', subtitle: 'Organisme', location: 'Lieu' } },
+  awards: { label: 'Distinctions', kind: 'entries', f: { title: 'Distinction', subtitle: 'Décernée par', location: 'Lieu' } },
+  organisations: { label: 'Associations et bénévolat', kind: 'entries', f: { title: 'Rôle', subtitle: 'Organisation', location: 'Lieu' } },
+  skills: { label: 'Compétences', kind: 'skills' },
+  languages: { label: 'Langues', kind: 'languages' },
+  interests: { label: "Centres d'intérêt", kind: 'tags' },
+  text: { label: 'Texte libre', kind: 'text' },
+};
+const LEVELS = ['Notions', 'Intermédiaire', 'Courant', 'Bilingue', 'Langue maternelle'];
+const SIDE_TYPES = ['skills', 'languages', 'interests'];
+const MONTHS = ['janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+function fmtDate(v, fmt) {
+  v = String(v || '').trim();
+  let y;
+  let mo;
+  let m = v.match(/^(\d{4})-(\d{1,2})$/);
+  if (m) [y, mo] = [m[1], m[2]];
+  else if ((m = v.match(/^(\d{1,2})\/(\d{4})$/))) [y, mo] = [m[2], m[1]];
+  else if (/^\d{4}$/.test(v)) [y, mo] = [v, ''];
+  else return v;
+  mo = mo && String(mo).padStart(2, '0');
+  if (fmt === 'yyyy' || !mo) return y;
+  if (fmt === 'mmm') return `${MONTHS[Number(mo) - 1] || mo} ${y}`;
+  return `${mo}/${y}`;
+}
+
+function entryDates(it, fmt) {
+  const a = fmtDate(it.start, fmt);
+  const b = it.current ? "Aujourd'hui" : fmtDate(it.end, fmt);
+  return a && b ? `${a} – ${b}` : a || b;
+}
+
+// Description: "- " lines are bullets, other lines paragraphs.
+function renderDesc(text) {
+  const lines = String(text || '').split('\n').map((l) => l.trim()).filter(Boolean);
+  let out = '';
+  let list = false;
+  for (const l of lines) {
+    const bullet = BULLET.test(l);
+    if (bullet !== list) out += list ? '</ul>' : '<ul>';
+    list = bullet;
+    out += bullet ? `<li>- ${escapeHtml(l.replace(BULLET, ''))}</li>` : `<p>${escapeHtml(l)}</p>`;
+  }
+  return out + (list ? '</ul>' : '');
+}
+
+function renderEntries(items, st) {
+  return (items || [])
+    .filter((it) => it && (it.title || it.subtitle || it.description))
+    .map((it) => {
+      const dates = entryDates(it, st.dateFormat);
+      const sub = [it.subtitle, it.location].filter(Boolean).map(escapeHtml).join(' · ');
+      return `<div class="entry"><div class="row"><h3>${escapeHtml(it.title || it.subtitle || '')}</h3>${dates ? `<em>${escapeHtml(dates)}</em>` : ''}</div>`
+        + `${it.title && sub ? `<div class="sub">${sub}${it.link ? ` · <span class="lnk">${escapeHtml(it.link)}</span>` : ''}</div>` : ''}${renderDesc(it.description)}</div>`;
+    })
+    .join('');
+}
+
+const clampLevel = (v, d = 4) => Math.min(5, Math.max(1, Math.round(Number(v)) || d));
+const dots = (n) => `<span class="dots">${[1, 2, 3, 4, 5].map((i) => `<b class="${i <= n ? 'on' : ''}"></b>`).join('')}</span>`;
+const bar = (n) => `<i class="bar" style="--v:${n * 20}%"></i>`;
+
+function renderSkillList(names, st, levels = {}) {
+  if (!names.length) return '';
+  if (st.skillStyle === 'chips') return `<div class="chips">${names.map((n) => `<span>${escapeHtml(n)}</span>`).join('')}</div>`;
+  if (st.skillStyle === 'bars' || st.skillStyle === 'dots') {
+    return names.map((n) => `<div class="lv"><span>${escapeHtml(n)}</span>${(st.skillStyle === 'bars' ? bar : dots)(clampLevel(levels[n]))}</div>`).join('');
+  }
+  return `<p>${escapeHtml(names.join(', '))}</p>`;
+}
+
+function renderLanguages(items, st) {
+  return (items || [])
+    .filter((it) => it && it.name)
+    .map((it) => {
+      const n = clampLevel(it.level, 3);
+      const label = it.label || LEVELS[n - 1];
+      if (st.langStyle === 'text') return `<p><strong>${escapeHtml(it.name)}</strong> : ${escapeHtml(label)}</p>`;
+      return `<div class="lv"><span><strong>${escapeHtml(it.name)}</strong> <small>${escapeHtml(label)}</small></span>${(st.langStyle === 'bars' ? bar : dots)(n)}</div>`;
+    })
+    .join('');
+}
+
+// Plain-text version of a section (matching, AI prompts).
+function sectionText(s) {
+  if (!s) return '';
+  const t = s.type || 'text';
+  if (t === 'text') return s.body || '';
+  if (t === 'languages') return (s.items || []).map((i) => `${i.name} ${i.label || LEVELS[clampLevel(i.level, 3) - 1]}`).join('\n');
+  if (t === 'interests') return (s.items || []).map((i) => i.name).join(', ');
+  if (t === 'skills') return '';
+  return (s.items || []).map((i) => [i.title, i.subtitle, i.location, entryDates(i, 'mmyyyy'), i.description].filter(Boolean).join(' · ')).join('\n');
+}
+
+// ---------- Icons (inline SVG, so the PDF needs no font or network) ----------
+const ICON_PATHS = {
+  mail: ['0 0 24 24', 'M3 5h18a1 1 0 011 1v12a1 1 0 01-1 1H3a1 1 0 01-1-1V6a1 1 0 011-1zm1.4 2L12 12.6 19.6 7H4.4z'],
+  phone: ['0 0 24 24', 'M6.6 10.8a15 15 0 006.6 6.6l2.2-2.2a1 1 0 011-.25c1.1.36 2.3.55 3.6.55a1 1 0 011 1V20a1 1 0 01-1 1A17 17 0 013 4a1 1 0 011-1h3.5a1 1 0 011 1c0 1.25.2 2.45.57 3.57a1 1 0 01-.25 1z'],
+  pin: ['0 0 24 24', 'M12 2a7 7 0 00-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 119.5 9 2.5 2.5 0 0112 11.5z'],
+  link: ['0 0 24 24', 'M10.6 13.4a1 1 0 010-1.4l3-3a3 3 0 114.2 4.2l-1.5 1.5-1.4-1.4 1.5-1.5a1 1 0 00-1.4-1.4l-3 3a1 1 0 01-1.4 0zm2.8-2.8a1 1 0 010 1.4l-3 3a3 3 0 11-4.2-4.2l1.5-1.5 1.4 1.4-1.5 1.5a1 1 0 001.4 1.4l3-3a1 1 0 011.4 0z'],
+  github: ['0 0 16 16', 'M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z'],
+  linkedin: ['0 0 24 24', 'M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 110-4.12 2.06 2.06 0 010 4.12zM7.12 20.45H3.56V9h3.56v11.45z'],
+  globe: ['0 0 24 24', 'M12 2a10 10 0 100 20 10 10 0 000-20zm6.9 9h-3a15 15 0 00-1.2-5A8 8 0 0118.9 11zM12 4c.8 1 1.6 3 1.9 7h-3.8C10.4 7 11.2 5 12 4zM4.1 13h3a15 15 0 001.2 5A8 8 0 014.1 13zm3-2h-3a8 8 0 014.2-5 15 15 0 00-1.2 5zm4.9 9c-.8-1-1.6-3-1.9-7h3.8c-.3 4-1.1 6-1.9 7zm3.7-2a15 15 0 001.2-5h3a8 8 0 01-4.2 5z'],
+};
+const icon = (name) => {
+  const [vb, d] = ICON_PATHS[name] || ICON_PATHS.link;
+  return `<svg class="ic" viewBox="${vb}" width="9" height="9" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
+};
+const linkIcon = (url) => (/linkedin/i.test(url) ? 'linkedin' : /github/i.test(url) ? 'github' : /^[^@\s]+@[^@\s]+$/.test(url) ? 'mail' : /https?:|www\.|\.[a-z]{2,}/i.test(url) ? 'globe' : 'link');
+
+// On screen the page margins (@page) do not exist: they are drawn as padding.
+function previewCss(st) {
+  if (['bandeau', 'lateral'].includes(st.layout)) return 'html { background: #fff; }';
+  const base = { compact: [8, 10], minimal: [14, 16] }[st.layout] || [10, 12];
+  const [y, x] = st.margin ? [Math.max(6, st.margin - 3), st.margin] : base;
+  return `html { background: #fff; } body { padding: ${y}mm ${x}mm; }`;
+}
+
 const SIDE_RE = /^(comp[ée]tences?|langues?|certifications?|centres? d.int[ée]r[êe]ts?|loisirs|outils)/i;
 
-function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }) {
-  const empty = !profileIn.name && !(profileIn.sections || []).length;
+function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], preview = false }) {
+  const empty = !profileIn.name && !(profileIn.sections || []).some((s) => sectionText(s).trim());
   const profile = empty ? { ...profileIn, ...SAMPLE, photo: profileIn.photo, cvStyle: profileIn.cvStyle } : profileIn;
   if (empty) {
     headline = headline || SAMPLE.headline;
@@ -407,52 +603,69 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }
     skills = skills?.length ? skills : SAMPLE.skills;
   }
   const style = resolveStyle(profile.cvStyle);
+  const icons = style.icons;
+  const details = (profile.details || []).filter((d) => d && d.value);
   const contact = [
-    profile.email && `Email : ${profile.email}`,
-    profile.phone && `Téléphone : ${profile.phone}`,
-    profile.location && `Localisation : ${profile.location}`,
+    profile.email && [icons ? icon('mail') : '', icons ? profile.email : `Email : ${profile.email}`],
+    profile.phone && [icons ? icon('phone') : '', icons ? profile.phone : `Téléphone : ${profile.phone}`],
+    profile.location && [icons ? icon('pin') : '', icons ? profile.location : `Localisation : ${profile.location}`],
+    ...details.map((d) => ['', d.label ? `${d.label} : ${d.value}` : d.value]),
   ].filter(Boolean);
-  const links = profile.links || [];
-  const sections = (profile.sections || []).filter((s) => s.title && s.body);
-  const skillsSection = sections.find(isSkills);
+  const links = (profile.links || []).filter(Boolean);
+  const levels = profile.skillLevels || {};
+  const all = (profile.sections || []).filter((s) => s && s.title && !s.hidden);
   const photo = style.photo ? profile.photoData || photoDataUri(profile.photo) : '';
+  const skillNames = (skills || []).slice(0, MAX_CV_SKILLS);
 
-  const skillsHtml = skillsSection
-    ? renderSkills(skillsSection, skillsAdded)
-    : skills.length
-      ? `<p>${escapeHtml(skills.slice(0, MAX_CV_SKILLS).join(', '))}</p>`
-      : '';
+  const blockOf = (s) => {
+    const type = s.type || 'text';
+    const kind = (SECTION_TYPES[type] || SECTION_TYPES.text).kind;
+    let html;
+    if (kind === 'entries') html = renderEntries(s.items, style);
+    else if (kind === 'skills') html = renderSkillList(skillNames, style, levels) + (skillsAdded.length && !skillNames.length ? `<p>${escapeHtml(skillsAdded.join(', '))}</p>` : '');
+    else if (kind === 'languages') html = renderLanguages(s.items, style);
+    else if (kind === 'tags') html = renderSkillList((s.items || []).map((i) => i.name).filter(Boolean), { ...style, skillStyle: style.skillStyle === 'chips' ? 'chips' : 'text' });
+    else if (isSkills(s)) html = renderSkills(s, skillsAdded);
+    else html = renderBody(s.body, { boldLines: /formation|éducation|diplôme/i.test(s.title) });
+    return { title: s.title, html, side: SIDE_TYPES.includes(type) || (type === 'text' && SIDE_RE.test(s.title)) };
+  };
 
-  // Sections keep the CV's order. Without a skills section of its own, skills go
-  // before certifications / languages.
-  const blocks = sections.map((s) => ({ title: s.title, html: isSkills(s) ? skillsHtml : renderBody(s.body, { boldLines: /formation|éducation|diplôme/i.test(s.title) }) }));
-  if (!skillsSection && skillsHtml) {
+  const blocks = all.map(blockOf).filter((b) => b.html);
+  // Without a skills section of its own, skills go before certifications / languages
+  // (CVs the editor has not touched yet).
+  const hasSkills = all.some((s) => (s.type || 'text') === 'skills' || (!s.type && isSkills(s)));
+  if (!profile.cvManaged && !hasSkills && skillNames.length) {
     const at = blocks.findIndex((b) => /certif|langue|intér|loisir/i.test(b.title));
-    blocks.splice(at === -1 ? blocks.length : at, 0, { title: 'Compétences', html: skillsHtml });
+    blocks.splice(at === -1 ? blocks.length : at, 0, { title: 'Compétences', html: renderSkillList(skillNames, style, levels), side: true });
   }
 
   const [pw, ph, pr] = PHOTO_MM[style.size];
   const round = style.shape === 'rond';
   const photoTag = photo ? `<img class="photo ${style.shape}${style.border ? ' bordered' : ''}" style="--pw:${round ? pr : pw}mm;--ph:${round ? pr : ph}mm" src="${photo}" alt="">` : '';
   const idHtml = `<h1>${escapeHtml(profile.name || 'Ton nom')}</h1>${headline ? `<div class="headline">${escapeHtml(headline)}</div>` : ''}`;
-  const contactHtml = `<div class="contact">${contact.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>${links.length ? `<div class="contact">${links.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}`;
+  const span = ([ic, text]) => `<span>${ic}${escapeHtml(text)}</span>`;
+  const linkSpan = (l) => `<span>${style.linkIcons ? icon(linkIcon(l)) : ''}${escapeHtml(l)}</span>`;
+  const contactHtml = `<div class="contact">${contact.map(span).join('')}</div>${links.length ? `<div class="contact">${links.map(linkSpan).join('')}</div>` : ''}`;
   const section = (b) => `<section><h2>${escapeHtml(b.title)}</h2>${b.html}</section>`;
-  const summaryHtml = summary ? `<section><h2>Profil</h2><p class="summary">${escapeHtml(summary)}</p></section>` : '';
+  const summaryHtml = summary && style.summary ? `<section><h2>Profil</h2><p class="summary">${escapeHtml(summary)}</p></section>` : '';
 
   let body;
   if (style.layout === 'lateral') {
-    const side = blocks.filter((b) => SIDE_RE.test(b.title));
-    const main = blocks.filter((b) => !SIDE_RE.test(b.title));
+    const side = blocks.filter((b) => b.side);
+    const main = blocks.filter((b) => !b.side);
     body = `<div class="rail"></div><aside>${photoTag}<section><h2>Contact</h2>${contactHtml}</section>${side.map(section).join('')}</aside>
       <main>${idHtml}${summaryHtml}${main.map(section).join('')}</main>`;
   } else if (style.layout === 'bandeau') {
     body = `<header>${photoTag}<div class="id">${idHtml}${contactHtml}</div></header><main>${summaryHtml}${blocks.map(section).join('')}</main>`;
+  } else if (style.columns === 'two') {
+    body = `<header>${photoTag}${idHtml}${contactHtml}</header><div class="cols"><main>${summaryHtml}${blocks.filter((b) => !b.side).map(section).join('')}</main><div class="side">${blocks.filter((b) => b.side).map(section).join('')}</div></div>`;
   } else {
     body = `<header>${photoTag}${idHtml}${contactHtml}</header>${summaryHtml}${blocks.map(section).join('')}`;
   }
 
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <style>
+  ${style.fontImport ? `@import url('${style.fontImport}');` : ''}
   :root { --accent: ${style.accent}; }
   @page { size: A4; margin: 10mm 12mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -465,20 +678,45 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }
   .photo.bordered { border: 0.55mm solid var(--accent); }
   h1 { font-size: 19pt; font-weight: 700; text-transform: uppercase; line-height: 1.1; }
   .headline { font-size: 12pt; font-weight: 700; color: var(--accent); margin-top: 2pt; }
-  .contact { font-size: 8.6pt; margin-top: 4pt; }
+  .contact { font-size: 8.6pt; margin-top: 4pt; display: flex; flex-wrap: wrap; align-items: center; }
+  .contact span { display: inline-flex; align-items: center; gap: 3pt; }
   .contact span + span::before { content: "|"; margin: 0 6pt; }
+  .ic { color: var(--accent); flex: none; }
   section { margin-top: 6pt; }
   h2 { font-size: 10.5pt; font-weight: 700; text-transform: uppercase; border-bottom: 0.8pt solid #000; padding-bottom: 1pt; margin-bottom: 4pt; break-after: avoid; }
   .row { display: flex; justify-content: space-between; gap: 10pt; }
   .row em { font-style: italic; white-space: nowrap; flex: none; }
   h3 { font-size: 9.8pt; font-weight: 700; margin-top: 4pt; break-after: avoid; }
   section h2 + h3 { margin-top: 0; }
+  .entry { margin-top: 4pt; break-inside: avoid-page; }
+  section h2 + .entry { margin-top: 0; }
+  .entry h3 { margin-top: 0; }
+  .sub { font-style: italic; color: #333; }
+  .lnk { color: var(--accent); }
   p { margin-bottom: 1.5pt; }
   p.strong-line { font-weight: 700; }
   ul { list-style: none; margin: 1pt 0 3pt; }
   li { padding-left: 9pt; text-indent: -6pt; margin-bottom: 1pt; break-inside: avoid; }
   .summary { text-align: justify; }
+  .chips { display: flex; flex-wrap: wrap; gap: 3pt; }
+  .chips span { border: 0.6pt solid var(--accent); border-radius: 8pt; padding: 0.5pt 6pt; }
+  .lv { display: flex; align-items: center; justify-content: space-between; gap: 8pt; margin-bottom: 2pt; }
+  .lv small { color: #555; }
+  .bar { display: block; width: 22mm; height: 3pt; background: rgba(0,0,0,.14); border-radius: 2pt; position: relative; flex: none; }
+  .bar::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v); background: var(--accent); border-radius: 2pt; }
+  .dots { display: inline-flex; gap: 2pt; flex: none; }
+  .dots b { width: 5pt; height: 5pt; border-radius: 50%; background: rgba(0,0,0,.16); }
+  .dots b.on { background: var(--accent); }
+  .cols { display: grid; grid-template-columns: 1fr 52mm; gap: 8mm; }
+  .cols .side section:first-child, .cols main section:first-child { margin-top: 6pt; }
+  .cols .bar { width: 16mm; }
   ${LAYOUT_CSS[style.layout]}
+  aside .chips span { border-color: #fff; }
+  aside .bar::after, aside .dots b.on { background: #fff; }
+  aside .bar, aside .dots b { background: rgba(255,255,255,.3); }
+  aside .ic { color: #fff; }
+  ${customCss(style)}
+  ${preview ? previewCss(style) : ''}
 </style></head><body>
   ${body}
 </body></html>`;
@@ -592,4 +830,4 @@ function photoDataUri(file) {
   return `data:${type};base64,${fs.readFileSync(file).toString('base64')}`;
 }
 
-module.exports = { originalPdf, CV_STYLES, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };
+module.exports = { originalPdf, CV_STYLES, SECTION_TYPES, LEVELS, sectionText, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };

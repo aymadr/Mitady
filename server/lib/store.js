@@ -40,7 +40,10 @@ function defaultProfile() {
     titleGender: 'neutre',
     pet: null, // the pixel companion: { animal, color, accessory, name }, see public/js/pet.js
     skills: [],
-    sections: [],
+    sections: [], // { id, type, title, hidden, body | items }, see cv.js SECTION_TYPES
+    details: [], // extra personal details: [{ label, value }]
+    skillLevels: {}, // 1-5 per skill, for the bar / dot styles
+    cvManaged: false, // true once the CV editor owns the section list
     cvFile: null, // { name, path, type, uploadedAt }
     photo: null, // path of the CV photo (edited)
     photoOriginal: null, // path of the picture it was cropped from

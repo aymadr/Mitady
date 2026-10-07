@@ -68,7 +68,7 @@ app.get('/api/state', (req, res) => {
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'avatar', 'pet', 'photoCrop'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'details', 'skillLevels', 'cvManaged', 'avatar', 'pet', 'photoCrop'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
 
 app.put('/api/profile', route((req, res) => {
@@ -159,11 +159,15 @@ app.get('/api/profile/photo', route((req, res) => {
   res.sendFile(f);
 }));
 
+const PREVIEW_FIELDS = ['name', 'email', 'phone', 'location', 'links', 'summary', 'skills', 'sections', 'details', 'skillLevels', 'cvManaged', 'headline'];
+
 // Preview of the app template with the profile as it is, style included.
 app.post('/api/profile/cv-preview', route((req, res) => {
   const p = { ...store.db.profile, cvStyle: { ...store.db.profile.cvStyle, ...(req.body.cvStyle || {}) } };
+  // Unsaved edits sent by the editor, so the preview follows every keystroke.
+  for (const k of PREVIEW_FIELDS) if (req.body.profile && k in req.body.profile) p[k] = req.body.profile[k];
   if (req.body.photoData) p.photoData = req.body.photoData; // a picture being edited, not saved yet
-  res.type('html').send(cv.renderCvHtml(p, { headline: p.headline, summary: p.summary, skills: p.skills }));
+  res.type('html').send(cv.renderCvHtml(p, { headline: p.headline, summary: p.summary, skills: p.skills || [], preview: true }));
 }));
 
 // The user's own CV as a PDF (a Word file is converted), shown and attached as is.
@@ -177,7 +181,7 @@ app.get('/api/profile/cv/pdf', route(async (req, res) => {
 app.post('/api/demo/cv-preview', route((req, res) => {
   const p = store.db.profile;
   const style = { ...p.cvStyle, ...(req.body.cvStyle || {}) };
-  res.type('html').send(cv.renderCvHtml({ cvStyle: style, photo: p.photo, sections: [] }, { headline: req.body.headline || '', summary: req.body.summary || '', skills: [] }));
+  res.type('html').send(cv.renderCvHtml({ cvStyle: style, photo: p.photo, sections: [] }, { headline: req.body.headline || '', summary: req.body.summary || '', skills: [], preview: true }));
 }));
 
 app.get('/api/profile/cv', route((req, res) => {
@@ -300,7 +304,7 @@ app.post('/api/applications/:id/cv/preview', route((req, res) => {
   const { profile } = store.db;
   const { skills: offerSkills } = analyzeOffer(a, profile);
   const skills = cv.orderSkills(profile.skills, offerSkills, opts.skillsAdded);
-  res.type('html').send(cv.renderCvHtml(profile, { headline: opts.headline, summary: opts.summary, skills, skillsAdded: opts.skillsAdded }));
+  res.type('html').send(cv.renderCvHtml(profile, { headline: opts.headline, summary: opts.summary, skills, skillsAdded: opts.skillsAdded, preview: true }));
 }));
 
 app.post('/api/applications/:id/cv', route(async (req, res) => {

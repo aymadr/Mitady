@@ -1,7 +1,8 @@
 import { S, startSearch, refreshPage, upsertApp } from '../main.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, miniRing, relDate } from '../lib.js';
 import { startOnboarding } from './onboarding.js';
-import { tile } from '../brand.js';
+import { tile, marquee } from '../brand.js';
+import { petSvg, petOf } from '../pet.js';
 
 // Numbers count up from zero when the page opens.
 function countUp(root) {
@@ -46,7 +47,7 @@ function onboarding(view) {
         <div class="eyebrow">Pour démarrer</div>
         <h1 class="page-title">Trouve le bon poste,<br><span class="grad">plus vite.</span></h1>
         <p class="page-sub">Importe ton CV, dis ce que tu cherches. L'app collecte les offres, mesure ta correspondance et adapte ton CV à chacune.</p>
-        <p style="margin-top:20px"><button class="btn btn-secondary btn-sm" id="guide">Ouvrir le guide pas à pas</button></p>
+        <p style="margin-top:20px"><button class="btn btn-secondary btn-sm" id="guide">Découvrir ce que Mitady sait faire</button> <button class="btn btn-plain" id="setup">Refaire la configuration</button></p>
       </div></div>
       <div class="group steps">
         ${step(hasCv, 1, 'Importe ou écris ton CV', "Un PDF ou un Word, analysé automatiquement. Ou saisis ton parcours à la main : l'app le met en forme au format ATS.", html`<a class="btn btn-primary btn-sm" href="#/profil">Commencer</a>`)}
@@ -54,8 +55,25 @@ function onboarding(view) {
         ${step(hasOffers, 3, 'Lance une première recherche', 'HelloWork, LinkedIn, Indeed, Welcome to the Jungle et plus encore.', html`<button class="btn btn-secondary btn-sm" data-search>Chercher</button>`)}
       </div>`,
   );
-  view.querySelector('#guide').addEventListener('click', startOnboarding);
+  view.querySelector('#guide').addEventListener('click', () => startOnboarding({ tour: true }));
+  view.querySelector('#setup').addEventListener('click', () => startOnboarding());
   view.querySelector('[data-search]')?.addEventListener('click', startSearch);
+}
+
+// "3 candidatures cette semaine · série de 2 jours"
+function streakChip(apps) {
+  const days = new Set(apps.map((a) => a.appliedAt).filter(Boolean));
+  const iso = (d) => d.toISOString().slice(0, 10);
+  const week = apps.filter((a) => a.appliedAt && (Date.now() - new Date(a.appliedAt)) / 86400000 < 7).length;
+  let streak = 0;
+  const d = new Date();
+  if (!days.has(iso(d))) d.setDate(d.getDate() - 1);
+  while (days.has(iso(d))) {
+    streak += 1;
+    d.setDate(d.getDate() - 1);
+  }
+  if (!week) return '';
+  return html`<div class="streak">${tile('rocket', { size: 30, cls: 'inline' })}<span><b>${week} candidature${week > 1 ? 's' : ''}</b> cette semaine${streak > 1 ? html` · <b>série de ${streak} jours</b>` : ''}</span></div>`;
 }
 
 export function renderToday(view) {
@@ -100,14 +118,17 @@ export function renderToday(view) {
 
   mount(
     view,
-    html`<div class="page-head"><div>
+    html`<div class="page-head"><div class="greet"><span class="greet-pet">${petSvg(petOf(S.profile), { size: 104, mood: 'idle', label: petOf(S.profile).name })}</span><div>
         <div class="eyebrow">${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1 class="page-title">Bonjour${firstName ? html` <span class="grad">${firstName}</span>` : ''}.</h1>
         <p class="page-sub">${summary[0].toUpperCase() + summary.slice(1)}</p>
-        <p style="margin-top:22px"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></p>
-      </div></div>
+        ${streakChip(apps)}
+        <div class="cta-row"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></div>
+      </div></div></div>
 
-      <div class="stats">
+      ${marquee()}
+
+      <div class="stats" style="margin-top:34px">
         <div class="stat hero">${tile('inbox', { size: 44 })}<div class="stat-value" data-count="${todo.length}">0</div><div class="stat-label">À traiter</div></div>
         <div class="stat">${tile('send', { size: 44 })}<div class="stat-value" data-count="${sentEver.length}">0</div><div class="stat-label">Candidatures envoyées</div></div>
         <div class="stat">${tile('chat', { size: 44 })}<div class="stat-value" data-count="${interviews.length}">0</div><div class="stat-label">Entretiens en cours</div></div>

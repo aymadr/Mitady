@@ -1,14 +1,23 @@
 import { api, fail, toast } from './lib.js';
 import { renderToday } from './views/today.js';
 import { renderOffers } from './views/offers.js';
+import { renderBoard } from './views/board.js';
 import { renderProfile } from './views/profile.js';
 import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
 import { needsOnboarding, startOnboarding } from './views/onboarding.js';
 import { watch } from './decorate.js';
+import { openSearch, handleProgress, finishSearch, abortSearch, isSearching, isMinimized, progressInfo } from './views/searching.js';
+import { petHead, petOf } from './pet.js';
 
 // Shared client state, loaded once and kept in sync with server responses.
 export const S = { profile: null, settings: null, secrets: null, domains: [], applications: [] };
+
+// The companion in the header follows the profile.
+export function refreshNav() {
+  const el = document.getElementById('nav-avatar');
+  if (el && S.profile) el.innerHTML = petHead(petOf(S.profile), 30).toString();
+}
 
 export function upsertApp(app) {
   const i = S.applications.findIndex((a) => a.id === app.id);
@@ -19,24 +28,32 @@ export function upsertApp(app) {
 const routes = {
   '': renderToday,
   offres: renderOffers,
+  suivi: renderBoard,
   profil: renderProfile,
   reglages: renderSettings,
 };
 
 let currentPage = null;
+let booted = false;
 
 // Hash routes: #/offres, #/offres/<id>, #/profil, #/reglages
 export function route() {
   const [page = '', id, tab] = location.hash.replace(/^#\/?/, '').split('/');
   const view = document.getElementById('view');
   if (page !== currentPage || !id) {
+    const changed = page !== currentPage;
     currentPage = page;
-    (routes[page] || renderToday)(view);
-    document.querySelectorAll('.nav-links a').forEach((a) => {
-      const target = a.getAttribute('href').replace(/^#\/?/, '');
-      if (target === page) a.setAttribute('aria-current', 'page');
-      else a.removeAttribute('aria-current');
-    });
+    const draw = () => {
+      (routes[page] || renderToday)(view);
+      document.querySelectorAll('.nav-links a').forEach((a) => {
+        const target = a.getAttribute('href').replace(/^#\/?/, '');
+        if (target === page) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+    };
+    // Pages cross-fade (View Transitions) once the app is up; the first paint is immediate.
+    if (changed && !id && booted && document.startViewTransition && !matchMedia('(prefers-reduced-motion: reduce)').matches) document.startViewTransition(draw);
+    else draw();
   }
   if (page === 'offres' && id) openOffer(id, tab);
   else closeOffer();
@@ -57,7 +74,11 @@ export function go(hash) {
 
 let source = null;
 export function startSearch() {
-  if (source) return;
+  if (source) {
+    // A search is running: bring its screen back.
+    if (isSearching() && isMinimized()) document.querySelector('.srch')?.classList.remove('min'), document.body.classList.add('ob-open');
+    return;
+  }
   if (!S.profile.search.domain && !S.profile.search.keywords.length) {
     toast('Choisis d\'abord un domaine ou des mots-clés dans ton profil.');
     go('#/profil');
@@ -67,18 +88,26 @@ export function startSearch() {
   const log = document.getElementById('activity-log');
   const title = document.getElementById('activity-title');
   const btn = document.getElementById('search-btn');
-  box.hidden = false;
-  requestAnimationFrame(() => box.classList.add('open'));
   title.textContent = 'Recherche en cours';
   log.textContent = '';
   btn.disabled = true;
 
+  // The full-screen search scene; minimising it falls back to the small progress card.
+  openSearch({
+    onMinimize: () => {
+      box.hidden = false;
+      requestAnimationFrame(() => box.classList.add('open'));
+    },
+  });
+  const hideCard = () => {
+    box.classList.remove('open');
+    setTimeout(() => (box.hidden = true), 300);
+  };
   const finish = () => {
     source.close();
     source = null;
     btn.disabled = false;
-    box.classList.remove('open');
-    setTimeout(() => (box.hidden = true), 300);
+    hideCard();
   };
 
   source = new EventSource('/api/search');
@@ -88,16 +117,21 @@ export function startSearch() {
     log.append(line);
     while (log.children.length > 6) log.firstChild.remove();
   });
+  source.addEventListener('progress', (e) => {
+    handleProgress(JSON.parse(e.data));
+    title.textContent = `Recherche en cours · ${progressInfo().pct.toFixed(0)} %`;
+  });
   source.addEventListener('done', async (e) => {
     const { added, merged = 0 } = JSON.parse(e.data);
     finish();
     S.applications = await api('/applications');
-    toast((added ? `${added} nouvelle${added > 1 ? 's' : ''} offre${added > 1 ? 's' : ''}` : 'Aucune nouvelle offre pour le moment') + (merged ? ` · ${merged} doublon${merged > 1 ? 's' : ''} fusionné${merged > 1 ? 's' : ''}` : ''));
     refreshPage();
+    finishSearch({ added, merged, onSee: () => go('#/offres') });
   });
   source.addEventListener('error', (e) => {
     const msg = e.data ? JSON.parse(e.data).message : 'La recherche a été interrompue.';
     finish();
+    abortSearch();
     fail(new Error(msg));
   });
 }
@@ -112,7 +146,10 @@ document.addEventListener('keydown', (e) => {
   try {
     Object.assign(S, await api('/state'));
     watch(document.getElementById('view'));
+    refreshNav();
+    document.getElementById('guide-btn').addEventListener('click', () => startOnboarding({ tour: true }));
     route();
+    booted = true;
     if (needsOnboarding()) startOnboarding();
   } catch (e) {
     document.getElementById('view').innerHTML = `<div class="empty"><strong>Serveur injoignable</strong>Lance « npm start » puis recharge la page.</div>`;

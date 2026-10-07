@@ -1,6 +1,7 @@
 // Mitady — brand mark and the 3D icon set.
 // Icons are 24-grid stroke glyphs set on a glossy, extruded tile (see .i3d in styles.css).
 import { raw } from './lib.js';
+import { siteLogo } from './logos.js';
 
 export const NAME = 'Mitady';
 
@@ -83,3 +84,12 @@ export function art(names) {
 }
 
 export { PATH as GLYPHS };
+
+const SOURCES = ['HelloWork', 'LinkedIn', 'Indeed', 'Welcome to the Jungle', 'Jobs That Make Sense', 'France Travail', 'Jobijoba', 'JobTeaser', "L'Étudiant"];
+
+// Endless strip of the job boards Mitady reads.
+export function marquee() {
+  const pill = (n) => `<span class="mq">${siteLogo(n, 26)}${n}</span>`;
+  const row = SOURCES.map(pill).join('');
+  return raw(`<div class="marquee" aria-hidden="true"><div class="marquee-track">${row}${row}</div></div>`);
+}

@@ -1,13 +1,26 @@
 // Text helpers shared by the server.
 
-const TO_MASC = {
-  alternante: 'alternant', apprentie: 'apprenti', 'ingénieure': 'ingénieur', collaboratrice: 'collaborateur',
-  directrice: 'directeur', animatrice: 'animateur', administratrice: 'administrateur', 'chargée': 'chargé',
-  analyste: 'analyste', consultante: 'consultant', 'développeuse': 'développeur', gestionnaire: 'gestionnaire',
-  technicienne: 'technicien', assistante: 'assistant', responsable: 'responsable', auditrice: 'auditeur',
-  commerciale: 'commercial', juriste: 'juriste', stagiaire: 'stagiaire', contrôleuse: 'contrôleur',
-};
-const TO_FEM = Object.fromEntries(Object.entries(TO_MASC).map(([f, m]) => [m, f]));
+// Masculine / feminine pairs of job-title words. Invariable words (analyste, responsable,
+// gestionnaire, stagiaire, chef de projet…) need no entry.
+const PAIRS = [
+  ['alternant', 'alternante'], ['apprenti', 'apprentie'], ['ingénieur', 'ingénieure'], ['collaborateur', 'collaboratrice'],
+  ['directeur', 'directrice'], ['animateur', 'animatrice'], ['administrateur', 'administratrice'], ['chargé', 'chargée'],
+  ['consultant', 'consultante'], ['développeur', 'développeuse'], ['technicien', 'technicienne'], ['assistant', 'assistante'],
+  ['auditeur', 'auditrice'], ['contrôleur', 'contrôleuse'], ['conseiller', 'conseillère'], ['coordinateur', 'coordinatrice'],
+  ['formateur', 'formatrice'], ['recruteur', 'recruteuse'], ['chercheur', 'chercheuse'], ['rédacteur', 'rédactrice'],
+  ['vendeur', 'vendeuse'], ['commercial', 'commerciale'], ['expert', 'experte'], ['agent', 'agente'], ['acheteur', 'acheteuse'],
+  ['programmeur', 'programmeuse'], ['opérateur', 'opératrice'], ['superviseur', 'superviseuse'], ['intégrateur', 'intégratrice'],
+  ['employé', 'employée'], ['ambassadeur', 'ambassadrice'], ['concepteur', 'conceptrice'], ['instructeur', 'instructrice'],
+  ['étudiant', 'étudiante'], ['diplômé', 'diplômée'], ['délégué', 'déléguée'], ['préparateur', 'préparatrice'],
+  ['producteur', 'productrice'], ['président', 'présidente'], ['adjoint', 'adjointe'], ['gérant', 'gérante'],
+  ['traducteur', 'traductrice'], ['créateur', 'créatrice'], ['éditeur', 'éditrice'], ['monteur', 'monteuse'],
+  ['serveur', 'serveuse'], ['cuisinier', 'cuisinière'], ['infirmier', 'infirmière'], ['pâtissier', 'pâtissière'],
+  ['boulanger', 'boulangère'], ['ouvrier', 'ouvrière'], ['électricien', 'électricienne'], ['mécanicien', 'mécanicienne'],
+  ['trésorier', 'trésorière'], ['analyste-programmeur', 'analyste-programmeuse'], ['administratif', 'administrative'],
+  ['marketeur', 'marketeuse'], ['pilote', 'pilote'],
+];
+const TO_MASC = Object.fromEntries(PAIRS.map(([m, f]) => [f, m]));
+const TO_FEM = Object.fromEntries(PAIRS.map(([m, f]) => [m, f]));
 
 // Cleans an offer title for use as a CV headline: drops "(H/F)" markers,
 // inclusive-writing suffixes, and agrees the title with the chosen gender.

@@ -38,6 +38,7 @@ function defaultProfile() {
     links: [],
     summary: '',
     titleGender: 'neutre',
+    pet: null, // the pixel companion: { animal, color, accessory, name }, see public/js/pet.js
     skills: [],
     sections: [],
     cvFile: null, // { name, path, type, uploadedAt }

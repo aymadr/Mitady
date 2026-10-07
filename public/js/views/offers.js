@@ -1,6 +1,7 @@
 import { S, upsertApp, go } from '../main.js';
 import { html, mount, api, busy, fail, toast, icons, avatar, miniRing, relDate, norm } from '../lib.js';
 import { openModal, closeModal } from './modal.js';
+import { siteLogo } from '../logos.js';
 
 const FILTERS = [
   { id: 'todo', label: 'À traiter', test: (a) => a.status === 'todo' },
@@ -38,7 +39,7 @@ function rows(list) {
       ${avatar(a.company)}
       <div class="item-main">
         <div class="item-title">${a.title}</div>
-        <div class="item-sub">${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
+        <div class="item-sub">${siteLogo(a.source, 20)}${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
       </div>
       <div class="item-side">
         ${statusSide(a)}

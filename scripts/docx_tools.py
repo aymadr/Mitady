@@ -206,6 +206,11 @@ if __name__ == "__main__":
             print(json.dumps(extract(arg), ensure_ascii=False))
         elif cmd == "photo":
             print(json.dumps(photo(arg, sys.argv[3]), ensure_ascii=False))
+        elif cmd == "topdf":
+            pdf = to_pdf(arg, sys.argv[3])
+            if not pdf:
+                raise RuntimeError("Conversion PDF indisponible : installe Microsoft Word ou LibreOffice.")
+            print(json.dumps({"output": pdf}))
         elif cmd == "tailor":
             with open(arg, encoding="utf-8") as f:
                 print(json.dumps(tailor(json.load(f)), ensure_ascii=False))

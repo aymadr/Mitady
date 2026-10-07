@@ -10,9 +10,12 @@ const store = require('./store');
 
 const PY_SCRIPT = path.resolve(__dirname, '..', '..', 'scripts', 'docx_tools.py');
 
+// Windows installs "python"; Linux and macOS usually only "python3".
+const PYTHON = process.platform === 'win32' ? 'python' : 'python3';
+
 function runPython(args, timeout = 180000) {
   return new Promise((resolve, reject) => {
-    execFile('python', [PY_SCRIPT, ...args], { timeout, windowsHide: true, maxBuffer: 20e6 }, (err, stdout) => {
+    execFile(PYTHON, [PY_SCRIPT, ...args], { timeout, windowsHide: true, maxBuffer: 20e6 }, (err, stdout) => {
       let out;
       try {
         out = JSON.parse(String(stdout).trim().split('\n').pop());
@@ -254,36 +257,57 @@ function renderSkills(section, added) {
 const isSkills = (s) => /^comp[ée]tences?$/i.test(s.title.trim());
 const MAX_CV_SKILLS = 30;
 
-// Every option keeps the ATS rules: one column, real text, no icons or tables.
+// Templates. "ats" ones keep the rules applicant tracking systems read reliably:
+// one column, real text, no icons or tables. The others are more designed (header
+// band, side column); their text is still real text, but a parser may mix up the columns.
 const CV_STYLES = {
   layouts: {
-    classique: 'Classique',
-    moderne: 'Moderne',
-    compact: 'Compact',
+    classique: { label: 'Classique', ats: true },
+    moderne: { label: 'Moderne', ats: true },
+    compact: { label: 'Compact', ats: true },
+    elegant: { label: 'Élégant', ats: true },
+    minimal: { label: 'Minimal', ats: true },
+    bandeau: { label: 'Bandeau', ats: false },
+    lateral: { label: 'Colonne latérale', ats: false },
   },
   fonts: {
     calibri: { label: 'Calibri', stack: 'Calibri, Carlito, "Segoe UI", Arial, sans-serif' },
     arial: { label: 'Arial', stack: 'Arial, "Liberation Sans", Helvetica, sans-serif' },
     georgia: { label: 'Georgia', stack: 'Georgia, "Times New Roman", serif' },
+    garamond: { label: 'Garamond', stack: 'Garamond, "EB Garamond", "Palatino Linotype", Georgia, serif' },
+    trebuchet: { label: 'Trebuchet', stack: '"Trebuchet MS", "Fira Sans", Verdana, sans-serif' },
   },
   accents: {
     bleu: { label: 'Bleu', color: '#1f3a93' },
-    noir: { label: 'Noir', color: '#111111' },
+    azur: { label: 'Azur', color: '#1c7ed6' },
+    marine: { label: 'Marine', color: '#14274e' },
+    turquoise: { label: 'Turquoise', color: '#0f6b73' },
     vert: { label: 'Vert', color: '#1d5e3a' },
+    olive: { label: 'Olive', color: '#5c6b2f' },
+    jaune: { label: 'Moutarde', color: '#a87b0a' },
+    orange: { label: 'Terracotta', color: '#b24a1d' },
+    rouge: { label: 'Rouge', color: '#b3261e' },
     bordeaux: { label: 'Bordeaux', color: '#7a1f3d' },
+    rose: { label: 'Rose', color: '#b83280' },
+    violet: { label: 'Violet', color: '#5b2a86' },
+    marron: { label: 'Chocolat', color: '#5a3a29' },
     gris: { label: 'Ardoise', color: '#3c4a5c' },
+    noir: { label: 'Noir', color: '#111111' },
   },
+  photoShapes: { carre: 'Carrée', rond: 'Ronde' },
 };
 
-const DEFAULT_STYLE = { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true };
+const DEFAULT_STYLE = { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre' };
 
 function resolveStyle(style = {}) {
   const s = { ...DEFAULT_STYLE, ...style };
   return {
     layout: CV_STYLES.layouts[s.layout] ? s.layout : 'classique',
     font: (CV_STYLES.fonts[s.font] || CV_STYLES.fonts.calibri).stack,
-    accent: (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
+    // A preset name, or any #rrggbb picked by the user.
+    accent: /^#[0-9a-f]{6}$/i.test(s.accent) ? s.accent : (CV_STYLES.accents[s.accent] || CV_STYLES.accents.bleu).color,
     photo: s.photo !== false,
+    round: s.photoShape === 'rond',
   };
 }
 
@@ -304,9 +328,80 @@ const LAYOUT_CSS = {
   h2 { font-size: 9.8pt; margin-bottom: 3pt; }
   h3 { font-size: 9.2pt; margin-top: 3pt; }
   section { margin-top: 4pt; }`,
+  elegant: `
+  header { text-align: center; padding-bottom: 6pt; border-bottom: 1.2pt solid var(--accent); }
+  .photo { float: none; display: block; margin: 0 auto 5pt; }
+  h1 { font-size: 22pt; font-weight: 400; letter-spacing: 0.14em; }
+  .headline { color: #333; font-weight: 400; font-style: italic; font-size: 12pt; }
+  .contact span + span::before { content: "·"; }
+  h2 { color: var(--accent); border: 0; text-align: center; letter-spacing: 0.18em; font-size: 10pt; margin-top: 4pt; }
+  h2::before, h2::after { content: ""; display: inline-block; width: 22pt; border-top: 0.6pt solid var(--accent); vertical-align: middle; margin: 0 8pt; }
+  section { margin-top: 8pt; }`,
+  minimal: `
+  @page { margin: 14mm 16mm; }
+  body { font-size: 9pt; line-height: 1.32; color: #1a1a1a; }
+  h1 { font-size: 24pt; text-transform: none; font-weight: 300; }
+  .headline { font-weight: 400; color: var(--accent); font-size: 11.5pt; }
+  h2 { border: 0; color: var(--accent); font-size: 8.6pt; letter-spacing: 0.16em; margin-bottom: 3pt; }
+  h3 { font-size: 9.4pt; }
+  section { margin-top: 10pt; }`,
+  bandeau: `
+  @page { margin: 10mm 0; }
+  @page :first { margin-top: 0; }
+  header { background: var(--accent); color: #fff; padding: 11mm 14mm 7mm; display: flex; align-items: center; gap: 8mm; flex-direction: row-reverse; justify-content: space-between; }
+  header .id { flex: 1; }
+  .photo { float: none; margin: 0; border: 1.4pt solid #fff; }
+  h1 { font-size: 23pt; }
+  .headline { color: #fff; font-weight: 400; opacity: 0.95; }
+  .contact { color: #fff; }
+  main { padding: 0 14mm; }
+  h2 { color: var(--accent); border-bottom: 0.8pt solid var(--accent); }
+  section { margin-top: 7pt; }`,
+  lateral: `
+  @page { margin: 8mm 0; }
+  @page :first { margin-top: 0; }
+  /* Fixed elements repeat on every printed page: the accent column is one of them. */
+  .rail { position: fixed; left: 0; top: 0; bottom: 0; width: 66mm; background: var(--accent); z-index: -1; }
+  aside { position: absolute; top: 0; left: 0; width: 66mm; color: #fff; padding: 12mm 7mm 8mm 8mm; }
+  main { margin-left: 66mm; padding: 4mm 12mm 0 9mm; }
+  aside .photo { float: none; display: block; width: 36mm; height: 44mm; margin: 0 auto 7mm; border: 1.4pt solid #fff; }
+  aside .photo.round { width: 40mm; height: 40mm; }
+  aside h2 { color: #fff; border-bottom: 0.6pt solid rgba(255,255,255,.6); font-size: 9.6pt; letter-spacing: 0.08em; }
+  aside .contact { font-size: 8.4pt; margin: 0 0 4pt; word-break: break-word; }
+  aside .contact span { display: block; margin-bottom: 2pt; }
+  aside .contact span + span::before { content: none; }
+  aside li, aside p { font-size: 8.6pt; }
+  main h1 { font-size: 22pt; margin-top: 8mm; }
+  main h2 { color: var(--accent); border-bottom: 0.8pt solid var(--accent); }`,
 };
 
-function renderCvHtml(profile, { headline, summary, skills, skillsAdded = [] }) {
+// Sample content so every template can be previewed before the profile is filled in.
+const SAMPLE = {
+  name: 'Camille Martin',
+  email: 'camille.martin@email.fr',
+  phone: '06 12 34 56 78',
+  location: 'Paris',
+  links: ['linkedin.com/in/camille-martin'],
+  headline: 'Étudiante en Master',
+  summary: "Étudiante rigoureuse et curieuse, je cherche une première expérience où mettre en pratique mes compétences au sein d'une équipe.",
+  skills: ['Excel', 'Python', 'SQL', 'Anglais'],
+  sections: [
+    { title: 'Expérience', body: 'Assistante projet, Société Exemple - Paris · 06/2025 - 09/2025\n- Suivi de projet et reporting hebdomadaire\n- Coordination de 4 équipes' },
+    { title: 'Formation', body: 'Master 1 Management, Université Exemple · 2025 - 2026\n- Spécialisation en analyse de données' },
+    { title: 'Compétences', body: 'Outils : Excel, Python, SQL\nLangues : Français, Anglais' },
+  ],
+};
+
+const SIDE_RE = /^(comp[ée]tences?|langues?|certifications?|centres? d.int[ée]r[êe]ts?|loisirs|outils)/i;
+
+function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [] }) {
+  const empty = !profileIn.name && !(profileIn.sections || []).length;
+  const profile = empty ? { ...profileIn, ...SAMPLE, photo: profileIn.photo, cvStyle: profileIn.cvStyle } : profileIn;
+  if (empty) {
+    headline = headline || SAMPLE.headline;
+    summary = summary || SAMPLE.summary;
+    skills = skills?.length ? skills : SAMPLE.skills;
+  }
   const style = resolveStyle(profile.cvStyle);
   const contact = [
     profile.email && `Email : ${profile.email}`,
@@ -332,14 +427,34 @@ function renderCvHtml(profile, { headline, summary, skills, skillsAdded = [] }) 
     blocks.splice(at === -1 ? blocks.length : at, 0, { title: 'Compétences', html: skillsHtml });
   }
 
+  const photoTag = photo ? `<img class="photo${style.round ? ' round' : ''}" src="${photo}" alt="">` : '';
+  const idHtml = `<h1>${escapeHtml(profile.name || 'Ton nom')}</h1>${headline ? `<div class="headline">${escapeHtml(headline)}</div>` : ''}`;
+  const contactHtml = `<div class="contact">${contact.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>${links.length ? `<div class="contact">${links.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}`;
+  const section = (b) => `<section><h2>${escapeHtml(b.title)}</h2>${b.html}</section>`;
+  const summaryHtml = summary ? `<section><h2>Profil</h2><p class="summary">${escapeHtml(summary)}</p></section>` : '';
+
+  let body;
+  if (style.layout === 'lateral') {
+    const side = blocks.filter((b) => SIDE_RE.test(b.title));
+    const main = blocks.filter((b) => !SIDE_RE.test(b.title));
+    body = `<div class="rail"></div><aside>${photoTag}<section><h2>Contact</h2>${contactHtml}</section>${side.map(section).join('')}</aside>
+      <main>${idHtml}${summaryHtml}${main.map(section).join('')}</main>`;
+  } else if (style.layout === 'bandeau') {
+    body = `<header>${photoTag}<div class="id">${idHtml}${contactHtml}</div></header><main>${summaryHtml}${blocks.map(section).join('')}</main>`;
+  } else {
+    body = `<header>${photoTag}${idHtml}${contactHtml}</header>${summaryHtml}${blocks.map(section).join('')}`;
+  }
+
   return `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <style>
   :root { --accent: ${style.accent}; }
   @page { size: A4; margin: 10mm 12mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body { font-family: ${style.font}; color: #000; font-size: 9.2pt; line-height: 1.24; }
   header { overflow: hidden; }
   .photo { float: right; width: 21mm; height: 25mm; object-fit: cover; margin-left: 6mm; }
+  .photo.round { width: 24mm; height: 24mm; border-radius: 50%; }
   h1 { font-size: 19pt; font-weight: 700; text-transform: uppercase; line-height: 1.1; }
   .headline { font-size: 12pt; font-weight: 700; color: var(--accent); margin-top: 2pt; }
   .contact { font-size: 8.6pt; margin-top: 4pt; }
@@ -357,15 +472,7 @@ function renderCvHtml(profile, { headline, summary, skills, skillsAdded = [] }) 
   .summary { text-align: justify; }
   ${LAYOUT_CSS[style.layout]}
 </style></head><body>
-  <header>
-    ${photo ? `<img class="photo" src="${photo}" alt="">` : ''}
-    <h1>${escapeHtml(profile.name || 'Ton nom')}</h1>
-    ${headline ? `<div class="headline">${escapeHtml(headline)}</div>` : ''}
-    <div class="contact">${contact.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>
-    ${links.length ? `<div class="contact">${links.map((c) => `<span>${escapeHtml(c)}</span>`).join('')}</div>` : ''}
-  </header>
-  ${summary ? `<section><h2>Profil</h2><p class="summary">${escapeHtml(summary)}</p></section>` : ''}
-  ${blocks.map((b) => `<section><h2>${escapeHtml(b.title)}</h2>${b.html}</section>`).join('')}
+  ${body}
 </body></html>`;
 }
 
@@ -402,6 +509,13 @@ function orderSkills(profileSkills, offerSkills, added) {
 async function generate(app, profile, { headline, summary, skillsAdded = [], template = 'builtin' }, offerSkills = []) {
   const base = slug(`CV_${profile.name || 'candidat'}_${app.company}_${app.title}`, 90);
 
+  if (template === 'original') {
+    if (!profile.cvFile) throw new Error('Importe d\'abord ton CV.');
+    const out = path.join(store.CV_DIR, base + '.pdf');
+    fs.copyFileSync(await originalPdf(profile), out);
+    return { file: out, warning: '' };
+  }
+
   if (template === 'docx') {
     if (!profile.cvFile || !profile.cvFile.path.endsWith('.docx')) throw new Error('Importe d\'abord ton CV au format .docx.');
     const job = {
@@ -418,6 +532,11 @@ async function generate(app, profile, { headline, summary, skillsAdded = [], tem
     fs.writeFileSync(jobFile, JSON.stringify(job), 'utf8');
     try {
       const res = await runPython(['tailor', jobFile]);
+      // A CV is always sent as a PDF: without Word or LibreOffice the .docx cannot be converted.
+      if (!String(res.output).endsWith('.pdf')) {
+        fs.rmSync(res.output, { force: true });
+        throw new Error('Impossible de produire un PDF depuis ton fichier Word (Microsoft Word ou LibreOffice requis). Choisis « Modèle de l\'app », qui génère le PDF sans rien installer.');
+      }
       return { file: res.output, warning: res.warning || (res.titleReplaced ? '' : 'Titre introuvable dans le fichier Word : vérifie le « texte du titre » dans ton profil.') };
     } finally {
       fs.rmSync(jobFile, { force: true });
@@ -428,6 +547,16 @@ async function generate(app, profile, { headline, summary, skillsAdded = [], tem
   const skills = orderSkills(profile.skills || [], offerSkills, skillsAdded);
   await htmlToPdf(renderCvHtml(profile, { headline, summary, skills, skillsAdded }), out);
   return { file: out, warning: '' };
+}
+
+// The user's own CV, unchanged, as a PDF (Word files are converted once and cached).
+async function originalPdf(profile) {
+  const f = profile.cvFile;
+  if (!f || !fs.existsSync(f.path)) throw new Error('Importe d\'abord ton CV.');
+  if (f.path.endsWith('.pdf')) return f.path;
+  const out = f.path.replace(/\.docx$/i, '.pdf');
+  if (!fs.existsSync(out) || fs.statSync(out).mtimeMs < fs.statSync(f.path).mtimeMs) await runPython(['topdf', f.path, out]);
+  return out;
 }
 
 // The CV photo, taken from a Word file (none for PDFs).
@@ -447,4 +576,4 @@ function photoDataUri(file) {
   return `data:${type};base64,${fs.readFileSync(file).toString('base64')}`;
 }
 
-module.exports = { CV_STYLES, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };
+module.exports = { originalPdf, CV_STYLES, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };

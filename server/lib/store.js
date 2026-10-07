@@ -42,13 +42,15 @@ function defaultProfile() {
     sections: [],
     cvFile: null, // { name, path, type, uploadedAt }
     photo: null, // path of the CV photo
-    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true },
+    cvMode: 'own', // 'own' = keep my CV file, 'app' = use the app's templates
+    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre' },
     docx: { titleText: '', skillsAnchor: '' },
     search: {
       domain: '',
       keywords: [],
       location: '',
-      contract: 'Alternance',
+      contracts: ['Alternance'],
+      sources: null, // null = the sources enabled by default
       excluded: [...DEFAULT_EXCLUDED],
     },
   };
@@ -110,6 +112,10 @@ function sourceFromLink(link = '') {
   if (link.includes('makesense')) return 'Jobs That Make Sense';
   if (link.includes('linkedin')) return 'LinkedIn';
   if (link.includes('indeed')) return 'Indeed';
+  if (link.includes('francetravail') || link.includes('pole-emploi')) return 'France Travail';
+  if (link.includes('jobijoba')) return 'Jobijoba';
+  if (link.includes('jobteaser')) return 'JobTeaser';
+  if (link.includes('letudiant')) return "L'Étudiant";
   try {
     return new URL(link).hostname.replace(/^www\./, '');
   } catch {
@@ -136,6 +142,10 @@ if (!db) {
 for (const a of db.applications) {
   if (a.contact?.name === 'Service Recrutement') a.contact = { name: '', email: /^recrutement@/.test(a.contact.email) ? '' : a.contact.email };
 }
+// The search used to take a single contract; it now takes several (alternance + stage…).
+const oldSearch = (db.profile || {}).search || {};
+if (oldSearch.contract && !oldSearch.contracts) oldSearch.contracts = [oldSearch.contract];
+delete oldSearch.contract;
 db.profile = {
   ...defaultProfile(),
   ...db.profile,

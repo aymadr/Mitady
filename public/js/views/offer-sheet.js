@@ -63,7 +63,7 @@ function render() {
         </div>
         <div class="sheet-meta">
           ${a.location ? html`<span>${a.location}</span>` : ''}
-          <span>${a.source}</span>
+          <span>${a.source}${a.contract ? ` · ${a.contract}` : ''}</span>
           <span>Ajoutée ${relDate(a.addedAt)}</span>
           ${a.link ? html`<a href="${a.link}" target="_blank" rel="noopener">Voir l'annonce ${icons.external}</a>` : ''}
         </div>
@@ -221,19 +221,27 @@ function bindAi(body, a) {
 
 // ---------- CV ----------
 
+// Same rule as the server: the user's own CV unless they chose the app's templates.
+function defaultTemplate() {
+  const f = S.profile.cvFile;
+  if (S.profile.cvMode === 'app' || !f) return 'builtin';
+  return f.type === 'docx' ? 'docx' : 'original';
+}
+
 function cvDraft(a) {
   return {
     headline: a.cv?.headline ?? a.ai?.headline ?? a.suggestedHeadline,
     summary: a.cv?.summary ?? a.ai?.summary ?? S.profile.summary,
     skillsAdded: a.cv?.skillsAdded ?? [],
     // The template sticks to an offer only when picked by hand; otherwise the Word file wins.
-    template: a.cv?.templateChosen ? a.cv.template : S.profile.cvFile?.type === 'docx' ? 'docx' : 'builtin',
+    template: a.cv?.templateChosen ? a.cv.template : defaultTemplate(),
     templateChosen: Boolean(a.cv?.templateChosen),
   };
 }
 
 function renderCv(body, a) {
   const d = cvDraft(a);
+  const hasFile = Boolean(S.profile.cvFile);
   const hasDocx = S.profile.cvFile?.type === 'docx';
   const candidates = [...new Set([...a.missing, ...(a.ai?.skillsToAdd || [])])].filter(
     (s) => !S.profile.skills.some((p) => norm(p) === norm(s)),
@@ -247,17 +255,20 @@ function renderCv(body, a) {
         ? html`<div class="callout blue">Complète d'abord ton <a href="#/profil">profil</a> (nom, parcours, compétences) : c'est la base de chaque CV.</div>`
         : ''}
       <section class="card">
-        ${hasDocx
-          ? html`<div class="field"><span class="label">Modèle</span>
+        ${hasFile
+          ? html`<div class="field"><span class="label">CV à envoyer</span>
               <div class="segmented" id="template">
-                <button aria-pressed="${d.template === 'docx'}" data-v="docx">Mon CV Word</button>
+                <button aria-pressed="${d.template === 'original'}" data-v="original">Mon CV tel quel</button>
+                ${hasDocx ? html`<button aria-pressed="${d.template === 'docx'}" data-v="docx">Mon Word adapté</button>` : ''}
                 <button aria-pressed="${d.template === 'builtin'}" data-v="builtin">Modèle de l'app</button>
               </div>
-              <p class="hint">${d.template === 'docx'
-                ? "Ton fichier Word à l'identique : seuls le titre, le paragraphe de profil et les compétences ajoutées changent."
-                : "Format ATS, avec la mise en page choisie dans ton profil."}</p>
+              <p class="hint">${{
+                original: "Ton fichier, sans aucun changement (converti en PDF si c'est un Word). Le titre et le résumé ci-dessous ne sont pas utilisés.",
+                docx: "Ton fichier Word, mise en page conservée : seuls le titre, le paragraphe de profil et les compétences ajoutées changent. Livré en PDF.",
+                builtin: "Le CV est reconstruit avec le modèle et la photo choisis dans ton profil. Livré en PDF.",
+              }[d.template]}</p>
             </div>`
-          : ''}
+          : html`<p class="hint" style="margin-bottom:12px">CV généré par l'app (PDF). Importe ton propre CV dans ton profil pour pouvoir aussi l'envoyer tel quel.</p>`}
         <label class="field"><span class="label">Titre du CV</span><input class="input" id="headline" value="${d.headline}"></label>
         <label class="field"><span class="label">Résumé de profil</span><textarea class="textarea" id="summary" rows="4" placeholder="2 à 3 phrases qui répondent à l'offre.">${d.summary}</textarea></label>
         <div class="field">
@@ -284,7 +295,7 @@ function renderCv(body, a) {
         ? html`<section class="preview"><div class="preview-page"><iframe id="preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></section>`
         : generated
           ? html`<section class="preview"><iframe class="pdf-frame" title="CV généré" src="/api/applications/${a.id}/cv?v=${a.cv.generatedAt}#toolbar=0&view=FitH"></iframe></section>`
-          : html`<p class="small muted" style="padding:0 4px">L'aperçu de ton CV Word s'affiche ici après la génération.</p>`}
+          : html`<p class="small muted" style="padding:0 4px">L'aperçu du PDF s'affiche ici après la génération.</p>`}
     </div>`,
   );
 

@@ -25,7 +25,10 @@ function update(patch) {
   queued = { ...queued, ...patch };
   if (saveState) saveState.textContent = 'Enregistrement…';
   flush();
-  if (patch.cvStyle) refreshStylePreview();
+  if (patch.cvStyle) {
+    refreshStylePreview();
+    refreshThumbs();
+  }
 }
 
 // Merges parsed CV data into the profile without overwriting what the user typed.
@@ -152,7 +155,12 @@ export function renderProfile(view) {
             <label class="field"><span class="label">Lieu</span><input class="input" id="where" value="${p.search.location}" placeholder="Ex. Île-de-France, Lyon"></label>
           </div>
           <div class="field" style="margin-top:16px"><span class="label">Contrat</span>
-            <div class="segmented" id="contract">${CONTRACTS.map((c) => html`<button data-v="${c}" aria-pressed="${p.search.contract === c}">${c}</button>`)}</div>
+            <div class="chips" id="contracts">${CONTRACTS.map((c) => html`<button class="chip ${p.search.contracts.includes(c) ? 'on' : 'suggest'}" data-v="${c}" aria-pressed="${p.search.contracts.includes(c)}">${c}</button>`)}</div>
+            <p class="hint">Coche plusieurs types pour chercher en même temps, par exemple alternance et stage.</p>
+          </div>
+          <div class="field"><span class="label">Sites de recherche</span>
+            <div class="chips" id="sources">${S.sources.map((src) => html`<button class="chip ${activeSources(p).includes(src.id) ? 'on' : 'suggest'}" data-v="${src.id}" aria-pressed="${activeSources(p).includes(src.id)}">${src.label}</button>`)}</div>
+            <p class="hint">Plus tu actives de sites, plus la recherche est longue. Une même offre publiée sur plusieurs sites n'apparaît qu'une fois.</p>
           </div>
           <div class="field"><span class="label">Mots-clés de recherche</span><div id="keywords"></div>
             <p class="hint">${domain ? `Vide = mots-clés par défaut : ${domain.keywords.join(', ')}.` : 'Un intitulé ou un métier par mot-clé.'}</p></div>
@@ -204,7 +212,8 @@ export function renderProfile(view) {
     renderProfile(view);
   });
   view.querySelector('#where').addEventListener('input', (e) => search({ location: e.target.value }));
-  segmented(view.querySelector('#contract'), (v) => search({ contract: v }));
+  toggleGroup(view.querySelector('#contracts'), () => search({ contracts: [...view.querySelectorAll('#contracts [aria-pressed="true"]')].map((b) => b.dataset.v) }), 1);
+  toggleGroup(view.querySelector('#sources'), () => search({ sources: [...view.querySelectorAll('#sources [aria-pressed="true"]')].map((b) => b.dataset.v) }), 1);
   chipInput(view.querySelector('#keywords'), [...p.search.keywords], (keywords) => search({ keywords }), { placeholder: 'Ajouter un mot-clé' });
   chipInput(view.querySelector('#excluded'), [...p.search.excluded], (excluded) => search({ excluded }), { placeholder: 'Ajouter une entreprise' });
 
@@ -212,6 +221,22 @@ export function renderProfile(view) {
   view.querySelector('#docx-anchor')?.addEventListener('input', (e) => update({ docx: { ...S.profile.docx, skillsAnchor: e.target.value } }));
 
   if (location.hash.endsWith('/recherche')) view.querySelector('#recherche').scrollIntoView({ block: 'start' });
+}
+
+const activeSources = (p) => (Array.isArray(p.search.sources) ? p.search.sources : S.sources.filter((x) => x.on).map((x) => x.id));
+
+// Multi-select chips; `min` keeps at least that many selected.
+function toggleGroup(group, onChange, min = 0) {
+  group.querySelectorAll('[data-v]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      if (!on && group.querySelectorAll('[aria-pressed="true"]').length <= min) return;
+      b.setAttribute('aria-pressed', on);
+      b.classList.toggle('on', on);
+      b.classList.toggle('suggest', !on);
+      onChange();
+    }),
+  );
 }
 
 function segmented(group, onPick) {
@@ -310,17 +335,31 @@ function cvStyleSection(p) {
   const cur = p.cvStyle;
   const seg = (group, entries, value) =>
     html`<div class="segmented" data-style="${group}">${entries.map(([k, label]) => html`<button data-v="${k}" aria-pressed="${value === k}">${label}</button>`)}</div>`;
+  const hasFile = Boolean(p.cvFile);
+  const own = p.cvFile?.type === 'docx' ? 'ton fichier Word, adapté à chaque offre' : 'ton PDF tel quel';
   return html`<section class="section">
-    <div class="section-head"><h2 class="section-title">Mise en page du CV</h2><span class="section-note">Format ATS : une colonne, texte réel</span></div>
+    <div class="section-head"><h2 class="section-title">Ton CV</h2><span class="section-note">Toujours envoyé en PDF</span></div>
     <div class="card cv-style">
       <div class="stack">
-        ${p.cvFile?.type === 'docx'
-          ? html`<div class="callout">Tes CV adaptés partent de ton fichier Word. Cette mise en page sert quand tu choisis « Modèle de l'app » sur une offre.</div>`
-          : ''}
-        <div class="field"><span class="label">Modèle</span>${seg('layout', Object.entries(st.layouts), cur.layout)}</div>
+        <div class="field"><span class="label">Quel CV utiliser ?</span>
+          <div class="segmented" id="cv-mode">
+            <button data-v="own" aria-pressed="${p.cvMode !== 'app' && hasFile}" ${hasFile ? '' : raw('disabled')}>Garder mon CV</button>
+            <button data-v="app" aria-pressed="${p.cvMode === 'app' || !hasFile}">Modèle de l'app (ATS)</button>
+          </div>
+          <p class="hint">${hasFile
+            ? html`${p.cvMode === 'app' ? 'Ton parcours est mis en page avec le modèle choisi ci-dessous.' : `Tes candidatures partent avec ${own}.`} Tu peux changer pour chaque offre.`
+            : "Importe ton CV plus haut pour pouvoir le garder tel quel. Sans fichier, l'app construit ton CV à partir de ton parcours."}</p>
+        </div>
+        <div class="field"><span class="label">Modèle</span>
+          <div class="templates" id="layouts">${Object.entries(st.layouts).map(([k, l]) => html`<button class="tpl" data-v="${k}" aria-pressed="${cur.layout === k}">
+            <span class="tpl-thumb"><iframe tabindex="-1" data-layout="${k}" title="${l.label}" sandbox="allow-same-origin"></iframe></span>
+            <span class="tpl-name">${l.label}</span><span class="tpl-tag ${l.ats ? 'ats' : ''}">${l.ats ? 'ATS' : 'Design'}</span></button>`)}</div>
+          <p class="hint">ATS : une colonne, texte simple, lu sans erreur par les logiciels de tri des candidatures. Design : plus visuel, à privilégier pour un envoi direct à une personne.</p>
+        </div>
         <div class="field"><span class="label">Police</span>${seg('font', Object.entries(st.fonts).map(([k, v]) => [k, v.label]), cur.font)}</div>
         <div class="field"><span class="label">Couleur</span>
-          <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}</div>
+          <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}
+            <label class="swatch custom" title="Couleur personnalisée" style="--c:${/^#/.test(cur.accent) ? cur.accent : '#ffffff'}" aria-pressed="${/^#/.test(cur.accent)}"><input type="color" id="accent-custom" value="${/^#/.test(cur.accent) ? cur.accent : '#1f3a93'}"></label></div>
         </div>
         <div class="field"><span class="label">Photo</span>
           <div class="row wrap">
@@ -331,12 +370,22 @@ function cvStyleSection(p) {
               : html`<button class="btn btn-secondary btn-sm" id="photo-change">Ajouter une photo</button>`}
             <input type="file" id="photo-file" accept="image/png,image/jpeg" hidden>
           </div>
+          ${p.photo ? html`<div style="margin-top:10px">${seg('photoShape', Object.entries(st.photoShapes), cur.photoShape)}</div>` : html`<p class="hint">JPG ou PNG. Elle apparaît sur le CV généré par l'app.</p>`}
         </div>
       </div>
       <div class="preview"><div class="preview-page"><iframe id="style-preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></div>
     </div>
   </section>`;
 }
+
+// Mini preview of one template, with the current font, color and photo.
+function refreshThumb(frame) {
+  api('/profile/cv-preview', { method: 'POST', body: { cvStyle: { ...S.profile.cvStyle, layout: frame.dataset.layout } } })
+    .then((doc) => (frame.srcdoc = doc))
+    .catch(() => {});
+}
+
+const refreshThumbs = debounce(() => document.querySelectorAll('#layouts iframe').forEach(refreshThumb), 500);
 
 let stylePreview = null;
 const refreshStylePreview = debounce(async () => {
@@ -354,10 +403,24 @@ function bindCvStyle(view) {
   new ResizeObserver(() => (stylePreview.style.transform = `scale(${page.clientWidth / 794})`)).observe(page);
   refreshStylePreview();
 
+  view.querySelector('#accent-custom').addEventListener('input', (e) => {
+    view.querySelectorAll('[data-style="accent"] .swatch').forEach((x) => x.setAttribute('aria-pressed', x.contains(e.target)));
+    e.target.parentElement.style.setProperty('--c', e.target.value);
+    update({ cvStyle: { ...S.profile.cvStyle, accent: e.target.value } });
+  });
+  segmented(view.querySelector('#cv-mode'), (v) => update({ cvMode: v }));
+  const layouts = view.querySelector('#layouts');
+  segmented(layouts, (v) => update({ cvStyle: { ...S.profile.cvStyle, layout: v } }));
+  layouts.querySelectorAll('iframe').forEach((f) => {
+    f.style.transform = 'scale(0.17)';
+    refreshThumb(f);
+  });
+
   view.querySelectorAll('[data-style]').forEach((group) =>
     group.querySelectorAll('[data-v]').forEach((b) =>
       b.addEventListener('click', () => {
         group.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+        group.querySelector('.custom')?.setAttribute('aria-pressed', false);
         update({ cvStyle: { ...S.profile.cvStyle, [group.dataset.style]: b.dataset.v } });
       }),
     ),

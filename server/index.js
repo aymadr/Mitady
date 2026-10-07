@@ -10,6 +10,7 @@ const cv = require('./lib/cv');
 const ai = require('./lib/ai');
 const scraper = require('./lib/scraper');
 const mailer = require('./lib/mailer');
+const { mergeDuplicates } = require('./lib/dedupe');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
@@ -20,7 +21,7 @@ app.use(express.static(path.resolve(__dirname, '..', 'public')));
 
 // Wraps async handlers so thrown errors become JSON responses.
 const route = (fn) => (req, res) =>
-  Promise.resolve(fn(req, res)).catch((e) => {
+  Promise.resolve().then(() => fn(req, res)).catch((e) => {
     console.error(`[${req.method} ${req.path}]`, e.message);
     res.status(e.status || 500).json({ error: e.message });
   });
@@ -62,12 +63,12 @@ function publicSecrets() {
 
 app.get('/api/state', (req, res) => {
   const { profile, settings, applications } = store.db;
-  res.json({ profile, settings, secrets: publicSecrets(), domains: domainList(), cvStyles: cv.CV_STYLES, applications: applications.map(enrich) });
+  res.json({ profile, settings, secrets: publicSecrets(), domains: domainList(), sources: scraper.SOURCES, contracts: Object.keys(scraper.CONTRACTS), cvStyles: cv.CV_STYLES, applications: applications.map(enrich) });
 });
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
 
 app.put('/api/profile', route((req, res) => {
@@ -183,6 +184,7 @@ function newApplication(fields) {
     link: fields.link || '',
     location: fields.location || '',
     source: fields.source || store.sourceFromLink(fields.link),
+    contract: fields.contract || scraper.detectContract(fields),
     description: fields.description || '',
     status: 'todo',
     addedAt: store.today(),
@@ -233,13 +235,22 @@ app.post('/api/applications/:id/followed-up', route((req, res) => {
 
 // ---------- Tailored CV ----------
 
+// Which CV an offer starts from, unless the user picked one by hand:
+//  original = the user's own file, untouched (as PDF)
+//  docx     = the user's Word file with title, profile paragraph and skills adapted
+//  builtin  = the app's templates
+function defaultTemplate(profile) {
+  if (profile.cvMode === 'app' || !profile.cvFile) return 'builtin';
+  return profile.cvFile.type === 'docx' ? 'docx' : 'original';
+}
+
 function cvOptions(a, body) {
   const { profile } = store.db;
   return {
     headline: body.headline ?? a.cv?.headline ?? adaptTitle(a.title, profile.titleGender),
     summary: body.summary ?? a.cv?.summary ?? profile.summary,
     skillsAdded: body.skillsAdded ?? a.cv?.skillsAdded ?? [],
-    template: body.template || (a.cv?.templateChosen && a.cv.template) || (profile.cvFile?.type === 'docx' ? 'docx' : 'builtin'),
+    template: body.template || (a.cv?.templateChosen && a.cv.template) || defaultTemplate(profile),
     templateChosen: Boolean(body.templateChosen ?? a.cv?.templateChosen),
   };
 }
@@ -321,7 +332,7 @@ app.post('/api/applications/:id/send', route(async (req, res) => {
   const { profile } = store.db;
   let attachment = null;
   if (attach === 'tailored') attachment = a.cv?.file;
-  if (attach === 'original') attachment = profile.cvFile?.path;
+  if (attach === 'original') attachment = await cv.originalPdf(profile);
   if (attachment && !fs.existsSync(attachment)) throw fail(400, 'La pièce jointe est introuvable, régénère le CV.');
 
   await mailer.send(store.getSecrets().smtp, { fromName: profile.name, to, subject, body, attachment });
@@ -335,6 +346,23 @@ app.post('/api/applications/:id/send', route(async (req, res) => {
   a.contact = { ...a.contact, email: to };
   store.save();
   res.json(enrich(a));
+}));
+
+// ---------- Duplicates ----------
+
+// Merges duplicates among offers not yet worked on; applied or annotated ones are kept.
+function dedupeTodo() {
+  const open = store.db.applications.filter((a) => a.status === 'todo' && !a.cv?.file && !a.notes);
+  const { removed } = mergeDuplicates(open);
+  const gone = new Set(removed);
+  store.db.applications = store.db.applications.filter((a) => !gone.has(a));
+  return removed;
+}
+
+app.post('/api/applications/dedupe', route((req, res) => {
+  const removed = dedupeTodo();
+  store.save();
+  res.json({ removed: removed.length, applications: store.db.applications.map(enrich) });
 }));
 
 // ---------- Search (Server-Sent Events) ----------
@@ -353,8 +381,9 @@ app.get('/api/search', async (req, res) => {
     const jobs = await scraper.run(store.db.profile, store.db.applications, (line) => send('log', { line }));
     const added = jobs.map((j) => newApplication(j));
     store.db.applications.unshift(...added);
+    const merged = dedupeTodo();
     store.save();
-    send('done', { added: added.length });
+    send('done', { added: added.length - merged.filter((a) => added.includes(a)).length, merged: merged.length });
   } catch (e) {
     send('error', { message: e.message });
   } finally {

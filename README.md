@@ -4,23 +4,32 @@ Un outil local pour chercher un poste sans s'épuiser : il collecte les offres, 
 
 ## Démarrer
 
-```bash
-npm run setup   # dépendances + navigateur Chromium (une seule fois)
-npm start
-```
+Aucun éditeur de code ni ligne de commande : télécharge le projet (bouton vert **Code › Download ZIP** sur GitHub), décompresse-le, puis double-clique sur :
 
-Ouvre ensuite http://localhost:3000. Le serveur n'écoute que sur ta machine.
+| Système | Fichier |
+| --- | --- |
+| Windows | `Lancer.bat` |
+| Mac | `Lancer.command` (au premier lancement : clic droit › Ouvrir) |
+| Linux | `lancer.sh` |
 
-Prérequis : Node.js 18 ou plus récent. Python 3 avec `python-docx` est nécessaire uniquement pour importer un CV Word (`pip install python-docx pywin32`) ; la conversion Word → PDF utilise Microsoft Word ou LibreOffice.
+Au premier lancement, l'outil installe tout seul ce qui manque (quelques minutes, une seule fois), puis ouvre l'application dans ton navigateur. Les fois suivantes, elle s'ouvre en quelques secondes. Pour arrêter, ferme la fenêtre noire.
+
+Le seul prérequis est [Node.js](https://nodejs.org) 18 ou plus récent : sous Windows, `Lancer.bat` l'installe pour toi s'il manque. Python 3 est facultatif : il ne sert qu'à importer un CV Word, et la conversion Word → PDF utilise Microsoft Word ou LibreOffice.
+
+Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `data/`.
+
+Pour les développeurs : `npm run setup` puis `npm start`.
 
 ## Comment ça marche
 
-1. **Profil** : importe ton CV (PDF ou .docx), ou remplis tes rubriques à la main. Ton identité, ton parcours et tes compétences sont détectés, et tu les corriges si besoin. Choisis ton domaine, le lieu, le type de contrat et tes mots-clés.
-2. **Chercher des offres** : l'outil parcourt HelloWork, Welcome to the Jungle et Jobs That Make Sense. Il écarte les organismes de formation qui publient de fausses offres ainsi que les doublons.
+1. **Profil** : importe ton CV (PDF ou .docx), ou remplis tes rubriques à la main. Ton identité, ton parcours et tes compétences sont détectés, et tu les corriges si besoin. Choisis ton domaine, le lieu, les types de contrat (alternance, stage, CDI, CDD, freelance : plusieurs à la fois) et tes mots-clés.
+2. **Chercher des offres** : l'outil parcourt HelloWork, LinkedIn, Indeed, Welcome to the Jungle, Jobs That Make Sense et France Travail (Jobijoba, JobTeaser et L'Étudiant sont disponibles en option). Tu actives ou non chaque site dans Profil › Ce que tu cherches. Il écarte les organismes de formation qui publient de fausses offres. Une même offre publiée sur plusieurs sites, ou sous un titre légèrement différent, n'apparaît qu'une fois ; le bouton « Fusionner les doublons » nettoie aussi les offres déjà enregistrées.
 3. **Offres** : chaque offre affiche un score de correspondance calculé à partir des compétences citées dans l'annonce. Si l'annonce cite une compétence que tu maîtrises mais qui manque à ton profil, un clic l'y ajoute et les scores se recalculent partout.
-4. **CV adapté** : pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct. Tu génères ensuite un PDF :
-   - **avec ton propre fichier Word** : la mise en page est conservée à l'identique, et seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
-   - **avec le modèle de l'app** : un format ATS (une colonne, texte réel, sans icône ni tableau). Dans Profil › Mise en page du CV, tu choisis le modèle (Classique, Moderne, Compact), la police, la couleur et la photo.
+4. **CV** : tout CV est livré **en PDF**. Dans Profil › Ton CV tu choisis ce qui part par défaut, et tu peux changer pour chaque offre :
+   - **Mon CV tel quel** : ton fichier, sans aucun changement (un Word est converti en PDF) ;
+   - **Mon Word adapté** : la mise en page de ton fichier Word est conservée, seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
+   - **Modèle de l'app** : ton parcours est mis en page avec l'un des 7 modèles (Classique, Moderne, Compact, Élégant, Minimal en format ATS, une colonne et texte réel ; Bandeau et Colonne latérale, plus visuels), avec police, couleur et photo (carrée ou ronde, importée par toi ou reprise de ton Word).
+   Pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct.
 5. **Candidature** : trouve un contact (profils publics), devine son adresse e-mail selon le format de l'entreprise, puis envoie le message avec le CV adapté joint.
 6. **Aujourd'hui** : les relances à faire (après 7 jours sans réponse, réglable), tes meilleures correspondances et tes statistiques.
 
@@ -57,7 +66,8 @@ server/
   lib/store.js    persistance JSON
   lib/skills.js   domaines, dictionnaires de compétences, score
   lib/cv.js       import, analyse et génération de CV
-  lib/scraper.js  collecte d'offres et recherche de contacts
+  lib/scraper.js  collecte d'offres (sites, contrats) et recherche de contacts
+  lib/dedupe.js   détection des doublons entre sites
   lib/ai.js       fonctions Claude
   lib/mailer.js   envoi SMTP
 scripts/docx_tools.py   lecture et adaptation d'un CV Word

@@ -1,5 +1,5 @@
 import { S, upsertApp, go } from '../main.js';
-import { html, mount, api, fail, toast, icons, scoreClass, scoreText, relDate, norm } from '../lib.js';
+import { html, mount, api, busy, fail, toast, icons, scoreClass, scoreText, relDate, norm } from '../lib.js';
 import { openModal, closeModal } from './modal.js';
 
 const FILTERS = [
@@ -37,7 +37,7 @@ function rows(list) {
     (a) => html`<a class="item" href="#/offres/${a.id}">
       <div class="item-main">
         <div class="item-title">${a.title}</div>
-        <div class="item-sub">${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source} · ${relDate(a.addedAt)}</div>
+        <div class="item-sub">${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
       </div>
       <div class="item-side">
         ${statusSide(a)}
@@ -64,6 +64,7 @@ export function renderOffers(view) {
     html`<div class="page-head">
         <div><h1 class="page-title">Offres</h1></div>
         <div class="row">
+          <button class="btn btn-secondary btn-sm" id="dedupe" data-busy="Fusion…">Fusionner les doublons</button>
           <a class="btn btn-secondary btn-sm" href="/api/export.xlsx" download>Exporter</a>
           <button class="btn btn-secondary btn-sm" id="add-offer">${icons.plus} Ajouter une offre</button>
         </div>
@@ -82,6 +83,18 @@ export function renderOffers(view) {
   );
 
   const list = view.querySelector('#list');
+  view.querySelector('#dedupe').addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      try {
+        const res = await api('/applications/dedupe', { method: 'POST' });
+        S.applications = res.applications;
+        toast(res.removed ? `${res.removed} doublon${res.removed > 1 ? 's' : ''} fusionné${res.removed > 1 ? 's' : ''}` : 'Aucun doublon');
+        renderOffers(view);
+      } catch (err) {
+        fail(err);
+      }
+    }),
+  );
   view.querySelectorAll('[data-filter]').forEach((b) =>
     b.addEventListener('click', () => {
       ui.filter = b.dataset.filter;

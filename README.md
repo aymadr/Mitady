@@ -15,12 +15,14 @@ Prérequis : Node.js 18 ou plus récent. Python 3 avec `python-docx` est nécess
 
 ## Comment ça marche
 
-1. **Profil** : importe ton CV (PDF ou .docx), ou remplis tes rubriques à la main. Ton identité, ton parcours et tes compétences sont détectés, et tu les corriges si besoin. Choisis ton domaine, le lieu, le type de contrat et tes mots-clés.
-2. **Chercher des offres** : l'outil parcourt HelloWork, Welcome to the Jungle et Jobs That Make Sense. Il écarte les organismes de formation qui publient de fausses offres ainsi que les doublons.
+1. **Profil** : importe ton CV (PDF ou .docx), ou remplis tes rubriques à la main. Ton identité, ton parcours et tes compétences sont détectés, et tu les corriges si besoin. Choisis ton domaine, le lieu, les types de contrat (alternance, stage, CDI, CDD, freelance : plusieurs à la fois) et tes mots-clés.
+2. **Chercher des offres** : l'outil parcourt HelloWork, LinkedIn, Indeed, Welcome to the Jungle, Jobs That Make Sense et France Travail (Jobijoba, JobTeaser et L'Étudiant sont disponibles en option). Tu actives ou non chaque site dans Profil › Ce que tu cherches. Il écarte les organismes de formation qui publient de fausses offres. Une même offre publiée sur plusieurs sites, ou sous un titre légèrement différent, n'apparaît qu'une fois ; le bouton « Fusionner les doublons » nettoie aussi les offres déjà enregistrées.
 3. **Offres** : chaque offre affiche un score de correspondance calculé à partir des compétences citées dans l'annonce. Si l'annonce cite une compétence que tu maîtrises mais qui manque à ton profil, un clic l'y ajoute et les scores se recalculent partout.
-4. **CV adapté** : pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct. Tu génères ensuite un PDF :
-   - **avec ton propre fichier Word** : la mise en page est conservée à l'identique, et seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
-   - **avec le modèle de l'app** : un format ATS (une colonne, texte réel, sans icône ni tableau). Dans Profil › Mise en page du CV, tu choisis le modèle (Classique, Moderne, Compact), la police, la couleur et la photo.
+4. **CV** : tout CV est livré **en PDF**. Dans Profil › Ton CV tu choisis ce qui part par défaut, et tu peux changer pour chaque offre :
+   - **Mon CV tel quel** : ton fichier, sans aucun changement (un Word est converti en PDF) ;
+   - **Mon Word adapté** : la mise en page de ton fichier Word est conservée, seuls le titre, le paragraphe de profil et les compétences ajoutées changent ;
+   - **Modèle de l'app** : ton parcours est mis en page avec l'un des 7 modèles (Classique, Moderne, Compact, Élégant, Minimal en format ATS, une colonne et texte réel ; Bandeau et Colonne latérale, plus visuels), avec police, couleur et photo (carrée ou ronde, importée par toi ou reprise de ton Word).
+   Pour chaque offre, tu ajustes le titre (accordé au masculin ou au féminin), le résumé et les compétences mises en avant, avec un aperçu en direct.
 5. **Candidature** : trouve un contact (profils publics), devine son adresse e-mail selon le format de l'entreprise, puis envoie le message avec le CV adapté joint.
 6. **Aujourd'hui** : les relances à faire (après 7 jours sans réponse, réglable), tes meilleures correspondances et tes statistiques.
 
@@ -57,7 +59,8 @@ server/
   lib/store.js    persistance JSON
   lib/skills.js   domaines, dictionnaires de compétences, score
   lib/cv.js       import, analyse et génération de CV
-  lib/scraper.js  collecte d'offres et recherche de contacts
+  lib/scraper.js  collecte d'offres (sites, contrats) et recherche de contacts
+  lib/dedupe.js   détection des doublons entre sites
   lib/ai.js       fonctions Claude
   lib/mailer.js   envoi SMTP
 scripts/docx_tools.py   lecture et adaptation d'un CV Word

@@ -358,3 +358,13 @@ button.chip.suggest:hover { color: var(--accent-text); box-shadow: inset 0 0 0 1
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* CV template gallery */
+.templates { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.tpl { display: flex; flex-direction: column; gap: 6px; align-items: stretch; padding: 6px; border-radius: 10px; background: var(--fill); text-align: left; box-shadow: 0 0 0 1px transparent; transition: box-shadow 0.2s; }
+.tpl[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--accent, #0a64d8); background: var(--surface); }
+.tpl-thumb { position: relative; display: block; aspect-ratio: 210 / 297; overflow: hidden; border-radius: 4px; background: #fff; box-shadow: 0 0 0 0.5px var(--line); }
+.tpl-thumb iframe { position: absolute; top: 0; left: 0; width: 794px; height: 1123px; border: 0; transform-origin: 0 0; pointer-events: none; background: #fff; }
+.tpl-name { font-size: 12px; font-weight: 600; }
+.tpl-tag { font-size: 10px; color: var(--text-3); }
+.tpl-tag.ats { color: #1d7a46; }

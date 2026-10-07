@@ -87,10 +87,10 @@ export function startSearch() {
     while (log.children.length > 6) log.firstChild.remove();
   });
   source.addEventListener('done', async (e) => {
-    const { added } = JSON.parse(e.data);
+    const { added, merged = 0 } = JSON.parse(e.data);
     finish();
     S.applications = await api('/applications');
-    toast(added ? `${added} nouvelle${added > 1 ? 's' : ''} offre${added > 1 ? 's' : ''}` : 'Aucune nouvelle offre pour le moment');
+    toast((added ? `${added} nouvelle${added > 1 ? 's' : ''} offre${added > 1 ? 's' : ''}` : 'Aucune nouvelle offre pour le moment') + (merged ? ` · ${merged} doublon${merged > 1 ? 's' : ''} fusionné${merged > 1 ? 's' : ''}` : ''));
     refreshPage();
   });
   source.addEventListener('error', (e) => {

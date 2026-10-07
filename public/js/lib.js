@@ -101,6 +101,20 @@ export function scoreClass(score) {
 
 export const scoreText = (score) => (score === null || score === undefined ? '—' : `${score} %`);
 
+// Company monogram with a hue derived from the name.
+export function avatar(name = '', size = '') {
+  const label = String(name).trim();
+  const initials = label.split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '?';
+  const h = [...label].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
+  return raw(`<span class="avatar ${size}" style="--h:${h}" aria-hidden="true">${esc(initials)}</span>`);
+}
+
+// Circular match score.
+export function miniRing(score) {
+  const cls = scoreClass(score);
+  return raw(`<span class="mini-ring ${cls}" style="--p:${score ?? 0}" title="Correspondance avec ton profil"><b>${score === null || score === undefined ? '—' : score}</b></span>`);
+}
+
 export const STATUS = {
   todo: 'À traiter',
   applied: 'Envoyée',

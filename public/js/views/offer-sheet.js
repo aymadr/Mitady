@@ -1,5 +1,5 @@
 import { S, upsertApp, go, refreshPage } from '../main.js';
-import { html, raw, mount, api, fail, toast, icons, debounce, busy, longDate, relDate, norm, STATUS } from '../lib.js';
+import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, longDate, relDate, norm, STATUS } from '../lib.js';
 
 const TABS = [
   { id: 'offre', label: 'Offre' },
@@ -55,6 +55,7 @@ function render() {
     el,
     html`<header class="sheet-head">
         <div class="sheet-top">
+          ${avatar(a.company, 'lg')}
           <div class="grow">
             <div class="sheet-company">${a.company}</div>
             <h2 class="sheet-title">${a.title}</h2>
@@ -110,13 +111,14 @@ async function addSkillToProfile(skill) {
 function renderOffer(body, a) {
   const pct = a.score ?? 0;
   const ringColor = a.score >= 70 ? 'var(--green)' : a.score >= 45 ? 'var(--accent)' : 'var(--text-3)';
+  const [ga, gb] = a.score >= 70 ? ['#14b87d', '#5ee6b0'] : a.score >= 45 ? ['#5b5bf0', '#ee5fa7'] : ['#8b8aa3', '#8b8aa3'];
   mount(
     body,
     html`<div class="stack">
       <section class="card">
         ${a.skills.length >= 2
           ? html`<div class="match">
-              <div class="ring" style="--p:${pct};--ring-color:${ringColor}"><span>${pct} %</span></div>
+              <div class="ring" style="--p:${pct};--ring-color:${ringColor};--grad-a:${ga};--grad-b:${gb}"><span>${pct} %</span></div>
               <div>
                 <div style="font-weight:600">${a.matched.length} compétence${a.matched.length > 1 ? 's' : ''} sur ${a.skills.length} demandées</div>
                 <div class="small muted">${a.missing.length

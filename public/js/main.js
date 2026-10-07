@@ -4,6 +4,8 @@ import { renderOffers } from './views/offers.js';
 import { renderProfile } from './views/profile.js';
 import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
+import { needsOnboarding, startOnboarding } from './views/onboarding.js';
+import { watch } from './decorate.js';
 
 // Shared client state, loaded once and kept in sync with server responses.
 export const S = { profile: null, settings: null, secrets: null, domains: [], applications: [] };
@@ -109,7 +111,9 @@ document.addEventListener('keydown', (e) => {
 (async () => {
   try {
     Object.assign(S, await api('/state'));
+    watch(document.getElementById('view'));
     route();
+    if (needsOnboarding()) startOnboarding();
   } catch (e) {
     document.getElementById('view').innerHTML = `<div class="empty"><strong>Serveur injoignable</strong>Lance « npm start » puis recharge la page.</div>`;
   }

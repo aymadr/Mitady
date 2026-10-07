@@ -16,14 +16,36 @@ const SITES = {
 
 const slug = (s) => String(s).toLowerCase().normalize('NFD').replace(/[^a-z0-9]/g, '');
 
+// The official logos shipped in public/logos/, with their width / height ratio.
+// A wide logo (a word, not an icon) sits on a wider white tile.
+const FILES = {
+  linkedin: ['svg', 1],
+  francetravail: ['svg', 0.9],
+  jobteaser: ['svg', 1],
+  hellowork: ['svg', 2.2],
+  indeed: ['svg', 3.7],
+  letudiant: ['svg', 5.2],
+  wttj: ['png', 3],
+  jobijoba: ['png', 3.1],
+};
+
 export function siteLogo(name, size = 28) {
   const known = SITES[name];
   const id = known?.id || slug(name) || 'site';
   const hue = [...String(name)].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 360, 7);
   const color = known?.color || `hsl(${hue} 70% 52%)`;
   const glyph = known?.glyph || String(name || '?')[0].toUpperCase();
-  const fallback = `this.dataset.t?this.remove():(this.dataset.t=1,this.src='/logos/${id}.png')`;
+  const file = FILES[id];
+  const drawnOnly = id === 'jtms'; // no official file yet: the tile is the logo
+  // Shipped logo: shown at once. Otherwise try a dropped-in file (.svg then .png) over the drawn tile.
+  const src = file ? `/logos/${id}.${file[0]}` : `/logos/${id}.svg`;
+  const ratio = file ? file[1] : 1;
+  const wide = ratio > 1.3;
+  const onerror = file
+    ? `this.parentNode.classList.remove('has-img','wide');this.remove()`
+    : `this.dataset.t?this.remove():(this.dataset.t=1,this.src='/logos/${id}.png')`;
+  const onload = `this.parentNode.classList.add('has-img')`;
   return raw(
-    `<span class="slogo ${known?.dark ? 'dark' : ''} ${known?.tight ? 'tight' : ''}" style="--s:${size}px;--c:${color}" title="${name}" aria-hidden="true"><b>${glyph}</b><img src="/logos/${id}.svg" alt="" onload="this.parentNode.classList.add('has-img')" onerror="${fallback}"></span>`,
+    `<span class="slogo ${known?.dark ? 'dark' : ''} ${known?.tight ? 'tight' : ''} ${file ? 'has-img' : ''} ${wide ? 'wide' : ''}" style="--s:${size}px;--c:${color};--r:${ratio}" title="${name}" aria-hidden="true"><b>${glyph}</b>${drawnOnly ? '' : `<img src="${src}" alt="" onload="${onload}" onerror="${onerror}">`}</span>`,
   );
 }

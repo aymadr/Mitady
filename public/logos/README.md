@@ -1,18 +1,21 @@
 # Logos des sites d'emploi
 
-Mitady dessine lui-même une tuile 3D pour chaque site. Pour utiliser les logos officiels,
-dépose ici un fichier par site, nommé comme ci-dessous (SVG de préférence, PNG accepté) :
+Ces fichiers sont affichés par Mitady sur une tuile 3D blanche. Les logos fournis :
 
 | Site | Fichier |
 | --- | --- |
-| HelloWork | `hellowork.svg` |
 | LinkedIn | `linkedin.svg` |
+| France Travail (les pastilles) | `francetravail.svg` |
+| JobTeaser (l'icône) | `jobteaser.svg` |
+| HelloWork | `hellowork.svg` |
 | Indeed | `indeed.svg` |
-| Welcome to the Jungle | `wttj.svg` |
-| Jobs That Make Sense | `jtms.svg` |
-| France Travail | `francetravail.svg` |
-| Jobijoba | `jobijoba.svg` |
-| JobTeaser | `jobteaser.svg` |
 | L'Étudiant | `letudiant.svg` |
+| Welcome to the Jungle | `wttj.png` |
+| Jobijoba | `jobijoba.png` |
 
-Le logo est affiché sur une tuile 3D. Il est utilisé automatiquement au rechargement de la page.
+Pas encore de fichier pour **Jobs That Make Sense** (`jtms.svg`) : Mitady dessine une tuile à la place.
+
+Pour remplacer ou ajouter un logo, dépose le fichier ici avec le nom du tableau (SVG de préférence, PNG accepté). Un logo
+large (un mot) est affiché sur une tuile plus large ; une icône carrée sur une tuile carrée.
+
+Les fichiers d'origine, avant rognage, sont conservés dans `originals/`.

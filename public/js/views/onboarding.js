@@ -3,6 +3,7 @@
 // goes through the same API as the Profile page, so it can be redone at any time.
 import { S, startSearch } from '../main.js';
 import { html, raw, mount, api, fail, toast, fileToBase64, chipInput, icons } from '../lib.js';
+import { logo, tile } from '../brand.js';
 
 const KEY = 'candidatures.onboarded';
 const seen = () => {
@@ -23,24 +24,6 @@ export function needsOnboarding() {
   const p = S.profile;
   return !seen() && !p.name && !p.cvFile && !p.search.domain && !S.applications.length;
 }
-
-const g = (d) => raw(`<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`);
-const GLYPH = {
-  Alternance: g('<path d="M4 8h13l-3-3M20 16H7l3 3"/><circle cx="12" cy="12" r="1.2"/>'),
-  Stage: g('<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="M7 11v5c0 1.4 2.2 3 5 3s5-1.6 5-3v-5"/>'),
-  CDI: g('<path d="M8 8c-3 0-5 1.8-5 4s2 4 5 4c4 0 4-8 8-8 3 0 5 1.800 5 4s-2 4-5 4c-4 0-4-8-8-8Z"/>'),
-  CDD: g('<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M8 3v4M16 3v4M3.5 10h17"/>'),
-  Freelance: g('<path d="m12 3 2.2 5.3L20 9l-4.300 3.700L17 18.500 12 15.500 7 18.500l1.300-5.800L4 9l5.800-.7L12 3Z"/>'),
-  cyber: g('<path d="M12 3 4.500 6v5.500c0 4.500 3.200 7.700 7.500 9.500 4.300-1.800 7.500-5 7.500-9.500V6L12 3Z"/><path d="m9 12 2.200 2.200L15.500 10"/>'),
-  finance: g('<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>'),
-  data: g('<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v6c0 1.700 3.100 3 7 3s7-1.300 7-3V6M5 12v6c0 1.700 3.100 3 7 3s7-1.300 7-3v-6"/>'),
-  dev: g('<path d="m8 8-5 4 5 4M16 8l5 4-5 4M14 5l-4 14"/>'),
-  infra: g('<rect x="3" y="4" width="18" height="6" rx="2"/><rect x="3" y="14" width="18" height="6" rx="2"/><path d="M7 7h.01M7 17h.01"/>'),
-  marketing: g('<path d="M4 10v4l12 5V5L4 10Z"/><path d="M8 14v4a2 2 0 0 0 4 0M19 9.500a4 4 0 0 1 0 5"/>'),
-  rh: g('<circle cx="9" cy="8" r="3.200"/><path d="M3 20c0-3.300 2.700-6 6-6s6 2.700 6 6M16 5.200a3.200 3.200 0 0 1 0 5.600M18 14.500c1.800.8 3 2.600 3 5.500"/>'),
-  commerce: g('<rect x="3" y="7" width="18" height="13" rx="3"/><path d="M8 7V5.500A2.500 2.500 0 0 1 10.500 3h3A2.500 2.500 0 0 1 16 5.500V7M3 13h18"/>'),
-  autre: g('<path d="M12 5v14M5 12h14"/>'),
-};
 
 const CONTRACTS = [
   ['Alternance', "Un rythme école et entreprise, un vrai salaire."],
@@ -73,7 +56,7 @@ export function startOnboarding() {
   root.innerHTML = `
     <div class="ob-bg"><i class="ob-blob b1"></i><i class="ob-blob b2"></i><i class="ob-blob b3"></i></div>
     <header class="ob-top">
-      <div class="ob-brand"><span class="brand-mark"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.500 10 17.500 19 7"/></svg></span>Candidatures</div>
+      <div class="ob-brand"><span class="brand-mark">${logo(32)}</span>Mitady</div>
       <div class="ob-progress" aria-hidden="true">${STEPS.map(() => '<i><b></b></i>').join('')}</div>
       <button class="ob-skip" id="ob-skip">Passer</button>
     </header>
@@ -169,6 +152,9 @@ function welcome(stage) {
             <span class="mini-ring high" style="--p:${s}"><b>${s}</b></span>
           </div>`,
         )}
+        <span class="t3 a" data-depth="40">${tile('search', { size: 76, cls: 'float' })}</span>
+        <span class="t3 b" data-depth="26">${tile('target', { size: 64, cls: 'float' })}</span>
+        <span class="t3 c" data-depth="34">${tile('send', { size: 56, cls: 'float' })}</span>
         <div class="ob-pdf" data-depth="30"><i></i><i></i><i class="s"></i><i></i><i class="s"></i></div>
       </div>
     </section>`,
@@ -302,7 +288,7 @@ function contract(stage) {
       <p class="ob-lead">Choisis-en plusieurs : alternance et stage, par exemple. L'appli cherche tout en même temps.</p>
       <div class="ob-cards" id="ob-contracts">
         ${CONTRACTS.map(([k, d], i) => html`<button class="ob-choice" data-v="${k}" aria-pressed="${chosen.has(k)}" style="--i:${i}">
-          <span class="ob-choice-icon">${GLYPH[k]}</span>
+          ${tile(k, { size: 54, cls: 'choice' })}
           <b>${k}</b><small>${d}</small>
           <span class="ob-tick">${icons.check}</span>
         </button>`)}
@@ -339,7 +325,7 @@ function field(stage) {
       <h2 class="ob-title sm">Dans quel <em>domaine</em> ?</h2>
       <div class="ob-cards dense" id="ob-domains">
         ${domains.map((d, i) => html`<button class="ob-choice" data-v="${d.id}" aria-pressed="${domain === d.id}" style="--i:${i}">
-          <span class="ob-choice-icon">${GLYPH[d.id] || GLYPH.autre}</span>
+          ${tile(d.id, { size: 46, cls: 'choice' })}
           <b>${d.label}</b><small>${d.sample}</small>
           <span class="ob-tick">${icons.check}</span>
         </button>`)}

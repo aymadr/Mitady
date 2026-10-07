@@ -1,14 +1,7 @@
 import { S, startSearch, refreshPage, upsertApp } from '../main.js';
 import { html, raw, mount, api, fail, toast, icons, avatar, miniRing, relDate } from '../lib.js';
 import { startOnboarding } from './onboarding.js';
-
-const svg = (d) => raw(`<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`);
-const I = {
-  inbox: svg('<path d="M3 13h5l1.500 3h6L17 13h4M5 5h14l2 8v6H3v-6l2-8Z"/>'),
-  send: svg('<path d="M21 3 10 14M21 3l-7 18-4-7-7-4 18-7Z"/>'),
-  chat: svg('<path d="M4 5h16v11H9l-5 4V5Z"/>'),
-  pulse: svg('<path d="M3 12h4l3-8 4 16 3-8h4"/>'),
-};
+import { tile } from '../brand.js';
 
 // Numbers count up from zero when the page opens.
 function countUp(root) {
@@ -111,14 +104,14 @@ export function renderToday(view) {
         <div class="eyebrow">${new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
         <h1 class="page-title">Bonjour${firstName ? html` <span class="grad">${firstName}</span>` : ''}.</h1>
         <p class="page-sub">${summary[0].toUpperCase() + summary.slice(1)}</p>
-      </div>
-      <button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></div>
+        <p style="margin-top:22px"><button class="btn btn-primary btn-lg" data-search>${icons.search} Chercher des offres</button></p>
+      </div></div>
 
       <div class="stats">
-        <div class="stat hero"><div class="stat-icon">${I.inbox}</div><div class="stat-value" data-count="${todo.length}">0</div><div class="stat-label">À traiter</div></div>
-        <div class="stat"><div class="stat-icon">${I.send}</div><div class="stat-value" data-count="${sentEver.length}">0</div><div class="stat-label">Candidatures envoyées</div></div>
-        <div class="stat"><div class="stat-icon">${I.chat}</div><div class="stat-value" data-count="${interviews.length}">0</div><div class="stat-label">Entretiens en cours</div></div>
-        <div class="stat"><div class="stat-icon">${I.pulse}</div><div class="stat-value" ${rate === null ? '' : raw(`data-count="${rate}" data-suffix=" %"`)}>${rate === null ? '—' : '0'}</div><div class="stat-label">Taux de réponse</div></div>
+        <div class="stat hero">${tile('inbox', { size: 44 })}<div class="stat-value" data-count="${todo.length}">0</div><div class="stat-label">À traiter</div></div>
+        <div class="stat">${tile('send', { size: 44 })}<div class="stat-value" data-count="${sentEver.length}">0</div><div class="stat-label">Candidatures envoyées</div></div>
+        <div class="stat">${tile('chat', { size: 44 })}<div class="stat-value" data-count="${interviews.length}">0</div><div class="stat-label">Entretiens en cours</div></div>
+        <div class="stat">${tile('pulse', { size: 44 })}<div class="stat-value" ${rate === null ? '' : raw(`data-count="${rate}" data-suffix=" %"`)}>${rate === null ? '—' : '0'}</div><div class="stat-label">Taux de réponse</div></div>
       </div>
 
       <div class="pipeline">

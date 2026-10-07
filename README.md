@@ -1,6 +1,6 @@
-# Candidatures
+# Mitady
 
-Un outil local pour chercher un poste sans s'épuiser : il collecte les offres, mesure ta correspondance avec chacune, adapte ton CV à l'offre et envoie ta candidature. Il fonctionne pour tous les domaines : cybersécurité, finance, data, développement, systèmes et réseaux, marketing, RH, commerce, ou tes propres mots-clés.
+*Mitady* veut dire « chercher » en malgache. Un outil local pour chercher un poste sans s'épuiser : il collecte les offres, mesure ta correspondance avec chacune, adapte ton CV à l'offre et envoie ta candidature. Il fonctionne pour tous les domaines : cybersécurité, finance, data, développement, systèmes et réseaux, marketing, RH, commerce, ou tes propres mots-clés.
 
 ## Démarrer
 

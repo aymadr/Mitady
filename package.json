@@ -1,5 +1,5 @@
 {
-  "name": "candidatures",
+  "name": "mitady",
   "version": "5.0.0",
   "description": "Outil local de recherche d'emploi : collecte d'offres, suivi, CV adapté à chaque offre et envoi de candidatures.",
   "main": "server/index.js",

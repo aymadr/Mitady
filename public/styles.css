@@ -176,10 +176,11 @@ svg { flex: none; }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -0.03em; color: var(--text); }
 .brand:hover { text-decoration: none; }
 .brand-mark {
-  width: 32px; height: 32px; border-radius: 11px; display: grid; place-items: center; color: #fff;
-  background: var(--grad); box-shadow: var(--glow), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  width: 32px; height: 32px; display: grid; place-items: center; color: #fff;
+  filter: drop-shadow(0 6px 10px rgba(110, 80, 240, 0.45));
   transition: transform 0.5s var(--spring);
 }
+.brand-mark svg { display: block; }
 .brand:hover .brand-mark { transform: rotate(-8deg) scale(1.06); }
 .nav-links { display: flex; gap: 2px; flex: 1; }
 .nav-links a {
@@ -713,3 +714,60 @@ body.ob-open { overflow: hidden; }
   .ob-progress { display: none; }
   .ob-top { justify-content: space-between; }
 }
+
+
+/* =====================================================================
+   3D icon tiles — gradient body, lit top edge, extruded bottom edge
+   ===================================================================== */
+.i3d {
+  --h: 250; --s: 44px;
+  position: relative; display: inline-grid; place-items: center; flex: none;
+  width: var(--s); height: var(--s); border-radius: calc(var(--s) * 0.32); color: #fff;
+  background:
+    radial-gradient(120% 90% at 25% 0%, hsl(var(--h) 100% 82% / 0.65), transparent 55%),
+    linear-gradient(150deg, hsl(var(--h) 88% 66%), hsl(calc(var(--h) + 34) 82% 50%));
+  box-shadow:
+    inset 0 calc(var(--s) * 0.045) 0 rgba(255, 255, 255, 0.6),
+    inset 0 calc(var(--s) * -0.12) calc(var(--s) * 0.2) hsl(calc(var(--h) + 34) 80% 30% / 0.5),
+    0 calc(var(--s) * 0.07) 0 hsl(calc(var(--h) + 30) 70% 34%),
+    0 calc(var(--s) * 0.3) calc(var(--s) * 0.42) calc(var(--s) * -0.16) hsl(var(--h) 85% 40% / 0.7);
+  transition: transform 0.5s var(--spring), box-shadow 0.3s;
+  transform-style: preserve-3d;
+}
+.i3d::before { /* gloss */
+  content: ""; position: absolute; left: 9%; right: 9%; top: 5%; height: 44%; border-radius: 999px 999px 70% 70% / 100% 100% 60% 60%;
+  background: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+.i3d svg { position: relative; width: 52%; height: 52%; stroke-width: 1.9; filter: drop-shadow(0 calc(var(--s) * 0.04) calc(var(--s) * 0.03) rgba(20, 10, 80, 0.35)); transition: transform 0.5s var(--spring); }
+.i3d.choice svg { width: 50%; }
+.i3d.inline { --s: 32px; }
+.section-title { display: inline-flex; align-items: center; gap: 12px; }
+.i3d.float { animation: tile-float 6s ease-in-out infinite alternate; }
+@keyframes tile-float { from { transform: translateY(-4px) rotate(-3deg); } to { transform: translateY(6px) rotate(3deg); } }
+a:hover > .i3d, .item:hover .i3d, .stat:hover .i3d, button:hover > .i3d, .ob-choice:hover .i3d { transform: translateY(-3px) rotate(-6deg) scale(1.08); }
+.stat .i3d { margin-bottom: 20px; }
+.stat.hero .i3d { background: linear-gradient(150deg, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.18)); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7), 0 10px 20px -8px rgba(40, 10, 140, 0.55); }
+
+/* Page-header artwork: three tiles floating at the right of the title */
+.page-head { position: relative; }
+.page-art { position: absolute; right: 12px; top: -6px; width: 190px; height: 150px; pointer-events: none; }
+.page-art-item { position: absolute; transform: rotate(var(--r)); }
+.page-art-item .i3d { animation-duration: 7s; }
+.page-head > div:first-child { position: relative; z-index: 1; }
+
+/* Empty states */
+.empty-art { position: relative; display: flex; align-items: flex-end; justify-content: center; gap: 10px; margin-bottom: 22px; }
+.empty-art .i3d:nth-child(2) { margin-left: -14px; margin-bottom: -6px; animation-delay: -2s; }
+
+/* Choice cards in the onboarding use the tiles too */
+.ob-choice .i3d { margin-bottom: 14px; transition: transform 0.5s var(--spring), filter 0.3s; }
+.ob-choice[aria-pressed="true"] .i3d { transform: rotate(-6deg) scale(1.1); }
+.ob-choice:not([aria-pressed="true"]) .i3d { filter: saturate(0.7); }
+.ob-cards.dense .ob-choice .i3d { --s: 44px !important; margin-bottom: 8px; }
+.ob-visual .t3 { position: absolute; z-index: 2; }
+.ob-visual .t3.a { left: 46%; top: -2%; }
+.ob-visual .t3.b { right: -2%; bottom: 14%; }
+.ob-visual .t3.c { left: -2%; bottom: 36%; }
+
+@media (max-width: 900px) { .page-art { display: none; } }

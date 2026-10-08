@@ -16,7 +16,7 @@ __pycache__/
 
 # Personal data: profile, offers, uploaded and generated CVs, SMTP password, API key.
 # Created on first launch; never committed.
-data/
+/data/
 
 # Local editor / agent settings
 .claude/

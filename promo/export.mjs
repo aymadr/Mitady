@@ -1,6 +1,6 @@
 // Renders promo/mitady-promo.html to an MP4, frame by frame (the page is a pure function of time, so it is exact).
 // Needs: playwright + a Chromium (CHROMIUM_PATH), ffmpeg on the PATH.
-// Run: node promo/export.mjs [--width 1280] [--fps 30] [--out promo/mitady-promo.mp4] [--workers 4] [--from 0] [--to 72]
+// Run: node promo/export.mjs [--width 1280] [--fps 30] [--out promo/mitady-promo.mp4] [--workers 4] [--from 0] [--to 72] [--no-audio]
 import { chromium } from 'playwright';
 import { spawnSync } from 'child_process';
 import fs from 'fs';
@@ -42,7 +42,14 @@ async function work(w) {
 }
 await Promise.all(Array.from({ length: workers }, (_, w) => work(w)));
 
-const r = spawnSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(tmp, 'f_%05d.jpg'), '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out], { stdio: 'inherit' });
+// the soundtrack (promo/make-audio.mjs) is added when it exists; pass --no-audio for a silent video
+const theme = path.join(here, 'assets', 'theme.mp3');
+const withAudio = fs.existsSync(theme) && !process.argv.includes('--no-audio');
+const r = spawnSync('ffmpeg', [
+  '-y', '-loglevel', 'error', '-framerate', String(fps), '-i', path.join(tmp, 'f_%05d.jpg'),
+  ...(withAudio ? ['-ss', String(from), '-t', String(frames / fps), '-i', theme, '-c:a', 'aac', '-b:a', '192k', '-af', `afade=t=out:st=${Math.max(0, frames / fps - 0.05)}:d=0.05`] : []),
+  '-c:v', 'libx264', '-preset', 'slow', '-crf', '20', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', '-shortest', out,
+], { stdio: 'inherit' });
 fs.rmSync(tmp, { recursive: true, force: true });
 if (r.status !== 0) process.exit(r.status || 1);
 console.log('→', out, (fs.statSync(out).size / 1024 / 1024).toFixed(1) + ' Mo');

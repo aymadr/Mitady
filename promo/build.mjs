@@ -27,6 +27,9 @@ const logoFiles = { hellowork: 'svg', linkedin: 'svg', indeed: 'svg', wttj: 'png
 for (const [id, ext] of Object.entries(logoFiles)) assets.logos[id] = dataUri(P('public/logos', `${id}.${ext}`), ext === 'svg' ? 'image/svg+xml' : 'image/png');
 for (const n of ['suivi-clair', 'suivi-sombre', 'accueil-clair', 'offres-clair']) assets.shots[n] = dataUri(P('promo/assets', `${n}.jpg`), 'image/jpeg');
 assets.logoSvg = fs.readFileSync(P('public/favicon.svg'), 'utf8');
+// the soundtrack (promo/make-audio.mjs); the page still works without it
+const themeFile = P('promo/assets/theme.mp3');
+assets.audio = fs.existsSync(themeFile) ? dataUri(themeFile, 'audio/mpeg') : '';
 
 // The same persona as the README screenshots, rendered by the app's own templates.
 const photo = dataUri(P('promo/assets/koala-photo.png'), 'image/png');

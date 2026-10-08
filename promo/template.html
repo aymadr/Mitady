@@ -49,15 +49,22 @@
   #ui button { background: rgba(255, 255, 255, .14); color: #fff; border: 0; border-radius: 999px; height: 36px; padding: 0 16px; font: inherit; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); }
   #ui input[type=range] { flex: 1; accent-color: #ffcd00; }
   #ui .t { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; opacity: .85; }
-  body.export #ui { display: none; }
+  #sound { position: fixed; top: 18px; right: 18px; z-index: 6; display: none; }
+  #sound button { background: rgba(0, 0, 0, .6); color: #fff; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; height: 44px; padding: 0 20px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); }
+  #sound button:hover { background: rgba(47, 125, 91, .9); }
+  body.has-audio #sound { display: block; }
+  body.sound-on #sound { display: none; }
+  body.export #ui, body.export #sound { display: none; }
 </style>
 </head>
 <body>
 <div id="viewport"><div id="stage"></div></div>
+<div id="sound"><button id="enable-sound">🔊 Activer le son</button></div>
 <div id="ui">
   <button id="play">Pause</button>
   <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Position">
   <span class="t" id="time">0:00</span>
+  <button id="snd">Son : non</button>
   <button id="full">Plein écran</button>
 </div>
 <script>
@@ -159,7 +166,7 @@ function render(t) {
 // ---------- clock and controls ----------
 let T = 0, playing = true, last = performance.now();
 const params = new URLSearchParams(location.search);
-const seek = (ms) => { T = clamp(ms, 0, DURATION * 1000 - 1); render(T); updateUi(); };
+const seek = (ms) => { T = clamp(ms, 0, DURATION * 1000 - 1); render(T); updateUi(); syncAudio(true); };
 window.seek = seek;
 window.DURATION = () => DURATION;
 const playBtn = document.getElementById('play'), range = document.getElementById('seek'), timeEl = document.getElementById('time');
@@ -173,7 +180,26 @@ function fit() {
   stage.style.transform = `translate(${(innerWidth - W * k) / 2}px, ${(innerHeight - H * k) / 2}px) scale(${k})`;
 }
 addEventListener('resize', fit); fit();
-playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Lecture'; last = performance.now(); };
+// soundtrack: an <audio> element kept in step with the clock (browsers only allow sound after a click)
+const bgm = ASSETS.audio ? new Audio(ASSETS.audio) : null;
+let soundOn = false;
+if (bgm && !params.has('export')) document.body.classList.add('has-audio');
+function syncAudio(force) {
+  if (!bgm) return;
+  const want = T / 1000;
+  if (!soundOn || !playing) { if (!bgm.paused) bgm.pause(); return; }
+  if (bgm.paused) { bgm.currentTime = want; bgm.play().catch(() => {}); }
+  else if (force || Math.abs(bgm.currentTime - want) > 0.25) bgm.currentTime = want;
+}
+function setSound(on) {
+  soundOn = on;
+  document.body.classList.toggle('sound-on', on);
+  document.getElementById('snd').textContent = on ? 'Son : oui' : 'Son : non';
+  syncAudio(true);
+}
+document.getElementById('enable-sound').onclick = () => setSound(true);
+document.getElementById('snd').onclick = () => setSound(!soundOn);
+playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Lecture'; last = performance.now(); syncAudio(true); };
 range.oninput = () => seek((range.value / 1000) * DURATION * 1000);
 document.getElementById('full').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
 addEventListener('keydown', (e) => {
@@ -181,6 +207,7 @@ addEventListener('keydown', (e) => {
   if (e.key === 'ArrowRight') seek(T + 5000);
   if (e.key === 'ArrowLeft') seek(T - 5000);
   if (e.key === 'f' || e.key === 'F') document.getElementById('full').click();
+  if (e.key === 'm' || e.key === 'M') document.getElementById('snd').click();
   if (e.key === 'r' || e.key === 'R') seek(0);
 });
 if (params.has('export')) { document.body.classList.add('export'); playing = false; }
@@ -188,9 +215,9 @@ if (params.has('t')) T = Number(params.get('t')) * 1000;
 render(T); updateUi();
 (function loop(now) {
   if (playing) {
-    T += now - last;
+    T += Math.min(now - last, 100);
     if (T >= DURATION * 1000) T = 0;
-    render(T); updateUi();
+    render(T); updateUi(); syncAudio(false);
   }
   last = now;
   requestAnimationFrame(loop);

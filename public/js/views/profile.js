@@ -97,7 +97,7 @@ export function renderProfile(view) {
       </section>
 
       <section class="section">
-        <div class="section-head"><h2 class="section-title">Ton compagnon</h2><span class="section-note">Il se perche sur tes barres de recherche</span></div>
+        <div class="section-head"><h2 class="section-title">Ton animal</h2><span class="section-note">Il se perche sur tes barres de recherche</span></div>
         <div class="card" id="avatar-editor"></div>
       </section>
 
@@ -148,13 +148,11 @@ export function renderProfile(view) {
   saveState = view.querySelector('#saved');
   mountPetEditor(view.querySelector('#avatar-editor'), {
     pet: p.pet,
-    gender: p.titleGender || 'neutre',
     big: false,
-    onChange: (pet, gender) => {
-      update({ pet, titleGender: gender });
+    onChange: (pet) => {
+      update({ pet });
       refreshNav();
       refreshPerches();
-      view.querySelectorAll('#gender [data-v]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === gender));
     },
   });
   bindUpload(view);

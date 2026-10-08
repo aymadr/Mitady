@@ -37,7 +37,7 @@ const CONTRACTS = [
   ['Freelance', 'Tes missions, tes tarifs, ton agenda.'],
 ];
 
-const FULL = ['welcome', 'you', 'cv', 'contract', 'field', 'tour', 'ready'];
+const FULL = ['welcome', 'you', 'pet', 'cv', 'contract', 'field', 'tour', 'ready'];
 let STEPS = FULL;
 let tourOnly = false;
 
@@ -127,7 +127,7 @@ function render() {
   const stage = root.querySelector('#ob-stage');
   document.removeEventListener('pointermove', parallax);
   clearInterval(tourTimer);
-  ({ welcome, you, cv, contract, field, tour, ready })[STEPS[step]](stage);
+  ({ welcome, you, pet, cv, contract, field, tour, ready })[STEPS[step]](stage);
   stage.querySelector('[data-back]')?.addEventListener('click', () => go(step - 1));
   stage.scrollTo?.(0, 0);
 }
@@ -192,11 +192,11 @@ function welcome(stage) {
 // ---------- 2. CV ----------
 
 function cv(stage) {
-  const done = Boolean(draft.parsed || S.profile.name);
+  const done = Boolean(draft.parsed || S.profile.cvFile);
   mount(
     stage,
     html`<section class="ob-step ob-narrow">
-      <div class="ob-kicker"><span></span>02 · Ton CV</div>
+      <div class="ob-kicker"><span></span>03 · Ton CV</div>
       <h2 class="ob-title">On part de <em>ton</em> CV.</h2>
       <p class="ob-lead">Dépose-le, l'appli lit ton identité, ton parcours et tes compétences. Tu pourras tout corriger ensuite.</p>
       ${done ? '' : html`<label class="ob-drop" id="ob-drop" tabindex="0">
@@ -247,7 +247,7 @@ function bindCv(stage) {
       const res = await api('/profile/cv', { method: 'POST', body: { name: file.name, data: await fileToBase64(file) } });
       const x = res.parsed;
       await patch({
-        name: x.name, headline: x.headline, email: x.email, phone: x.phone, location: x.location, summary: x.summary,
+        name: S.profile.name || x.name, headline: x.headline, email: x.email, phone: x.phone, location: x.location, summary: x.summary,
         links: x.links, skills: x.skills, sections: x.sections,
         docx: { titleText: x.headline, summaryText: x.summary || '', skillsAnchor: x.skillsAnchor || '' },
         search: { location: S.profile.search.location || x.location || '' },
@@ -273,22 +273,22 @@ function bindCv(stage) {
     mount(
       result,
       html`<div class="ob-manual">
-        <label class="ob-field"><span>Ton nom</span><input id="ob-name" placeholder="Camille Martin" autocomplete="name"></label>
+        ${S.profile.name ? '' : html`<label class="ob-field"><span>Ton nom</span><input id="ob-name" placeholder="Camille Martin" autocomplete="name"></label>`}
         <label class="ob-field"><span>Ton titre ou ta formation</span><input id="ob-headline" placeholder="Étudiante en Master Cybersécurité"></label>
       </div>`,
     );
     stage.querySelector('#ob-drop').hidden = true;
     stage.querySelector('#ob-manual').hidden = true;
     const name = result.querySelector('#ob-name');
-    const headline = result.querySelector('#ob-headline');
-    const sync = () => (next.disabled = !name.value.trim());
-    name.addEventListener('input', sync);
-    name.focus();
+    next.disabled = Boolean(name);
+    name?.addEventListener('input', () => (next.disabled = !name.value.trim()));
+    (name || result.querySelector('#ob-headline')).focus();
   });
   next?.addEventListener('click', async () => {
     const name = stage.querySelector('#ob-name');
-    if (name && name.value.trim()) {
-      await patch({ name: name.value.trim(), headline: stage.querySelector('#ob-headline').value.trim() }).catch(fail);
+    const headline = stage.querySelector('#ob-headline');
+    if (headline && (S.profile.name || name?.value.trim())) {
+      await patch({ name: name?.value.trim() || S.profile.name, headline: headline.value.trim() }).catch(fail);
     }
     go(step + 1);
   });
@@ -301,7 +301,7 @@ function contract(stage) {
   mount(
     stage,
     html`<section class="ob-step">
-      <div class="ob-kicker"><span></span>03 · Le contrat</div>
+      <div class="ob-kicker"><span></span>04 · Le contrat</div>
       <h2 class="ob-title">Tu cherches <em>quoi</em> ?</h2>
       <p class="ob-lead">Choisis-en plusieurs : alternance et stage, par exemple. L'appli cherche tout en même temps.</p>
       <div class="ob-cards" id="ob-contracts">
@@ -339,7 +339,7 @@ function field(stage) {
   mount(
     stage,
     html`<section class="ob-step">
-      <div class="ob-kicker"><span></span>04 · Le domaine</div>
+      <div class="ob-kicker"><span></span>05 · Le domaine</div>
       <h2 class="ob-title sm">Dans quel <em>domaine</em> ?</h2>
       <div class="ob-cards dense" id="ob-domains">
         ${domains.map((d, i) => html`<button class="ob-choice" data-v="${d.id}" aria-pressed="${domain === d.id}" style="--i:${i}">
@@ -409,30 +409,60 @@ function ready(stage) {
 }
 
 
-// ---------- 2. You (companion + gender) ----------
+// ---------- 2. You (name + gender) ----------
 
 function you(stage) {
+  const p = S.profile;
+  let gender = p.titleGender || 'neutre';
+  mount(
+    stage,
+    html`<section class="ob-step ob-narrow">
+      <div class="ob-kicker"><span></span>01 · Toi</div>
+      <h2 class="ob-title sm">Comment <em>t'appelles</em>-tu ?</h2>
+      <p class="ob-lead tight">Ton nom apparaît sur tes CV et tes e-mails de candidature.</p>
+      <div class="ob-manual">
+        <label class="ob-field"><span>Ton nom</span><input id="ob-you-name" placeholder="Camille Martin" autocomplete="name" value="${p.name || ''}"></label>
+        <div class="ob-field"><span>Tu es</span>
+          <div class="segmented" id="ob-gender">${[['masculin', 'Un homme'], ['feminin', 'Une femme'], ['neutre', 'Je préfère ne pas dire']].map(([v, l]) => html`<button type="button" data-v="${v}" aria-pressed="${gender === v}">${l}</button>`)}</div>
+          <small class="ob-hint-line">Sert uniquement à accorder l'intitulé du poste sur ton CV (« alternant » ou « alternante »).</small></div>
+      </div>
+      ${nav(true, true, 'Continuer', !p.name)}
+    </section>`,
+  );
+  const name = stage.querySelector('#ob-you-name');
+  const next = stage.querySelector('[data-next]');
+  name.addEventListener('input', () => (next.disabled = !name.value.trim()));
+  stage.querySelectorAll('#ob-gender [data-v]').forEach((b) =>
+    b.addEventListener('click', () => {
+      gender = b.dataset.v;
+      stage.querySelectorAll('#ob-gender [data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+    }),
+  );
+  name.focus();
+  next.addEventListener('click', async () => {
+    await patch({ name: name.value.trim(), titleGender: gender }).catch(fail);
+    go(step + 1);
+  });
+}
+
+// ---------- 3. Your animal ----------
+
+function pet(stage) {
   const p = S.profile;
   mount(
     stage,
     html`<section class="ob-step ob-you">
-      <div class="ob-kicker"><span></span>01 · Toi</div>
-      <h2 class="ob-title sm">Choisis <em>ton</em> compagnon.</h2>
-      <p class="ob-lead tight">Un petit animal à ton image : il se perche sur tes barres de recherche et t'accompagne dans l'appli. Dis-nous aussi si tu es un homme ou une femme : ça accorde l'intitulé du poste sur ton CV (« alternant » ou « alternante »).</p>
+      <div class="ob-kicker"><span></span>02 · Ton animal</div>
+      <h2 class="ob-title sm">Choisis <em>ton</em> animal.</h2>
+      <p class="ob-lead tight">Un petit compagnon rien qu'à toi, sans rapport avec ton CV : il se perche sur tes barres de recherche, s'endort quand tu es ailleurs et réagit quand tu le touches.</p>
       <div id="ob-pet"></div>
       ${nav(true, true, 'Continuer')}
     </section>`,
   );
-  let state = { pet: petOf(p), gender: p.titleGender || 'neutre' };
-  mountPetEditor(stage.querySelector('#ob-pet'), {
-    pet: state.pet,
-    gender: state.gender,
-    onChange: (pet, gender) => {
-      state = { pet, gender };
-    },
-  });
+  let chosen = petOf(p);
+  mountPetEditor(stage.querySelector('#ob-pet'), { pet: chosen, onChange: (next) => (chosen = next) });
   stage.querySelector('[data-next]').addEventListener('click', async () => {
-    await patch({ titleGender: state.gender, pet: state.pet }).catch(fail);
+    await patch({ pet: chosen }).catch(fail);
     refreshNav();
     go(step + 1);
   });
@@ -483,7 +513,7 @@ function tour(stage) {
   mount(
     stage,
     html`<section class="ob-step ob-tour">
-      <div class="ob-kicker"><span></span>${tourOnly ? 'Le guide' : '05 · Le guide'}</div>
+      <div class="ob-kicker"><span></span>${tourOnly ? 'Le guide' : '06 · Le guide'}</div>
       <h2 class="ob-title sm">Tout ce que Mitady <em>sait faire</em>.</h2>
       <div class="tour">
         <div class="tour-tabs" role="tablist">

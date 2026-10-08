@@ -4,6 +4,7 @@
 import { S, startSearch, refreshNav } from '../main.js';
 import { html, raw, mount, api, fail, toast, fileToBase64, chipInput, icons } from '../lib.js';
 import { logo, tile, marquee } from '../brand.js';
+import { scene } from '../scenery.js';
 import { celebrate } from '../fx.js';
 import { mountPetEditor, petSvg, petOf, defaultPet } from '../pet.js';
 import { siteLogo } from '../logos.js';
@@ -64,7 +65,7 @@ export function startOnboarding({ tour = false } = {}) {
   root = document.createElement('div');
   root.className = 'ob';
   root.innerHTML = `
-    <div class="ob-bg"><i class="ob-blob b1"></i><i class="ob-blob b2"></i><i class="ob-blob b3"></i></div>
+    <div class="ob-bg"><i class="ob-blob b1"></i><i class="ob-blob b2"></i><i class="ob-blob b3"></i>${[8, 22, 37, 52, 67, 80, 93].map((l, i) => `<i class="ob-leaf" style="left:${l}%;animation-delay:${-i * 2.3}s;animation-duration:${14 + (i % 3) * 3}s">${scene('leaf', { size: 20 })}</i>`).join('')}</div>
     <header class="ob-top">
       <div class="ob-brand"><span class="brand-mark">${logo(32)}</span>Mitady</div>
       <div class="ob-progress" aria-hidden="true" ${tour ? 'hidden' : ''}>${STEPS.map(() => '<i><b></b></i>').join('')}</div>
@@ -155,9 +156,9 @@ function welcome(stage) {
       <div class="ob-marquee">${marquee()}</div>
       <div class="ob-visual" aria-hidden="true">
         <div class="ob-orb" data-depth="14"></div>
-        <span class="t3 hero-mon" data-depth="22">${petSvg(defaultPet('renard'), { size: 118, mood: 'wave' })}</span>
-        <span class="t3 hero-mon2" data-depth="30">${petSvg(defaultPet('hibou'), { size: 92, mood: 'idle' })}</span>
-        <span class="t3 hero-mon3" data-depth="18">${petSvg(defaultPet('grenouille'), { size: 76, mood: 'party' })}</span>
+        <span class="t3 hero-mon" data-depth="22">${scene('tree', { size: 168 })}</span>
+        <span class="t3 hero-mon2" data-depth="30">${scene('bush', { size: 70 })}${scene('flower', { size: 58 })}</span>
+        <span class="t3 hero-mon3" data-depth="18">${scene('mushroom', { size: 56 })}${scene('butterfly', { size: 52, cls: 'flit' })}</span>
         ${[
           ['Analyste SOC en alternance', 'Orange Cyberdefense', 91, 'c1', 22, 262],
           ['Stage Data Analyst', 'Alan', 84, 'c2', 40, 160],
@@ -204,7 +205,7 @@ function cv(stage) {
         <span class="ob-drop-icon">${raw('<svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15V4M7.500 8.500 12 4l4.500 4.500M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></svg>')}</span>
         <strong>Glisse ton CV ici</strong>
         <small>PDF ou Word · ou clique pour choisir un fichier</small>
-        <span class="ob-peek">${petSvg(petOf(S.profile), { size: 84, mood: 'wave' })}</span>
+        <span class="ob-peek">${scene('flower', { size: 76 })}</span>
         <input type="file" id="ob-file" accept=".pdf,.docx" hidden>
       </label>
       <button class="ob-link" id="ob-manual">Je n'ai pas de CV, je remplis moi-même</button>`}
@@ -390,7 +391,7 @@ function ready(stage) {
   mount(
     stage,
     html`<section class="ob-step ob-ready">
-      <div class="ob-crowd" aria-hidden="true">${['grenouille', 'renard', null, 'hibou', 'lapin'].map((a, i) => html`<span style="--i:${i}">${petSvg(a ? defaultPet(a) : petOf(S.profile), { size: a ? 92 : 120, mood: 'party' })}</span>`)}</div>
+      <div class="ob-crowd" aria-hidden="true">${[['bush', 56], ['tree', 112], null, ['mushroom', 52], ['flower', 70]].map((d, i) => html`<span style="--i:${i}">${d ? scene(d[0], { size: d[1] }) : petSvg(petOf(S.profile), { size: 120, mood: 'party' })}</span>`)}</div>
       <div class="ob-kicker"><span></span>C'est prêt</div>
       <h2 class="ob-title big">Tout est en place${first ? html`, <em>${first}</em>` : ''}.</h2>
       <ul class="ob-checks">
@@ -475,7 +476,7 @@ const TOUR = [
     icon: 'search', title: 'Chercher', sub: 'Tous les sites, une recherche',
     text: "Lance une recherche : Mitady parcourt LinkedIn, Indeed, HelloWork, Welcome to the Jungle, France Travail et d'autres. Alternance et stage en même temps, et la même offre vue sur trois sites n'apparaît qu'une fois.",
     art: () => html`<div class="tour-logos">${['LinkedIn', 'Indeed', 'HelloWork', 'Welcome to the Jungle', 'France Travail', 'Jobs That Make Sense'].map((n, i) => html`<span style="--i:${i}">${siteLogo(n, 44)}<small>${n}</small></span>`)}</div>
-      <div class="tour-badges"><span class="badge blue">Alternance</span><span class="badge blue">Stage</span><span class="badge green">Doublons fusionnés</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 80, mood: 'wave' })}</span>`,
+      <div class="tour-badges"><span class="badge blue">Alternance</span><span class="badge blue">Stage</span><span class="badge green">Doublons fusionnés</span></div><span class="corner-mon">${scene('tree', { size: 96 })}</span>`,
   },
   {
     icon: 'target', title: 'Correspondance', sub: 'Ton score pour chaque offre',
@@ -499,12 +500,12 @@ const TOUR = [
     icon: 'bell', title: 'Suivi & relances', sub: 'Rien ne tombe dans l\'oubli',
     text: "Suis chaque candidature (à traiter, envoyée, entretien, offre) et reçois une relance quand une réponse tarde. Tout s'exporte en Excel.",
     art: () => html`<div class="pipeline-bar"><span style="flex:5;background:#8b8aa3"></span><span style="flex:3;background:#2f7d5b"></span><span style="flex:2;background:#ffcd00"></span><span style="flex:1;background:#14b87d"></span></div>
-      <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 80, mood: 'party' })}</span>`,
+      <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div><span class="corner-mon">${scene('mushroom', { size: 60 })}${scene('flower', { size: 72 })}</span>`,
   },
   {
     icon: 'sparkles', title: 'À ta façon', sub: 'Sombre, Claude, avatar',
     text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar depuis le profil, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
-    art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 84, mood: 'idle' })}</span>`,
+    art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div><span class="corner-mon">${scene('bush', { size: 62 })}</span>`,
   },
 ];
 

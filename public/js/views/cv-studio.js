@@ -4,6 +4,13 @@ import { S } from '../main.js';
 import { html, raw, mount, api, fail, debounce, chipInput, fileToBase64, norm, esc, icons } from '../lib.js';
 import { openPhotoEditor } from './photo-editor.js';
 
+const RESET_STYLE = {
+  layout: 'classique', font: 'calibri', nameFont: '', accent: 'bleu', textColor: '', bgColor: '', bgMode: 'header', colorMode: 'single', accentOn: null,
+  photoShape: 'portrait', photoSize: 'm', photoBorder: false, photoGray: false, photoPos: '',
+  fontSize: 0, lineHeight: 0, margin: 0, gap: 0, nameSize: 0, headStyle: '', headCaps: '', headIcons: '', skillStyle: 'text', langStyle: 'text',
+  entryStruct: '', datePos: '', subPos: '', icons: false, linkIcons: false, linkIconType: 'link', linkUnderline: false, linkBlue: false,
+  align: '', contactArr: 'line', columns: 'one', summary: true,
+};
 const uid = () => Math.random().toString(36).slice(2, 8);
 const I = {
   up: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 15 6-6 6 6"/></svg>',
@@ -13,7 +20,7 @@ const I = {
   trash: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/></svg>',
   grip: '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>',
 };
-const TYPE_ICON = { employment: '💼', education: '🎓', projects: '🧩', certificates: '📜', courses: '📚', awards: '🏆', organisations: '🤝', skills: '⚡', languages: '🌍', interests: '✨', text: '📝' };
+const TYPE_ICON = { employment: '💼', education: '🎓', projects: '🧩', certificates: '📜', courses: '📚', awards: '🏆', organisations: '🤝', skills: '⚡', languages: '🌍', interests: '✨', publications: '📰', references: '👥', declaration: '✍️', custom: '🧱', text: '📝' };
 
 let ctx = null; // { update, rerender } of the page currently showing the studio
 let tab = 'content';
@@ -34,16 +41,18 @@ function fitPreview() {
   const f = previewEl;
   if (!f?.isConnected) return;
   const page = f.parentElement;
-  const k = page.clientWidth / 794;
-  let h = 1123;
+  const [pw, ph] = style().pageFormat === 'Letter' ? [816, 1056] : [794, 1123];
+  const k = page.clientWidth / pw;
+  let h = ph;
   let pages = 1;
   try {
     const doc = f.contentDocument;
     const pad = parseFloat(getComputedStyle(doc.body).paddingTop) || 0;
     const total = doc.documentElement.scrollHeight;
-    h = Math.max(1123, total);
-    pages = Math.max(1, Math.ceil((total - 2 * pad - 4) / (1123 - 2 * pad)));
+    h = Math.max(ph, total);
+    pages = Math.max(1, Math.ceil((total - 2 * pad - 4) / (ph - 2 * pad)));
   } catch {}
+  f.style.width = pw + 'px';
   f.style.transform = `scale(${k})`;
   f.style.height = h + 'px';
   page.style.height = h * k + 'px';
@@ -146,9 +155,9 @@ function sectionBody(s, i) {
     const items = s.items || [];
     return html`${items.map((it, j) => {
       const key = `${s.id}.${j}`;
-      return html`<details class="ent" data-key="${key}" ${openKeys.has(key) ? raw('open') : ''}>
-        <summary><span class="ent-t">${it.title || it.subtitle || 'Sans titre'}</span><span class="ent-d">${[it.start, it.current ? "Aujourd'hui" : it.end].filter(Boolean).join(' – ')}</span>
-          <span class="ent-act"><button class="ib" data-act="e-up" data-s="${i}" data-e="${j}" title="Monter">${raw(I.up)}</button><button class="ib" data-act="e-down" data-s="${i}" data-e="${j}" title="Descendre">${raw(I.down)}</button><button class="ib danger" data-act="e-del" data-s="${i}" data-e="${j}" title="Supprimer">${raw(I.trash)}</button></span></summary>
+      return html`<details class="ent ${it.hidden ? 'is-hidden' : ''}" data-key="${key}" data-e="${j}" ${openKeys.has(key) ? raw('open') : ''}>
+        <summary><span class="ent-handle" title="Glisser pour réordonner">${raw(I.grip)}</span><span class="ent-t">${it.title || it.subtitle || 'Sans titre'}</span><span class="ent-d">${[it.start, it.current ? "Aujourd'hui" : it.end].filter(Boolean).join(' – ')}</span>
+          <span class="ent-act"><button class="ib" data-act="e-up" data-s="${i}" data-e="${j}" title="Monter">${raw(I.up)}</button><button class="ib" data-act="e-down" data-s="${i}" data-e="${j}" title="Descendre">${raw(I.down)}</button><button class="ib" data-act="e-hide" data-s="${i}" data-e="${j}" title="${it.hidden ? 'Afficher sur le CV' : 'Masquer du CV'}">${raw(it.hidden ? I.eyeOff : I.eye)}</button><button class="ib danger" data-act="e-del" data-s="${i}" data-e="${j}" title="Supprimer">${raw(I.trash)}</button></span></summary>
         <div class="ent-body grid-2">
           <label class="field"><span class="label">${t.f.title}</span><input class="input" data-s="${i}" data-e="${j}" data-f="title" value="${it.title || ''}"></label>
           <label class="field"><span class="label">${t.f.subtitle}</span><input class="input" data-s="${i}" data-e="${j}" data-f="subtitle" value="${it.subtitle || ''}"></label>
@@ -233,56 +242,119 @@ function contentPanel() {
   const t = types();
   return html`${personal(p)}
     <div id="secs">${sections().map(sectionCard)}</div>
-    <div class="add-grid-head label">Ajouter une rubrique</div>
-    <div class="add-grid">${Object.entries(t).map(([k, v]) => html`<button class="add-tile" data-act="s-add" data-type="${k}"><span>${TYPE_ICON[k]}</span>${v.label}</button>`)}</div>`;
+    <button type="button" class="btn btn-primary add-btn" data-act="open-add">${icons.plus} Ajouter du contenu</button>`;
 }
 
 // ---------- Rendering: design ----------
 
+const HEAD_STYLES = [['', 'Modèle'], ['line', 'Trait'], ['accent', 'Trait couleur'], ['shade', 'Bandeau gris'], ['center', 'Centré'], ['bar', 'Barre'], ['plain', 'Simple'], ['short', 'Trait court'], ['wavy', 'Ondulé'], ['box', 'Bloc']];
+const DEFAULT_ACCENT_ON = ['jobTitle', 'headerIcons', 'bars', 'linkIcons'];
+const isHexColor = (v) => /^#[0-9a-f]{6}$/i.test(v || '');
+const isLight = (h) => { const n = parseInt(h.slice(1), 16); return 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255) > 150; };
+
+const seg = (key, entries, value) =>
+  html`<div class="segmented" data-style="${key}">${entries.map(([k, label]) => html`<button type="button" data-v="${k}" aria-pressed="${String(value) === String(k)}">${label}</button>`)}</div>`;
+const check = (key, label, on) => html`<label class="chk"><input type="checkbox" data-toggle="${key}" ${on ? raw('checked') : ''}><span>${label}</span></label>`;
+const dcard = (title, body, id = '') => html`<section class="dcard" ${id ? raw(`id="${id}"`) : ''}><h4>${title}</h4>${body}</section>`;
+const range = (cur, key, min, max, step, unit, auto) =>
+  html`<div class="rng"><input type="range" min="${min}" max="${max}" step="${step}" data-range="${key}" value="${cur[key] || auto}"><span class="rng-v" data-rv="${key}">${cur[key] ? cur[key] + unit : 'Auto'}</span>${cur[key] ? html`<button type="button" class="btn btn-plain small" data-act="auto" data-key="${key}">Auto</button>` : ''}</div>`;
+const fontSelect = (st, key, value, withSame) => {
+  const groups = ['Sans', 'Serif', 'Slab', 'Mono'];
+  return html`<select class="select" data-font="${key}">${withSame ? html`<option value="" ${!value ? raw('selected') : ''}>Comme le corps du texte</option>` : ''}${groups.map((g) => html`<optgroup label="${g === 'Sans' ? 'Sans empattement' : g === 'Serif' ? 'Avec empattement' : g === 'Slab' ? 'Slab' : 'Monospace'}">${Object.entries(st.fonts).filter(([, f]) => f.group === g).map(([k, f]) => html`<option value="${k}" ${value === k ? raw('selected') : ''}>${f.label}</option>`)}</optgroup>`)}</select>`;
+};
+
 function designPanel() {
   const st = S.cvStyles;
   const cur = style();
-  const seg = (key, entries, value) => html`<div class="segmented" data-style="${key}">${entries.map(([k, label]) => html`<button data-v="${k}" aria-pressed="${String(value) === String(k)}">${label}</button>`)}</div>`;
-  const range = (key, min, max, step, unit, auto) => html`<div class="rng"><input type="range" min="${min}" max="${max}" step="${step}" data-range="${key}" value="${cur[key] || auto}"><span class="rng-v" data-rv="${key}">${cur[key] ? cur[key] + unit : 'Auto'}</span>${cur[key] ? html`<button class="btn btn-plain small" data-act="auto" data-key="${key}">Auto</button>` : ''}</div>`;
-  const groups = ['Sans', 'Serif', 'Mono'];
-  const atsOk = st.layouts[cur.layout]?.ats && cur.columns !== 'two';
-  return html`
-    <div class="field"><span class="label">Modèle</span>
-      <div class="templates" id="layouts">${Object.entries(st.layouts).map(([k, l]) => html`<button class="tpl" data-v="${k}" aria-pressed="${cur.layout === k}">
-        <span class="tpl-thumb"><iframe tabindex="-1" data-layout="${k}" title="${l.label}" sandbox="allow-same-origin"></iframe></span>
-        <span class="tpl-name">${l.label}</span><span class="tpl-tag ${l.ats ? 'ats' : ''}">${l.ats ? 'ATS' : 'Design'}</span></button>`)}</div>
-      <p class="hint ${atsOk ? '' : 'warn'}">${atsOk ? 'Compatible ATS : une colonne, texte réel, lu sans erreur par les logiciels de tri.' : 'Ce réglage est plus visuel : à privilégier pour un envoi direct à une personne. Pour un logiciel de tri (ATS), garde un modèle « ATS » en une colonne.'}</p></div>
-    <div class="field"><span class="label">Police</span>
-      ${groups.map((g) => html`<div class="font-group"><span class="hint" style="margin:0">${g === 'Sans' ? 'Sans empattement' : g === 'Serif' ? 'Avec empattement' : 'Monospace'}</span>
-        <div class="fonts" data-style="font">${Object.entries(st.fonts).filter(([, f]) => f.group === g).map(([k, f]) => html`<button class="font-btn" data-v="${k}" aria-pressed="${cur.font === k}" style="font-family:${f.stack}">${f.label}</button>`)}</div></div>`)}</div>
+  const atsOk = st.layouts[cur.layout]?.ats && cur.columns !== 'two' && !cur.bgColor;
+  const mode = cur.colorMode || (isHexColor(cur.bgColor) ? 'multi' : 'single');
+  const accentOn = new Set(cur.accentOn || DEFAULT_ACCENT_ON);
+  const customAccent = isHexColor(cur.accent);
+
+  const templates = dcard('Modèle', html`
+    <div class="templates" id="layouts">${Object.entries(st.layouts).map(([k, l]) => html`<button type="button" class="tpl" data-v="${k}" aria-pressed="${cur.layout === k}">
+      <span class="tpl-thumb"><iframe tabindex="-1" data-layout="${k}" title="${l.label}" sandbox="allow-same-origin"></iframe></span>
+      <span class="tpl-name">${l.label}</span><span class="tpl-tag ${l.ats ? 'ats' : ''}">${l.ats ? 'ATS' : 'Design'}</span></button>`)}</div>
+    <p class="hint ${atsOk ? '' : 'warn'}">${atsOk ? 'Compatible ATS : une colonne, texte réel, lu sans erreur par les logiciels de tri.' : 'Ce réglage est plus visuel : à privilégier pour un envoi direct à une personne. Pour un logiciel de tri (ATS), garde un modèle « ATS » en une colonne, sans fond coloré.'}</p>`);
+
+  const layout = dcard('Mise en page', html`
     <div class="grid-2">
-      <div class="field"><span class="label">Taille du texte</span>${range('fontSize', 8, 11, 0.1, ' pt', 9.2)}</div>
-      <div class="field"><span class="label">Interligne</span>${range('lineHeight', 1.05, 1.7, 0.05, '', 1.25)}</div>
-      <div class="field"><span class="label">Marges</span>${range('margin', 8, 22, 1, ' mm', 12)}</div>
-      <div class="field"><span class="label">Espace entre rubriques</span>${range('gap', 2, 18, 1, ' pt', 6)}</div>
-      <div class="field"><span class="label">Taille du nom</span>${range('nameSize', 16, 32, 1, ' pt', 20)}</div>
+      <div class="field"><span class="label">Marges</span>${range(cur, 'margin', 8, 22, 1, ' mm', 12)}</div>
+      <div class="field"><span class="label">Taille du texte</span>${range(cur, 'fontSize', 8, 11, 0.1, ' pt', 9.2)}</div>
+      <div class="field"><span class="label">Interligne</span>${range(cur, 'lineHeight', 1.05, 1.7, 0.05, '', 1.25)}</div>
+      <div class="field"><span class="label">Espace entre rubriques</span>${range(cur, 'gap', 2, 18, 1, ' pt', 6)}</div>
     </div>
-    <div class="field"><span class="label">Couleur</span>
-      <div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}
-        <label class="swatch custom" title="Couleur personnalisée" style="--c:${/^#/.test(cur.accent) ? cur.accent : '#ffffff'}" aria-pressed="${/^#/.test(cur.accent)}"><input type="color" id="accent-custom" value="${/^#/.test(cur.accent) ? cur.accent : '#1f3a93'}"></label></div></div>
-    <div class="field"><span class="label">En-tête</span>
-      ${seg('align', [['', 'À gauche'], ['center', 'Centré']], cur.align || '')}
-      <div class="row wrap" style="margin-top:10px">
-        <label class="row small"><input type="checkbox" data-toggle="icons" ${cur.icons ? raw('checked') : ''}> Icônes pour e-mail, téléphone, ville</label>
-        <label class="row small"><input type="checkbox" data-toggle="linkIcons" ${cur.linkIcons ? raw('checked') : ''}> Logos LinkedIn, GitHub… sur les liens</label></div></div>
-    <div class="field"><span class="label">Photo</span>
-      <div class="row wrap"><label class="row small"><input type="checkbox" data-toggle="photo" ${cur.photo !== false ? raw('checked') : ''}> Afficher la photo</label></div>
-      <div class="row wrap" style="margin-top:8px">${seg('photoShape', Object.entries(st.photoShapes), cur.photoShape)}${seg('photoSize', Object.entries(st.photoSizes), cur.photoSize)}
-        <label class="row small"><input type="checkbox" data-toggle="photoBorder" ${cur.photoBorder ? raw('checked') : ''}> Cadre</label></div></div>
-    <div class="field"><span class="label">Titres de rubrique</span>
-      ${seg('headStyle', [['', 'Modèle'], ['line', 'Trait noir'], ['accent', 'Trait couleur'], ['plain', 'Sans trait'], ['bar', 'Barre'], ['box', 'Bloc']], cur.headStyle || '')}
-      <div style="margin-top:10px">${seg('headCaps', [['', 'Modèle'], ['on', 'MAJUSCULES'], ['off', 'Minuscules']], cur.headCaps || '')}</div></div>
-    <div class="field"><span class="label">Dates</span>${seg('dateFormat', [['mmyyyy', '09/2024'], ['mmm', 'sept. 2024'], ['yyyy', '2024']], cur.dateFormat || 'mmyyyy')}</div>
-    <div class="field"><span class="label">Compétences</span>${seg('skillStyle', [['text', 'Texte'], ['chips', 'Pastilles'], ['bars', 'Barres'], ['dots', 'Points']], cur.skillStyle || 'text')}</div>
-    <div class="field"><span class="label">Langues</span>${seg('langStyle', [['text', 'Texte'], ['bars', 'Barres'], ['dots', 'Points']], cur.langStyle || 'text')}</div>
     <div class="field"><span class="label">Colonnes</span>${seg('columns', [['one', 'Une colonne'], ['two', 'Deux colonnes']], cur.columns || 'one')}
-      <p class="hint">Deux colonnes : compétences, langues et centres d'intérêt passent à droite.</p></div>
-    <button class="btn btn-plain small" data-act="reset-design">Réinitialiser le design</button>`;
+      <p class="hint">Deux colonnes : compétences, langues et centres d'intérêt passent à droite.</p></div>`);
+
+  const fonts = dcard('Police', html`
+    <div class="field"><span class="label">Texte</span>${fontSelect(st, 'font', cur.font, false)}</div>
+    <div class="field"><span class="label">Nom et titre</span>${fontSelect(st, 'nameFont', cur.nameFont, true)}</div>
+    <div class="field"><span class="label">Taille du nom</span>${range(cur, 'nameSize', 16, 32, 1, ' pt', 20)}</div>
+    <p class="font-sample" style="font-family:${st.fonts[cur.font]?.stack || 'inherit'}">Analyste cybersécurité · Aa Bb Cc 0123</p>`);
+
+  const colors = dcard('Couleurs', html`
+    <div class="field"><span class="label">Appliquer le fond sur</span>
+      <div class="zones" data-style="bgMode">${[['page', 'Page entière'], ['header', 'En-tête'], ['border', 'Bordure']].map(([k, l]) => html`<button type="button" class="zone zone-${k}" data-v="${k}" aria-pressed="${(cur.bgMode || 'header') === k}"><i></i><span>${l}</span></button>`)}</div></div>
+    <div class="field"><span class="label">Palette</span>${seg('colorMode', [['single', 'Simple'], ['multi', 'Multi']], mode)}</div>
+    ${mode === 'single'
+      ? html`<div class="swatches" data-style="accent">${Object.entries(st.accents).map(([k, v]) => html`<button type="button" class="swatch" data-v="${k}" aria-pressed="${cur.accent === k}" aria-label="${v.label}" title="${v.label}" style="--c:${v.color}"></button>`)}
+          <label class="swatch custom" title="Couleur personnalisée" style="--c:${customAccent ? cur.accent : '#ffffff'}" aria-pressed="${customAccent}"><input type="color" id="accent-custom" value="${customAccent ? cur.accent : '#1f3a93'}"></label></div>`
+      : html`<div class="palettes">${st.palettes.map((p, i) => html`<button type="button" class="pal" data-pal="${i}" title="${p.label}" aria-pressed="${cur.bgColor === p.bg && cur.accent === p.accent}" style="--pb:${p.bg};--pa:${p.accent};--pi:${isLight(p.bg) ? '#222' : '#fff'}"><span class="pal-l"><b>T</b><i></i></span><span class="pal-r"><b>T</b><i></i></span></button>`)}</div>
+        <div class="custom-colors">
+          <label><span>Texte</span><input type="color" data-color="textColor" value="${isHexColor(cur.textColor) ? cur.textColor : '#222222'}"></label>
+          <label><span>Fond</span><input type="color" data-color="bgColor" value="${isHexColor(cur.bgColor) ? cur.bgColor : '#f4f1e8'}"></label>
+          <label><span>Accent</span><input type="color" data-color="accent" value="${customAccent ? cur.accent : (st.accents[cur.accent]?.color || '#1f3a93')}"></label>
+          ${cur.bgColor ? html`<button type="button" class="btn btn-plain small" data-act="no-bg">Sans fond</button>` : ''}
+        </div>`}
+    <div class="field" style="margin-top:16px"><span class="label">Appliquer la couleur d'accent à</span>
+      <div class="chk-grid">${Object.entries(st.accentKeys).map(([k, l]) => html`<label class="chk"><input type="checkbox" data-acc="${k}" ${accentOn.has(k) ? raw('checked') : ''}><span>${l}</span></label>`)}</div></div>`);
+
+  const header = dcard('En-tête', html`
+    <div class="field"><span class="label">Alignement du texte</span>${seg('align', [['', 'À gauche'], ['center', 'Centré']], cur.align || '')}</div>
+    <div class="field"><span class="label">Arrangement des coordonnées</span>${seg('contactArr', [['line', 'Sur une ligne'], ['cols', 'Deux colonnes'], ['stack', 'En liste']], cur.contactArr || 'line')}</div>
+    <div class="row wrap" style="margin-top:12px">${check('icons', 'Icônes pour e-mail, téléphone, ville', cur.icons)}</div>`);
+
+  const photo = dcard('Photo', html`
+    <div class="row wrap">${check('photo', 'Afficher', cur.photo !== false)}${check('photoGray', 'Noir et blanc', cur.photoGray)}${check('photoBorder', 'Cadre', cur.photoBorder)}</div>
+    <div class="field" style="margin-top:14px"><span class="label">Position</span>${seg('photoPos', [['', 'Selon le modèle'], ['left', 'Gauche'], ['top', 'Haut'], ['right', 'Droite']], cur.photoPos || '')}</div>
+    <div class="field"><span class="label">Taille</span>${seg('photoSize', Object.entries(st.photoSizes), cur.photoSize || 'm')}</div>
+    <div class="field"><span class="label">Forme</span><div class="shapes" data-style="photoShape">${Object.entries(st.photoShapes).map(([k, l]) => html`<button type="button" class="shp shp-${k}" data-v="${k}" aria-pressed="${(cur.photoShape || 'portrait') === k}" title="${l}"><i></i></button>`)}</div></div>`);
+
+  const links = dcard('Liens', html`
+    <div class="row wrap">${check('linkUnderline', 'Souligné', cur.linkUnderline)}${check('linkBlue', 'En bleu', cur.linkBlue)}${check('linkIcons', 'Logo devant les liens (LinkedIn, GitHub…)', cur.linkIcons)}</div>
+    ${cur.linkIcons ? html`<div class="field" style="margin-top:12px"><span class="label">Icône des autres liens</span>${seg('linkIconType', [['link', 'Chaîne'], ['external', 'Flèche']], cur.linkIconType || 'link')}</div>` : ''}`);
+
+  const heads = dcard('Titres de rubrique', html`
+    <div class="hstyles" data-style="headStyle">${HEAD_STYLES.map(([k, l]) => html`<button type="button" class="hs hs-${k || 'tpl'}" data-v="${k}" aria-pressed="${(cur.headStyle || '') === k}"><span class="hs-prev"><b>Titre</b><i></i></span><small>${l}</small></button>`)}</div>
+    <div class="field" style="margin-top:14px"><span class="label">Majuscules</span>${seg('headCaps', [['', 'Selon le modèle'], ['off', 'Telles quelles'], ['on', 'MAJUSCULES']], cur.headCaps || '')}</div>
+    <div class="field"><span class="label">Icônes</span>${seg('headIcons', [['', 'Selon le modèle'], ['none', 'Aucune'], ['outline', 'Contour'], ['filled', 'Rempli']], cur.headIcons || '')}</div>`);
+
+  const entries = dcard('Fiches (expériences, formations…)', html`
+    <div class="field"><span class="label">Structure</span>
+      <div class="structs" data-style="entryStruct">${[['', 'Selon le modèle', 'full'], ['full', 'Pleine largeur', 'full'], ['cols', 'Colonnes', 'cols']].map(([k, l, ic]) => html`<button type="button" class="struct struct-${ic}" data-v="${k}" aria-pressed="${(cur.entryStruct || '') === k}"><i></i><i></i><i></i><small>${l}</small></button>`)}</div></div>
+    <div class="field"><span class="label">Position des dates et du lieu</span>${seg('datePos', [['', 'Selon le modèle'], ['right', 'Droite'], ['left', 'Gauche'], ['split', 'Séparés']], cur.datePos || '')}</div>
+    <div class="field"><span class="label">Sous-titre</span>${seg('subPos', [['', 'Selon le modèle'], ['same', 'Sur la même ligne'], ['below', 'Sous le titre']], cur.subPos || '')}</div>`);
+
+  const skills = dcard('Compétences et langues', html`
+    <div class="field"><span class="label">Compétences</span>${seg('skillStyle', [['text', 'Texte'], ['chips', 'Pastilles'], ['bars', 'Barres'], ['dots', 'Points']], cur.skillStyle || 'text')}</div>
+    <div class="field"><span class="label">Langues</span>${seg('langStyle', [['text', 'Texte'], ['bars', 'Barres'], ['dots', 'Points']], cur.langStyle || 'text')}</div>`);
+
+  return html`${templates}${layout}${fonts}${colors}${header}${photo}${links}${heads}${entries}${skills}
+    <button type="button" class="btn btn-plain small" data-act="reset-design">Réinitialiser le design</button>`;
+}
+
+// ---------- Rendering: document ----------
+
+function documentPanel() {
+  const st = S.cvStyles;
+  const cur = style();
+  return html`${dcard('Paramètres du document', html`
+    <div class="field"><span class="label">Langue du CV</span>${seg('docLang', Object.entries(st.langs), cur.docLang || 'fr')}
+      <p class="hint">Traduit ce que l'app écrit elle-même (Profil, Contact, « Aujourd'hui », les mois, les niveaux de langue et les titres de rubrique par défaut). Tes propres textes ne sont pas traduits.</p></div>
+    <div class="field"><span class="label">Format des dates</span>${seg('dateFormat', Object.entries(st.dateFormats), cur.dateFormat || 'mmyyyy')}</div>
+    <div class="field"><span class="label">Format de page</span>${seg('pageFormat', Object.entries(st.pageFormats), cur.pageFormat || 'A4')}
+      <p class="hint">A4 en France et en Europe, Letter aux États-Unis et au Canada.</p></div>`)}`;
 }
 
 // ---------- Section ----------
@@ -305,9 +377,10 @@ export function cvStudioSection(p) {
     </div>
     <div class="studio">
       <div class="studio-edit">
-        <div class="segmented studio-tabs" id="studio-tabs"><button data-v="content" aria-pressed="true">Contenu</button><button data-v="design" aria-pressed="false">Design</button></div>
+        <div class="segmented studio-tabs" id="studio-tabs"><button data-v="content" aria-pressed="true">Contenu</button><button data-v="design" aria-pressed="false">Design</button><button data-v="doc" aria-pressed="false">Document</button></div>
         <div id="studio-panel"></div>
       </div>
+      <div class="studio-hist on"><button type="button" data-undo title="Annuler (Ctrl+Z)" aria-label="Annuler"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button type="button" data-redo title="Rétablir (Ctrl+Y)" aria-label="Rétablir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
       <div class="studio-prev"><div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="label" style="margin:0">Aperçu en direct</span><span class="small muted" id="pages"></span></div>
         <div class="preview"><div class="preview-page"><iframe id="studio-preview" title="Aperçu du CV" sandbox="allow-same-origin"></iframe></div></div></div>
     </div>
@@ -325,8 +398,17 @@ function renderContent() {
 function renderDesign() {
   const panel = document.querySelector('#studio-panel');
   if (!panel) return;
+  const y = panel.scrollTop;
   mount(panel, designPanel());
   bindDesign(panel);
+  panel.scrollTop = y;
+}
+
+function renderDocument() {
+  const panel = document.querySelector('#studio-panel');
+  if (!panel) return;
+  mount(panel, documentPanel());
+  bindDocument(panel);
 }
 
 let fontsLoaded = false;
@@ -340,15 +422,75 @@ function loadFonts() {
   document.head.appendChild(l);
 }
 
+// ---------- Undo / redo ----------
+
+const HIST_KEYS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'skills', 'sections', 'details', 'skillLevels', 'cvStyle', 'photoCrop'];
+let past = [];
+let future = [];
+let lastPush = 0;
+
+function pick(keys) {
+  return Object.fromEntries(keys.map((k) => [k, structuredClone(S.profile[k] ?? null)]));
+}
+
+function refreshHistBar() {
+  const bar = document.querySelector('.studio-hist');
+  if (!bar) return;
+  bar.querySelector('[data-undo]').disabled = !past.length;
+  bar.querySelector('[data-redo]').disabled = !future.length;
+}
+
+function record(patch) {
+  const keys = Object.keys(patch).filter((k) => HIST_KEYS.includes(k));
+  if (!keys.length) return;
+  const now = Date.now();
+  const last = past[past.length - 1];
+  // What changes: for the style, the options touched, so two different choices are two steps.
+  const sig = keys.map((k) => (k === 'cvStyle' ? 'cvStyle:' + Object.keys(patch.cvStyle || {}).filter((o) => JSON.stringify(patch.cvStyle[o]) !== JSON.stringify(S.profile.cvStyle?.[o])).join(',') : k)).join('|');
+  // Typing in the same field is one step.
+  if (last && now - lastPush < 700 && sig === last.sig) {
+    lastPush = now;
+    return;
+  }
+  past.push({ keys, sig, before: pick(keys) });
+  if (past.length > 80) past.shift();
+  future = [];
+  lastPush = now;
+  refreshHistBar();
+}
+
+function stepHistory(from, to) {
+  const e = from.pop();
+  if (!e) return;
+  to.push({ keys: e.keys, sig: e.sig, before: pick(e.keys) });
+  ctx.raw(e.before);
+  lastPush = 0;
+  (tab === 'design' ? renderDesign : tab === 'doc' ? renderDocument : renderContent)();
+  refreshHistBar();
+}
+
 export function bindCvStudio(view, c) {
-  ctx = c;
+  past = [];
+  future = [];
+  ctx = { ...c, raw: c.update, update: (patch) => { record(patch); c.update(patch); } };
+  view.querySelector('[data-undo]')?.addEventListener('click', () => stepHistory(past, future));
+  view.querySelector('[data-redo]')?.addEventListener('click', () => stepHistory(future, past));
+  if (!window.__studioKeys) {
+    window.__studioKeys = true;
+    document.addEventListener('keydown', (e) => {
+      if (!document.querySelector('#studio') || !(e.ctrlKey || e.metaKey) || e.target.closest?.('input, textarea, select')) return;
+      if (e.key === 'z' || e.key === 'Z') { e.preventDefault(); e.shiftKey ? stepHistory(future, past) : stepHistory(past, future); }
+      if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); stepHistory(future, past); }
+    });
+  }
+  refreshHistBar();
   ensureManaged();
   loadFonts();
   previewEl = view.querySelector('#studio-preview');
   previewEl.addEventListener('load', fitPreview);
   new ResizeObserver(fitPreview).observe(previewEl.parentElement);
   refreshPreview();
-  const render = () => (tab === 'design' ? renderDesign() : renderContent());
+  const render = () => (tab === 'design' ? renderDesign() : tab === 'doc' ? renderDocument() : renderContent());
   const tabs = view.querySelector('#studio-tabs');
   tabs.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === tab));
   tabs.querySelectorAll('[data-v]').forEach((b) =>
@@ -366,6 +508,43 @@ export function bindCvStudio(view, c) {
     }),
   );
   render();
+}
+
+// ---------- Add content ----------
+
+function addSection(type) {
+  const id = uid();
+  const t = types()[type];
+  const base = { id, type, title: t.label, items: [] };
+  if (t.kind === 'entries') base.items = [{ title: '', subtitle: '', location: '', start: '', end: '', current: false, link: '', description: '' }];
+  if (t.kind === 'text') base.body = '';
+  if (t.kind === 'languages') base.items = [{ name: '', level: 3 }];
+  ctx.update({ sections: [...sections(), base] });
+  openKeys.add('sec.' + id);
+  if (base.items.length) openKeys.add(`${id}.0`);
+  renderContent();
+  document.querySelector(`[data-key="sec.${id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+}
+
+function openAddModal() {
+  const wrap = document.createElement('div');
+  wrap.className = 'modal-wrap';
+  const t = types();
+  wrap.innerHTML = html`<div class="add-modal" role="dialog" aria-modal="true" aria-label="Ajouter du contenu">
+    <button type="button" class="x" aria-label="Fermer">${icons.x}</button>
+    <h3>Ajouter du contenu</h3>
+    <div class="add-cards">${Object.entries(t).map(([k, v]) => html`<button type="button" class="add-card ${k === 'custom' ? 'dashed' : ''}" data-type="${k}"><b><span>${TYPE_ICON[k]}</span>${v.label}</b><small>${v.desc || ''}</small></button>`)}</div>
+  </div>`.toString();
+  document.body.appendChild(wrap);
+  const close = () => {
+    document.removeEventListener('keydown', onKey);
+    wrap.remove();
+  };
+  const onKey = (e) => e.key === 'Escape' && close();
+  document.addEventListener('keydown', onKey);
+  wrap.addEventListener('pointerdown', (e) => e.target === wrap && close());
+  wrap.querySelector('.x').addEventListener('click', close);
+  wrap.querySelectorAll('[data-type]').forEach((b) => b.addEventListener('click', () => { close(); addSection(b.dataset.type); }));
 }
 
 // ---------- Content bindings ----------
@@ -499,19 +678,8 @@ function bindContent(panel) {
             const s = n[i];
             n[i] = { id: s.id, title: s.title, hidden: s.hidden, type: guessType(s.title), items: textToEntries(s.body) };
           }, true);
-        case 's-add': {
-          const type = b.dataset.type;
-          const id = uid();
-          const base = { id, type, title: types()[type].label, items: [] };
-          if (types()[type].kind === 'entries') base.items = [{ title: '', subtitle: '', location: '', start: '', end: '', current: false, link: '', description: '' }];
-          if (types()[type].kind === 'text') base.body = '';
-          if (types()[type].kind === 'languages') base.items = [{ name: '', level: 3 }];
-          ctx.update({ sections: [...sections(), base] });
-          openKeys.add('sec.' + id);
-          if (base.items.length) openKeys.add(`${id}.0`);
-          renderContent();
-          return document.querySelector(`[data-key="sec.${id}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        }
+        case 'open-add': return openAddModal();
+        case 'e-hide': return edit((n) => (n[i].items[j].hidden = !n[i].items[j].hidden), true);
         case 'sum-hide':
           ctx.update({ cvStyle: { ...style(), summary: style().summary === false } });
           return renderContent();
@@ -521,6 +689,41 @@ function bindContent(panel) {
       }
     }),
   );
+
+  // Drag to reorder entries inside a section.
+  panel.querySelectorAll('.sx-body').forEach((body) => {
+    const sx = body.closest('.sx');
+    const i = Number(sx?.dataset.i);
+    let from = null;
+    body.querySelectorAll(':scope > details.ent').forEach((ent) => {
+      ent.querySelector('.ent-handle')?.addEventListener('mousedown', () => (ent.draggable = true));
+      ent.addEventListener('dragstart', (e) => {
+        e.stopPropagation();
+        from = Number(ent.dataset.e);
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'e' + from);
+      });
+      ent.addEventListener('dragover', (e) => {
+        if (from === null) return;
+        e.preventDefault();
+        e.stopPropagation();
+        ent.classList.add('over');
+      });
+      ent.addEventListener('dragleave', () => ent.classList.remove('over'));
+      ent.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const to = Number(ent.dataset.e);
+        if (from === null || from === to) return;
+        edit((n) => n[i].items.splice(to, 0, n[i].items.splice(from, 1)[0]), true);
+      });
+      ent.addEventListener('dragend', () => {
+        from = null;
+        ent.draggable = false;
+        body.querySelectorAll('.ent').forEach((x) => x.classList.remove('over'));
+      });
+    });
+  });
 
   // Drag to reorder sections (the handle arms the drag, so text fields keep selecting normally).
   const list = panel.querySelector('#secs');
@@ -555,8 +758,6 @@ function bindContent(panel) {
 
 // ---------- Design bindings ----------
 
-const DESIGN_KEYS = ['layout', 'font', 'accent', 'fontSize', 'lineHeight', 'margin', 'gap', 'nameSize', 'headStyle', 'headCaps', 'dateFormat', 'skillStyle', 'langStyle', 'icons', 'linkIcons', 'align', 'columns', 'photo', 'photoShape', 'photoSize', 'photoBorder', 'summary'];
-
 function bindDesign(panel) {
   const set = (patch) => ctx.update({ cvStyle: { ...style(), ...patch } });
   const layouts = panel.querySelector('#layouts');
@@ -568,22 +769,29 @@ function bindDesign(panel) {
       set({ layout: b.dataset.v });
     }),
   );
+  // Choices: one value among several. The ones that change which controls are shown redraw the panel.
+  const REDRAW = ['skillStyle', 'columns', 'colorMode', 'linkIconType'];
   panel.querySelectorAll('[data-style]').forEach((group) =>
     group.querySelectorAll('[data-v]').forEach((b) =>
       b.addEventListener('click', () => {
         group.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
         group.querySelector('.custom')?.setAttribute('aria-pressed', false);
-        set({ [group.dataset.style]: b.dataset.v });
-        if (['skillStyle', 'columns'].includes(group.dataset.style)) renderDesign();
+        const key = group.dataset.style;
+        const patch = { [key]: b.dataset.v };
+        if (key === 'accent') patch.colorMode = 'single';
+        if (key === 'colorMode' && b.dataset.v === 'single') Object.assign(patch, { bgColor: '', textColor: '' });
+        set(patch);
+        if (REDRAW.includes(key) || key === 'accent') renderDesign();
+        if (key === 'docLang') document.querySelector('#studio-panel')?.scrollTo?.(0, 0);
       }),
     ),
   );
-  panel.querySelector('#accent-custom').addEventListener('input', (e) => {
+  panel.querySelector('#accent-custom')?.addEventListener('input', (e) => {
     panel.querySelectorAll('[data-style="accent"] .swatch').forEach((x) => x.setAttribute('aria-pressed', x.contains(e.target)));
     e.target.parentElement.style.setProperty('--c', e.target.value);
     set({ accent: e.target.value });
   });
-  panel.querySelectorAll('[data-toggle]').forEach((c) => c.addEventListener('change', () => set({ [c.dataset.toggle]: c.checked })));
+  panel.querySelectorAll('[data-toggle]').forEach((c) => c.addEventListener('change', () => { set({ [c.dataset.toggle]: c.checked }); if (c.dataset.toggle === 'linkIcons') renderDesign(); }));
   panel.querySelectorAll('[data-range]').forEach((r) =>
     r.addEventListener('input', () => {
       const k = r.dataset.range;
@@ -598,10 +806,49 @@ function bindDesign(panel) {
       renderDesign();
     }),
   );
-  panel.querySelector('[data-act="reset-design"]').addEventListener('click', () => {
-    if (!confirm('Revenir aux réglages d\'origine du modèle ?')) return;
-    const keep = { photo: style().photo, photoShape: style().photoShape, photoSize: style().photoSize, photoBorder: style().photoBorder };
-    ctx.update({ cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', fontSize: 0, lineHeight: 0, margin: 0, gap: 0, nameSize: 0, headStyle: '', headCaps: '', dateFormat: 'mmyyyy', skillStyle: 'text', langStyle: 'text', icons: false, linkIcons: false, align: '', columns: 'one', summary: true, ...keep } });
+  panel.querySelectorAll('[data-font]').forEach((s) =>
+    s.addEventListener('change', () => {
+      set({ [s.dataset.font]: s.value });
+      renderDesign();
+    }),
+  );
+  panel.querySelectorAll('[data-pal]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const p = S.cvStyles.palettes[Number(b.dataset.pal)];
+      set({ bgColor: p.bg, accent: p.accent, textColor: p.text, colorMode: 'multi' });
+      renderDesign();
+    }),
+  );
+  panel.querySelectorAll('[data-color]').forEach((i) =>
+    i.addEventListener('input', () => set({ [i.dataset.color]: i.value, colorMode: 'multi' })),
+  );
+  panel.querySelector('[data-act="no-bg"]')?.addEventListener('click', () => {
+    set({ bgColor: '', colorMode: 'multi' });
     renderDesign();
   });
+  panel.querySelectorAll('[data-acc]').forEach((c) =>
+    c.addEventListener('change', () => {
+      const on = new Set(style().accentOn || DEFAULT_ACCENT_ON);
+      if (c.checked) on.add(c.dataset.acc);
+      else on.delete(c.dataset.acc);
+      set({ accentOn: [...on] });
+    }),
+  );
+  panel.querySelector('[data-act="reset-design"]')?.addEventListener('click', () => {
+    if (!confirm("Revenir aux réglages d'origine du modèle ?")) return;
+    const keep = { docLang: style().docLang, pageFormat: style().pageFormat, dateFormat: style().dateFormat, photo: style().photo };
+    ctx.update({ cvStyle: { ...RESET_STYLE, ...keep } });
+    renderDesign();
+  });
+}
+
+function bindDocument(panel) {
+  panel.querySelectorAll('[data-style]').forEach((group) =>
+    group.querySelectorAll('[data-v]').forEach((b) =>
+      b.addEventListener('click', () => {
+        group.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+        ctx.update({ cvStyle: { ...style(), [group.dataset.style]: b.dataset.v } });
+      }),
+    ),
+  );
 }

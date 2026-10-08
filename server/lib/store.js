@@ -49,7 +49,7 @@ function defaultProfile() {
     photoOriginal: null, // path of the picture it was cropped from
     photoCrop: null, // { zoom, x, y, rot, bw } to reopen the cropper where it was
     cvMode: 'own', // 'own' = keep my CV file, 'app' = use the app's templates
-    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false },
+    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'portrait', photoSize: 'm', photoBorder: false },
     docx: { titleText: '', skillsAnchor: '' },
     search: {
       domain: '',
@@ -163,6 +163,12 @@ db.profile = {
   search: { ...defaultProfile().search, ...(db.profile || {}).search },
   cvStyle: { ...defaultProfile().cvStyle, ...(db.profile || {}).cvStyle },
 };
+// Photo shapes were square / rounded (both portrait) before: keep their look.
+if (db.profile.cvStyle && !db.profile.cvStyle.photoShapeV2) {
+  const m = { carre: 'portrait', arrondi: 'portraitArrondi' };
+  db.profile.cvStyle.photoShape = m[db.profile.cvStyle.photoShape] || db.profile.cvStyle.photoShape;
+  db.profile.cvStyle.photoShapeV2 = true;
+}
 db.settings = { ...defaultSettings(), ...db.settings };
 
 let secrets = { ...defaultSecrets(), ...readJson(SECRETS_FILE, {}) };

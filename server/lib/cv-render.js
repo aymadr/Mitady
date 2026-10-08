@@ -580,7 +580,7 @@ function customCss(st) {
     c.push(`@page { margin: ${my}mm 0; } @page :first { margin-top: 0; }`);
     c.push(`header { background: ${st.bg}; color: ${ink}; padding: ${my}mm ${mx}mm 5mm; margin-bottom: 3mm; } header .headline { color: ${st.accentOn?.includes('jobTitle') ? 'var(--accent)' : 'inherit'}; opacity: .92; }`);
     c.push(`header h1 { color: ${st.accentOn?.includes('name') ? 'var(--accent)' : 'inherit'}; } header .ic { color: inherit; }`);
-    c.push(`body > section, body > .cols { padding-left: ${mx}mm; padding-right: ${mx}mm; }`);
+    c.push(`body > section, body > .cols, body > .letter { padding-left: ${mx}mm; padding-right: ${mx}mm; }`);
   }
   if (st.bg && st.bgMode === 'border') c.push('.frame { display: block; }');
   return c.join('\n  ');
@@ -786,7 +786,28 @@ function photoDims(st) {
   return [w, +(w * 1.28).toFixed(1)];
 }
 
-function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], preview = false }) {
+// ---------- Cover letter ----------
+
+const LETTER_LABELS = { fr: { subject: 'Objet' }, en: { subject: 'Subject' } };
+const paragraphs = (text) => String(text || '').split(/\n{2,}/).map((p) => p.trim()).filter(Boolean).map((p) => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`).join('');
+
+// The letter itself: recipient, place and date, subject, greeting, body, closing, signature.
+function letterBodyHtml(l, st, profile) {
+  const r = l.recipient || {};
+  const to = [r.name, r.role, r.company, r.address].filter(Boolean).map((x) => `<div>${escapeHtml(x)}</div>`).join('');
+  const when = [l.place, l.date].filter(Boolean).map(escapeHtml).join(', ');
+  const side = l.align === 'left' ? 'left' : 'right';
+  return `<div class="lt lt-${side}">
+    <div class="lt-head">${to ? `<div class="lt-to">${to}</div>` : ''}${when ? `<div class="lt-when">${when}</div>` : ''}</div>
+    ${l.subject ? `<p class="lt-subject"><strong>${LETTER_LABELS[st.docLang].subject} :</strong> ${escapeHtml(l.subject)}</p>` : ''}
+    ${l.opening ? `<p class="lt-open">${escapeHtml(l.opening)}</p>` : ''}
+    ${paragraphs(l.body)}
+    ${l.closing ? `<p class="lt-close">${escapeHtml(l.closing)}</p>` : ''}
+    <div class="lt-sign">${escapeHtml(profile.name || '')}</div>
+  </div>`;
+}
+
+function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], preview = false, letter = null }) {
   const empty = !profileIn.name && !(profileIn.sections || []).some((s) => sectionText(s).trim());
   const profile = empty ? { ...profileIn, ...SAMPLE, photo: profileIn.photo, cvStyle: profileIn.cvStyle } : profileIn;
   if (empty) {
@@ -796,6 +817,7 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
   }
   const st = resolveStyle(profile.cvStyle);
   const tx = I18N[st.docLang];
+  const letterHtml = letter ? letterBodyHtml(letter, st, profile) : null;
   const struct = st.tpl.struct;
   const contactItems = [
     profile.email && ['mail', st.icons ? profile.email : `${tx.email} : ${profile.email}`],
@@ -825,11 +847,11 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
     };
   };
 
-  const blocks = all.map(blockOf).filter((b) => b.html);
+  const blocks = letterHtml ? [] : all.map(blockOf).filter((b) => b.html);
   // Without a skills section of its own, skills go before certifications / languages
   // (CVs the editor has not touched yet).
   const hasSkills = all.some((s) => (s.type || 'text') === 'skills' || (!s.type && isSkills(s)));
-  if (!profile.cvManaged && !hasSkills && skillNames.length) {
+  if (!letterHtml && !profile.cvManaged && !hasSkills && skillNames.length) {
     const at = blocks.findIndex((b) => /certif|langue|intér|loisir|language|interest/i.test(b.title));
     blocks.splice(at === -1 ? blocks.length : at, 0, { title: SECTION_TYPES.skills[st.docLang === 'en' ? 'en' : 'label'], html: renderSkillList(skillNames, st, levels), type: 'skills', side: true });
   }
@@ -846,12 +868,21 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
     : `<div class="contact links">${contactItems.map(span).join('')}${links.map(lk).join('')}</div>`;
   const iconMode = st.headIcons === 'none' ? '' : st.headIcons;
   const section = (b) => `<section><h2>${iconMode ? headIcon(b.type, iconMode) : ''}<span>${escapeHtml(b.title)}</span></h2>${b.html}</section>`;
-  const summaryBlock = summary && st.summary ? { title: tx.profile, type: 'profile', html: `<p class="summary">${escapeHtml(summary)}</p>` } : null;
+  const summaryBlock = !letterHtml && summary && st.summary ? { title: tx.profile, type: 'profile', html: `<p class="summary">${escapeHtml(summary)}</p>` } : null;
   const summaryHtml = summaryBlock ? section(summaryBlock) : '';
 
   const hd = `<div class="hd">${idHtml}${contactHtml}</div>`;
   let body;
-  if (struct === 'side') {
+  if (letterHtml) {
+    const L = `<div class="letter">${letterHtml}</div>`;
+    if (struct === 'side') {
+      body = `<div class="rail"></div><aside>${photoTag}${st.tpl.nameInSide ? idHtml : ''}<section><h2>${escapeHtml(tx.contact)}</h2>${contactHtml}</section></aside><main>${st.tpl.nameInSide ? '' : idHtml}${L}</main>`;
+    } else if (struct === 'band') {
+      body = `<header>${photoTag}${hd}</header><main>${L}</main>`;
+    } else {
+      body = `<header>${photoTag}${hd}</header>${L}`;
+    }
+  } else if (struct === 'side') {
     const sideOnes = blocks.filter((b) => b.side);
     const mainOnes = blocks.filter((b) => !b.side);
     const inSide = st.tpl.nameInSide;
@@ -906,6 +937,17 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
   ul { list-style: none; margin: 1pt 0 3pt; }
   li { padding-left: 9pt; text-indent: -6pt; margin-bottom: 1pt; break-inside: avoid; }
   .summary { text-align: justify; }
+  .letter { margin-top: 9mm; font-size: 10pt; line-height: 1.45; }
+  .lt p { margin: 0 0 8pt; text-align: justify; }
+  .lt-head { display: flex; flex-direction: column; gap: 8pt; margin-bottom: 12pt; }
+  .lt-right .lt-head { align-items: flex-end; text-align: right; }
+  .lt-left .lt-head { align-items: flex-start; }
+  .lt-when { color: #444; }
+  .lt-subject { margin-top: 4pt; }
+  .lt-open { margin-top: 10pt; }
+  .lt-close { margin-top: 12pt; }
+  .lt-sign { margin-top: 22pt; font-weight: 700; }
+  .lt-right .lt-sign { text-align: right; }
 
   /* Entries: grid areas by structure and date position */
   .entry { display: grid; column-gap: 10pt; margin-top: 4pt; break-inside: avoid-page; }
@@ -970,4 +1012,4 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
 </body></html>`;
 }
 
-module.exports = { CV_STYLES, SECTION_TYPES, LEVELS, TEMPLATES, sectionText, renderCvHtml, renderBody, renderSkills, isSkills, photoDataUri, MAX_CV_SKILLS };
+module.exports = { LETTER_LABELS, CV_STYLES, SECTION_TYPES, LEVELS, TEMPLATES, sectionText, renderCvHtml, renderBody, renderSkills, isSkills, photoDataUri, MAX_CV_SKILLS };

@@ -68,8 +68,8 @@ app.get('/api/state', (req, res) => {
 
 // ---------- Profile ----------
 
-const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'cvMode', 'details', 'skillLevels', 'cvManaged', 'avatar', 'pet', 'photoCrop'];
-const MERGED_FIELDS = ['search', 'docx', 'cvStyle'];
+const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'letter', 'cvMode', 'details', 'skillLevels', 'cvManaged', 'avatar', 'pet', 'photoCrop'];
+const MERGED_FIELDS = ['search', 'docx', 'cvStyle', 'letter'];
 
 app.put('/api/profile', route((req, res) => {
   const p = store.db.profile;
@@ -257,6 +257,7 @@ app.put('/api/applications/:id', route((req, res) => {
   Object.assign(a, Object.fromEntries(Object.entries({ notes, title, company, location, link, description }).filter(([, v]) => v !== undefined)));
   if (contact) a.contact = { ...a.contact, ...contact };
   if (cvDraft) a.cv = { ...(a.cv || {}), ...cvDraft };
+  if (req.body.letterDraft) a.letter = { ...(a.letter || {}), ...req.body.letterDraft, recipient: { ...(a.letter?.recipient || {}), ...(req.body.letterDraft.recipient || {}) } };
   store.save();
   res.json(enrich(a));
 }));
@@ -324,6 +325,93 @@ app.get('/api/applications/:id/cv', route((req, res) => {
   res.sendFile(a.cv.file);
 }));
 
+// ---------- Cover letter ----------
+
+const RAVI = { masculin: 'ravi', feminin: 'ravie', neutre: 'ravi(e)' };
+const list = (items) => (items.length > 1 ? `${items.slice(0, -1).join(', ')} et ${items[items.length - 1]}` : items[0] || 'mon domaine');
+
+function letterVars(a) {
+  const { profile } = store.db;
+  let matched = [];
+  try { matched = analyzeOffer(a, profile).matched || []; } catch {}
+  const top = (matched.length ? matched : profile.skills || []).slice(0, 3);
+  return {
+    entreprise: a.company,
+    poste: adaptTitle(a.title, profile.titleGender, a.company),
+    contact: a.contact?.name || '',
+    nom: profile.name,
+    email: profile.email,
+    telephone: profile.phone,
+    ville: profile.location,
+    competences: list(top),
+    ravi: RAVI[profile.titleGender || 'neutre'],
+  };
+}
+
+const longDateLabel = (lang) => new Date().toLocaleDateString(lang === 'en' ? 'en-GB' : 'fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+// What the letter says for an offer: the user's edits, else Claude's text, else the template.
+function letterDraft(a, over = {}, { fresh = false } = {}) {
+  const { profile } = store.db;
+  const L = profile.letter;
+  const vars = letterVars(a);
+  const base = {
+    subject: fill(L.subject, vars),
+    opening: fill(L.opening, vars),
+    body: !fresh && a.ai?.letterBody ? a.ai.letterBody : fill(L.body, vars),
+    closing: fill(L.closing, vars),
+    place: L.place || profile.location || '',
+    date: L.showDate === false ? '' : longDateLabel(profile.cvStyle?.docLang),
+    align: L.align || 'right',
+    recipient: { name: a.contact?.name || '', role: '', company: a.company, address: a.location || '' },
+  };
+  const { file, generatedAt, ...edits } = fresh ? {} : a.letter || {};
+  return { ...base, ...edits, ...over, recipient: { ...base.recipient, ...(edits.recipient || {}), ...(over.recipient || {}) } };
+}
+
+const letterHeadline = (a) => a.cv?.headline || adaptTitle(a.title, store.db.profile.titleGender, a.company);
+
+app.get('/api/applications/:id/letter/draft', route((req, res) => {
+  res.json(letterDraft(findApp(req.params.id), {}, { fresh: Boolean(req.query.fresh) }));
+}));
+
+app.post('/api/applications/:id/letter/preview', route((req, res) => {
+  const a = findApp(req.params.id);
+  res.type('html').send(cv.renderLetterFor(store.db.profile, letterDraft(a, req.body), letterHeadline(a), true));
+}));
+
+app.post('/api/applications/:id/letter', route(async (req, res) => {
+  const a = findApp(req.params.id);
+  const draft = letterDraft(a, req.body);
+  const file = await cv.generateLetter(a, store.db.profile, draft, letterHeadline(a));
+  a.letter = { ...draft, file, generatedAt: new Date().toISOString() };
+  store.save();
+  res.json({ application: enrich(a) });
+}));
+
+app.get('/api/applications/:id/letter', route((req, res) => {
+  const a = findApp(req.params.id);
+  if (!a.letter?.file || !fs.existsSync(a.letter.file)) throw fail(404, 'Lettre pas encore générée.');
+  if (req.query.download) return res.download(a.letter.file);
+  res.sendFile(a.letter.file);
+}));
+
+// Preview of the letter on an example offer, for the editor (settings sent unsaved).
+app.post('/api/profile/letter-preview', route((req, res) => {
+  const profile = { ...store.db.profile, letter: { ...store.db.profile.letter, ...(req.body.letter || {}) } };
+  if (req.body.cvStyle) profile.cvStyle = { ...profile.cvStyle, ...req.body.cvStyle };
+  for (const k of PREVIEW_FIELDS) if (req.body.profile && k in req.body.profile) profile[k] = req.body.profile[k];
+  const sample = { title: profile.headline || 'Alternant Cybersécurité', company: 'Société Exemple', location: 'Paris', description: '', contact: {} };
+  const L = profile.letter;
+  const vars = { ...letterVars(sample), nom: profile.name || 'Camille Martin' };
+  const draft = {
+    subject: fill(L.subject, vars), opening: fill(L.opening, vars), body: fill(L.body, vars), closing: fill(L.closing, vars),
+    place: L.place || profile.location || 'Paris', date: L.showDate === false ? '' : longDateLabel(profile.cvStyle?.docLang), align: L.align || 'right',
+    recipient: { name: 'Mme Dupont', role: 'Responsable recrutement', company: sample.company, address: 'Paris' },
+  };
+  res.type('html').send(cv.renderLetterFor(profile, draft, profile.headline, true));
+}));
+
 // ---------- Claude ----------
 
 app.post('/api/applications/:id/ai', route(async (req, res) => {
@@ -370,7 +458,7 @@ app.get('/api/applications/:id/email-draft', route((req, res) => {
 
 app.post('/api/applications/:id/send', route(async (req, res) => {
   const a = findApp(req.params.id);
-  const { to, subject, body, attach } = req.body;
+  const { to, subject, body, attach, attachLetter } = req.body;
   if (!to || !subject || !body) throw fail(400, 'Destinataire, objet et message sont requis.');
   const { profile } = store.db;
   let attachment = null;
@@ -378,7 +466,9 @@ app.post('/api/applications/:id/send', route(async (req, res) => {
   if (attach === 'original') attachment = await cv.originalPdf(profile);
   if (attachment && !fs.existsSync(attachment)) throw fail(400, 'La pièce jointe est introuvable, régénère le CV.');
 
-  await mailer.send(store.getSecrets().smtp, { fromName: profile.name, to, subject, body, attachment });
+  const extra = attachLetter && a.letter?.file && fs.existsSync(a.letter.file) ? [a.letter.file] : [];
+  if (attachLetter && !extra.length) throw fail(400, 'La lettre est introuvable, régénère-la.');
+  await mailer.send(store.getSecrets().smtp, { fromName: profile.name, to, subject, body, attachment, attachments: extra });
   a.emails = [...(a.emails || []), { to, subject, at: new Date().toISOString() }];
   if (a.status === 'todo') {
     a.status = 'applied';

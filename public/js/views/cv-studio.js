@@ -63,7 +63,9 @@ function fitPreview() {
 const refreshPreview = debounce(async () => {
   if (!previewEl?.isConnected) return;
   try {
-    previewEl.srcdoc = await api('/profile/cv-preview', { method: 'POST', body: payload(style()) });
+    previewEl.srcdoc = tab === 'letter'
+      ? await api('/profile/letter-preview', { method: 'POST', body: { ...payload(style()), letter: S.profile.letter } })
+      : await api('/profile/cv-preview', { method: 'POST', body: payload(style()) });
   } catch (e) {
     fail(e);
   }
@@ -71,7 +73,9 @@ const refreshPreview = debounce(async () => {
 
 const refreshThumbs = debounce(() => {
   document.querySelectorAll('#layouts iframe').forEach((f) =>
-    api('/profile/cv-preview', { method: 'POST', body: payload({ ...style(), layout: f.dataset.layout }) })
+    (tab === 'letter'
+      ? api('/profile/letter-preview', { method: 'POST', body: { ...payload(style()), letter: { ...S.profile.letter, layout: f.dataset.layout } } })
+      : api('/profile/cv-preview', { method: 'POST', body: payload({ ...style(), layout: f.dataset.layout }) }))
       .then((doc) => (f.srcdoc = doc))
       .catch(() => {}),
   );
@@ -377,7 +381,7 @@ export function cvStudioSection(p) {
     </div>
     <div class="studio">
       <div class="studio-edit">
-        <div class="segmented studio-tabs" id="studio-tabs"><button data-v="content" aria-pressed="true">Contenu</button><button data-v="design" aria-pressed="false">Design</button><button data-v="doc" aria-pressed="false">Document</button></div>
+        <div class="segmented studio-tabs" id="studio-tabs"><button data-v="content" aria-pressed="true">Contenu</button><button data-v="design" aria-pressed="false">Design</button><button data-v="doc" aria-pressed="false">Document</button><button data-v="letter" aria-pressed="false">Lettre</button></div>
         <div id="studio-panel"></div>
       </div>
       <div class="studio-hist on"><button type="button" data-undo title="Annuler (Ctrl+Z)" aria-label="Annuler"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></svg></button><button type="button" data-redo title="Rétablir (Ctrl+Y)" aria-label="Rétablir"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5M20 9H10a6 6 0 0 0 0 12h3"/></svg></button></div>
@@ -404,6 +408,20 @@ function renderDesign() {
   panel.scrollTop = y;
 }
 
+function renderTab() {
+  if (tab === 'design') renderDesign();
+  else if (tab === 'doc') renderDocument();
+  else if (tab === 'letter') renderLetter();
+  else renderContent();
+}
+
+function renderLetter() {
+  const panel = document.querySelector('#studio-panel');
+  if (!panel) return;
+  mount(panel, letterPanel());
+  bindLetter(panel);
+}
+
 function renderDocument() {
   const panel = document.querySelector('#studio-panel');
   if (!panel) return;
@@ -424,7 +442,7 @@ function loadFonts() {
 
 // ---------- Undo / redo ----------
 
-const HIST_KEYS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'skills', 'sections', 'details', 'skillLevels', 'cvStyle', 'photoCrop'];
+const HIST_KEYS = ['letter', 'name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'skills', 'sections', 'details', 'skillLevels', 'cvStyle', 'photoCrop'];
 let past = [];
 let future = [];
 let lastPush = 0;
@@ -465,7 +483,7 @@ function stepHistory(from, to) {
   to.push({ keys: e.keys, sig: e.sig, before: pick(e.keys) });
   ctx.raw(e.before);
   lastPush = 0;
-  (tab === 'design' ? renderDesign : tab === 'doc' ? renderDocument : renderContent)();
+  renderTab();
   refreshHistBar();
 }
 
@@ -490,7 +508,7 @@ export function bindCvStudio(view, c) {
   previewEl.addEventListener('load', fitPreview);
   new ResizeObserver(fitPreview).observe(previewEl.parentElement);
   refreshPreview();
-  const render = () => (tab === 'design' ? renderDesign() : tab === 'doc' ? renderDocument() : renderContent());
+  const render = () => renderTab();
   const tabs = view.querySelector('#studio-tabs');
   tabs.querySelectorAll('[data-v]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.v === tab));
   tabs.querySelectorAll('[data-v]').forEach((b) =>
@@ -498,6 +516,7 @@ export function bindCvStudio(view, c) {
       tab = b.dataset.v;
       tabs.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
       render();
+      refreshPreview();
     }),
   );
   const modes = view.querySelector('#cv-mode');
@@ -850,5 +869,71 @@ function bindDocument(panel) {
         ctx.update({ cvStyle: { ...style(), [group.dataset.style]: b.dataset.v } });
       }),
     ),
+  );
+}
+
+// ---------- Letter ----------
+
+const LETTER_VARS = [['entreprise', 'Entreprise'], ['poste', 'Poste'], ['contact', 'Contact'], ['competences', 'Compétences'], ['ravi', 'ravi(e)'], ['nom', 'Nom'], ['ville', 'Ville']];
+
+function letterPanel() {
+  const st = S.cvStyles;
+  const L = S.profile.letter || {};
+  const same = !L.layout;
+  const templates = dcard('Modèle de la lettre', html`
+    <div class="field"><label class="chk"><input type="checkbox" id="l-same" ${same ? raw('checked') : ''}><span>Même modèle que mon CV (recommandé : les deux documents sont assortis)</span></label></div>
+    <div class="templates ${same ? 'is-off' : ''}" id="layouts">${Object.entries(st.layouts).map(([k, l]) => html`<button type="button" class="tpl" data-v="${k}" aria-pressed="${(L.layout || style().layout) === k}">
+      <span class="tpl-thumb"><iframe tabindex="-1" data-layout="${k}" title="${l.label}" sandbox="allow-same-origin"></iframe></span>
+      <span class="tpl-name">${l.label}</span></button>`)}</div>
+    <p class="hint">Polices, couleurs, photo et en-tête viennent de l'onglet Design.</p>`);
+  const text = dcard('Texte de ta lettre type', html`
+    <p class="hint" style="margin-top:0">C'est le modèle de départ de chaque candidature : tu pourras le retoucher pour chaque offre, ou le faire rédiger par Claude.</p>
+    <label class="field"><span class="label">Objet</span><input class="input" data-l="subject" value="${L.subject || ''}"></label>
+    <label class="field"><span class="label">Formule d'appel</span><input class="input" data-l="opening" value="${L.opening || ''}"></label>
+    <label class="field"><span class="label">Corps de la lettre</span><textarea class="textarea" id="l-text" data-l="body" rows="11">${L.body || ''}</textarea></label>
+    <div class="chips" id="l-vars">${LETTER_VARS.map(([k, l]) => html`<button type="button" class="chip suggest" data-var="${k}" title="Insère {{${k}}}">${icons.plus} ${l}</button>`)}</div>
+    <p class="hint">Les mots entre doubles accolades sont remplacés pour chaque offre : <code>{{entreprise}}</code>, <code>{{poste}}</code>, <code>{{competences}}</code>…</p>
+    <label class="field"><span class="label">Formule de politesse</span><textarea class="textarea" data-l="closing" rows="2">${L.closing || ''}</textarea></label>`);
+  const place = dcard('Présentation', html`
+    <label class="field"><span class="label">Lieu</span><input class="input" data-l="place" value="${L.place || ''}" placeholder="${S.profile.location || 'Ville'}"></label>
+    <div class="row wrap" style="margin-top:12px">${check('showDate', 'Afficher la date', L.showDate !== false)}</div>
+    <div class="field" style="margin-top:14px"><span class="label">Bloc destinataire</span>${seg('l-align', [['right', 'À droite (usage français)'], ['left', 'À gauche']], L.align || 'right')}</div>`);
+  return html`${templates}${text}${place}`;
+}
+
+function bindLetter(panel) {
+  const set = (patch) => ctx.update({ letter: { ...(S.profile.letter || {}), ...patch } });
+  panel.querySelectorAll('[data-l]').forEach((el) => el.addEventListener('input', () => set({ [el.dataset.l]: el.value })));
+  panel.querySelector('[data-toggle=showDate]').addEventListener('change', (e) => set({ showDate: e.target.checked }));
+  panel.querySelectorAll('[data-style="l-align"] [data-v]').forEach((b) =>
+    b.addEventListener('click', () => {
+      panel.querySelectorAll('[data-style="l-align"] [data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      set({ align: b.dataset.v });
+    }),
+  );
+  const layouts = panel.querySelector('#layouts');
+  layouts.querySelectorAll('iframe').forEach((f) => new ResizeObserver(() => (f.style.transform = `scale(${f.parentElement.clientWidth / 794})`)).observe(f.parentElement));
+  refreshThumbs();
+  panel.querySelector('#l-same').addEventListener('change', (e) => {
+    layouts.classList.toggle('is-off', e.target.checked);
+    set({ layout: e.target.checked ? '' : style().layout });
+  });
+  layouts.querySelectorAll('[data-v]').forEach((b) =>
+    b.addEventListener('click', () => {
+      panel.querySelector('#l-same').checked = false;
+      layouts.classList.remove('is-off');
+      layouts.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+      set({ layout: b.dataset.v });
+    }),
+  );
+  panel.querySelectorAll('#l-vars [data-var]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const t = panel.querySelector('#l-text');
+      const at = t.selectionStart ?? t.value.length;
+      t.value = `${t.value.slice(0, at)}{{${b.dataset.var}}}${t.value.slice(t.selectionEnd ?? at)}`;
+      t.focus();
+      t.selectionStart = t.selectionEnd = at + b.dataset.var.length + 4;
+      set({ body: t.value });
+    }),
   );
 }

@@ -17,7 +17,7 @@ function textToHtml(text) {
     .join('');
 }
 
-async function send(smtp, { fromName, to, subject, body, attachment }) {
+async function send(smtp, { fromName, to, subject, body, attachment, attachments = [] }) {
   const t = transporter(smtp);
   const info = await t.sendMail({
     from: fromName ? `"${fromName.replace(/"/g, '')}" <${smtp.user}>` : smtp.user,
@@ -25,7 +25,7 @@ async function send(smtp, { fromName, to, subject, body, attachment }) {
     subject,
     text: body,
     html: `<div style="font-family:-apple-system,Segoe UI,Arial,sans-serif;font-size:14px;line-height:1.5;color:#1d1d1f">${textToHtml(body)}</div>`,
-    attachments: attachment ? [{ filename: path.basename(attachment), path: attachment }] : [],
+    attachments: [attachment, ...attachments].filter(Boolean).map((f) => ({ filename: path.basename(f), path: f })),
   });
   return info.messageId;
 }

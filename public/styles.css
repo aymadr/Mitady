@@ -1444,3 +1444,4 @@ body.ob-open .forest { display: none; }
 .add-card small { color: var(--text-2); font-size: 12.5px; line-height: 1.4; }
 .add-card.dashed { background: none; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
 .sx-ico { display: inline-grid; place-items: center; }
+.templates.is-off { opacity: 0.45; pointer-events: none; filter: grayscale(0.4); }

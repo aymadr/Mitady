@@ -6,6 +6,7 @@ import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, long
 const TABS = [
   { id: 'offre', label: 'Offre' },
   { id: 'cv', label: 'CV' },
+  { id: 'lettre', label: 'Lettre' },
   { id: 'candidature', label: 'Candidature' },
   { id: 'notes', label: 'Notes' },
 ];
@@ -98,7 +99,7 @@ function render() {
   el.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => go(`#/offres/${state.id}/${b.dataset.tab}`)));
 
   const body = el.querySelector('.sheet-body');
-  ({ offre: renderOffer, cv: renderCv, candidature: renderApply, notes: renderNotes })[state.tab](body, a);
+  ({ offre: renderOffer, cv: renderCv, lettre: renderLetter, candidature: renderApply, notes: renderNotes })[state.tab](body, a);
 }
 
 // ---------- Offre ----------
@@ -377,6 +378,112 @@ function renderCv(body, a) {
   );
 }
 
+// ---------- Lettre ----------
+
+async function renderLetter(body, a) {
+  mount(body, html`<div class="stack"><p class="small muted" style="padding:0 4px">Je prépare ta lettre…</p></div>`);
+  let draft;
+  try {
+    draft = await api(`/applications/${a.id}/letter/draft`);
+  } catch (e) {
+    return fail(e);
+  }
+  if (state.id !== a.id || state.tab !== 'lettre') return;
+  const generated = a.letter?.file && a.letter?.generatedAt;
+  const aiOn = S.secrets.aiEnabled;
+
+  mount(
+    body,
+    html`<div class="stack">
+      ${!S.profile.name ? html`<div class="callout blue">Complète d'abord ton <a href="#/profil">profil</a> : ton nom et tes coordonnées figurent sur la lettre.</div>` : ''}
+      <section class="card">
+        <div class="row" style="margin-bottom:12px"><strong class="grow">Lettre de motivation</strong>
+          ${aiOn ? html`<button class="btn btn-secondary btn-sm" id="l-ai" data-busy="Claude écrit…">Rédiger avec Claude</button>` : ''}
+          <button class="btn btn-plain small" id="l-reset">Reprendre mon modèle</button></div>
+        <div class="grid-2">
+          <label class="field"><span class="label">Destinataire</span><input class="input" id="l-name" value="${draft.recipient.name}" placeholder="Prénom Nom (facultatif)"></label>
+          <label class="field"><span class="label">Fonction</span><input class="input" id="l-role" value="${draft.recipient.role}" placeholder="Responsable recrutement"></label>
+        </div>
+        <label class="field" style="margin-top:12px"><span class="label">Objet</span><input class="input" id="l-subject" value="${draft.subject}"></label>
+        <label class="field"><span class="label">Formule d'appel</span><input class="input" id="l-opening" value="${draft.opening}"></label>
+        <label class="field"><span class="label">Lettre</span><textarea class="textarea" id="l-body" rows="12">${draft.body}</textarea>
+          <span class="hint">Une ligne vide sépare deux paragraphes. Le modèle se règle dans Profil › Modifier mon CV › Lettre.</span></label>
+        <label class="field"><span class="label">Formule de politesse</span><textarea class="textarea" id="l-closing" rows="2">${draft.closing}</textarea></label>
+        <div class="form-foot"><button class="btn btn-primary" id="l-generate" data-busy="Génération…">${generated ? 'Régénérer le PDF' : 'Générer le PDF'}</button></div>
+      </section>
+      ${generated
+        ? html`<div class="file-row"><div class="grow"><strong>Lettre prête</strong>Générée ${relDate(a.letter.generatedAt)} · à joindre dans l'onglet Candidature</div>
+            <a class="btn btn-secondary btn-sm" href="/api/applications/${a.id}/letter" target="_blank">Ouvrir</a>
+            <a class="btn btn-secondary btn-sm" href="/api/applications/${a.id}/letter?download=1">Télécharger</a></div>`
+        : ''}
+      <section class="preview"><div class="preview-page"><iframe id="l-preview" title="Aperçu de la lettre" sandbox="allow-same-origin"></iframe></div></section>
+    </div>`,
+  );
+
+  const $ = (sel) => body.querySelector(sel);
+  const iframe = $('#l-preview');
+  const page = iframe.parentElement;
+  const fit = () => (iframe.style.transform = `scale(${page.clientWidth / 794})`);
+  new ResizeObserver(fit).observe(page);
+  const collect = () => ({
+    subject: $('#l-subject').value, opening: $('#l-opening').value, body: $('#l-body').value, closing: $('#l-closing').value,
+    recipient: { name: $('#l-name').value, role: $('#l-role').value },
+  });
+  const preview = debounce(async () => {
+    try {
+      iframe.srcdoc = await api(`/applications/${a.id}/letter/preview`, { method: 'POST', body: collect() });
+    } catch (e) {
+      fail(e);
+    }
+  }, 300);
+  const persist = debounce(() => save({ letterDraft: collect() }).catch(fail), 600);
+  const onEdit = () => { persist(); preview(); };
+  ['#l-name', '#l-role', '#l-subject', '#l-opening', '#l-body', '#l-closing'].forEach((sel) => $(sel).addEventListener('input', onEdit));
+  preview();
+
+  const fill = (d) => {
+    $('#l-subject').value = d.subject;
+    $('#l-opening').value = d.opening;
+    $('#l-body').value = d.body;
+    $('#l-closing').value = d.closing;
+    onEdit();
+  };
+  $('#l-reset').addEventListener('click', async () => {
+    if (!confirm('Remplacer le texte par ton modèle de lettre ?')) return;
+    try { fill(await api(`/applications/${a.id}/letter/draft?fresh=1`)); } catch (e) { fail(e); }
+  });
+  $('#l-ai')?.addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      const w = working({ text: 'J’écris ta lettre…', mood: 'write', i: 3 });
+      try {
+        const updated = await api(`/applications/${a.id}/ai`, { method: 'POST' });
+        upsertApp(updated);
+        if (updated.ai?.letterBody) $('#l-body').value = updated.ai.letterBody;
+        onEdit();
+        w.done('Lettre rédigée !');
+      } catch (err) {
+        w.fail('Oups, ça n’a pas marché');
+        fail(err);
+      }
+    }),
+  );
+  $('#l-generate').addEventListener('click', (e) =>
+    busy(e.currentTarget, async () => {
+      const w = working({ text: 'Je prépare ta lettre…', mood: 'write', i: 3 });
+      try {
+        const res = await api(`/applications/${a.id}/letter`, { method: 'POST', body: collect() });
+        upsertApp(res.application);
+        w.done('Lettre prête en PDF !');
+        toast('Lettre générée');
+        render();
+      } catch (err) {
+        w.fail('Oups, ça n’a pas marché');
+        fail(err);
+      }
+    }),
+  );
+}
+
 // ---------- Candidature ----------
 
 const PATTERNS = {
@@ -406,7 +513,7 @@ async function renderApply(body, a) {
     try {
       const d = await api(`/applications/${a.id}/email-draft`);
       const tpl = a.cv?.templateChosen ? a.cv.template : defaultTemplate();
-      emailDrafts.set(a.id, { ...d, attach: tpl !== 'original' && a.cv?.file ? 'tailored' : S.profile.cvFile ? 'original' : a.cv?.file ? 'tailored' : 'none' });
+      emailDrafts.set(a.id, { ...d, attachLetter: Boolean(a.letter?.file), attach: tpl !== 'original' && a.cv?.file ? 'tailored' : S.profile.cvFile ? 'original' : a.cv?.file ? 'tailored' : 'none' });
     } catch (e) {
       return fail(e);
     }
@@ -450,6 +557,8 @@ async function renderApply(body, a) {
             ${attachOptions.map((o) => html`<button data-v="${o.v}" aria-pressed="${draft.attach === o.v}" ${o.ok ? '' : raw('disabled')}>${o.label}</button>`)}
           </div>
           ${a.cv?.file ? '' : html`<p class="hint">Génère un CV adapté dans l'onglet CV pour le joindre.</p>`}
+          <label class="chk" style="margin-top:12px"><input type="checkbox" id="attach-letter" ${a.letter?.file ? '' : raw('disabled')} ${draft.attachLetter && a.letter?.file ? raw('checked') : ''}><span>Joindre la lettre de motivation</span></label>
+          ${a.letter?.file ? '' : html`<p class="hint">Génère ta lettre dans l'onglet Lettre pour la joindre.</p>`}
         </div>
         <div class="form-foot">
           <button class="btn btn-plain small" id="copy">Copier</button>
@@ -519,6 +628,8 @@ async function renderApply(body, a) {
       $('#attach').querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
     }),
   );
+
+  $('#attach-letter').addEventListener('change', (e) => (draft.attachLetter = e.target.checked));
 
   $('#copy').addEventListener('click', async () => {
     await navigator.clipboard.writeText(`${draft.subject}\n\n${draft.body}`);

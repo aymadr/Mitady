@@ -194,7 +194,7 @@ let browserPromise = null;
 function getBrowser() {
   if (!browserPromise) {
     const { chromium } = require('playwright');
-    browserPromise = chromium.launch({ headless: true }).catch((e) => {
+    browserPromise = chromium.launch({ headless: true, executablePath: process.env.CHROMIUM_PATH || undefined }).catch((e) => {
       browserPromise = null;
       throw new Error('Chromium introuvable. Lance « npx playwright install chromium ». ' + e.message);
     });
@@ -211,6 +211,19 @@ async function htmlToPdf(html, outPath) {
   } finally {
     await page.close();
   }
+}
+
+// The cover letter as a PDF, in the look of the CV (or of the template picked for letters).
+async function generateLetter(app, profile, letter, headline) {
+  const out = path.join(store.CV_DIR, slug(`Lettre_${profile.name || 'candidat'}_${app.company}_${app.title}`, 90) + '.pdf');
+  await htmlToPdf(renderLetterFor(profile, letter, headline), out);
+  return out;
+}
+
+function renderLetterFor(profile, letter, headline, preview = false) {
+  const layout = profile.letter?.layout || profile.cvStyle?.layout;
+  const p = { ...profile, cvStyle: { ...profile.cvStyle, layout } };
+  return renderCvHtml(p, { headline: headline ?? profile.headline, summary: '', skills: [], preview, letter });
 }
 
 // Skills shown on the tailored CV: the ones the offer asks for first.
@@ -293,4 +306,4 @@ async function extractPhoto(filePath) {
 }
 
 
-module.exports = { originalPdf, CV_STYLES, SECTION_TYPES, LEVELS, sectionText, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };
+module.exports = { generateLetter, renderLetterFor, originalPdf, CV_STYLES, SECTION_TYPES, LEVELS, sectionText, extractPhoto, extractText, parseCvText, generate, renderCvHtml, orderSkills };

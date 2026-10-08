@@ -33,6 +33,10 @@ Ton animal est indépendant de toi et de ton CV. À l'accueil, tu donnes d'abord
 - **Arrêter une recherche** : le bouton « Arrêter la recherche » (sur l'écran de recherche et sur la petite carte réduite) stoppe tout de suite et garde les offres déjà trouvées.
 - **Jalons** : une petite fête pour ta première candidature, puis la 5ᵉ, la 10ᵉ, la 25ᵉ et la 50ᵉ, et à chaque entretien ou offre.
 
+## Lettre de motivation
+
+L'onglet **Lettre** de l'éditeur (Profil › Modifier mon CV) règle ta lettre type : objet, formule d'appel, corps du texte avec des variables (`{{entreprise}}`, `{{poste}}`, `{{contact}}`, `{{competences}}`, `{{ravi}}`…), formule de politesse, lieu, date et place du bloc destinataire. Elle prend par défaut le même modèle que ton CV (les 21 modèles, polices, couleurs et photo sont partagés) ou un autre au choix, avec aperçu en direct. Pour chaque offre, l'onglet **Lettre** de la fiche reprend ce modèle, rempli avec l'entreprise, le poste et tes compétences qui correspondent ; tu le retouches, ou tu le fais rédiger par Claude (clé API dans Réglages), puis tu génères le PDF et tu le joins à l'e-mail avec ton CV.
+
 ## Logos des sites
 
 Chaque site d'emploi a une tuile 3D dessinée par Mitady. Pour afficher les logos officiels à la place, dépose un fichier par site dans `public/logos/` (voir `public/logos/README.md`).

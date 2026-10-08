@@ -75,13 +75,14 @@ async function tailor(app, profile) {
       '- skillsToAdd : compétences demandées par l\'offre, absentes de la liste « Compétences » mais justifiées par le parcours.\n' +
       '- gaps : attentes de l\'offre que le profil ne couvre pas (pour que le candidat sache quoi préparer).\n' +
       "- emailSubject et emailBody : un e-mail de candidature court (120 mots max), direct, signé avec le nom du candidat. Commence par « Bonjour, » sauf si un contact est connu : " +
-      (app.contact?.name || 'aucun') + '.',
+      (app.contact?.name || 'aucun') + '.\n' +
+      '- letterBody : le corps d\'une lettre de motivation, 3 paragraphes séparés par une ligne vide (accroche liée à l\'entreprise, preuves tirées du profil, conclusion), 180 mots maximum, à la première personne, sans formule d\'appel ni de politesse ni signature.',
     schema: {
       type: 'object',
       properties: {
-        headline: str, summary: str, requirements: strList, skillsToAdd: strList, gaps: strList, emailSubject: str, emailBody: str,
+        headline: str, summary: str, requirements: strList, skillsToAdd: strList, gaps: strList, emailSubject: str, emailBody: str, letterBody: str,
       },
-      required: ['headline', 'summary', 'requirements', 'skillsToAdd', 'gaps', 'emailSubject', 'emailBody'],
+      required: ['headline', 'summary', 'requirements', 'skillsToAdd', 'gaps', 'emailSubject', 'emailBody', 'letterBody'],
       additionalProperties: false,
     },
   });

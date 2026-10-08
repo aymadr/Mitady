@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="125" height="76" viewBox="0 0 125 76" role="img"><style>
+  .pet-b { overflow: visible; }
+  .pet-body { transform-box: view-box; animation: bob 1.3s steps(2, jump-none) infinite; }
+  .pet-open { animation: blink 4.6s steps(1) infinite; }
+  .pet-closed { opacity: 0; animation: blinkc 4.6s steps(1) infinite; }
+  .zz .pet-open { opacity: 0; animation: none; } .zz .pet-closed { opacity: 1; animation: none; }
+  .sw { animation: sway 5.5s ease-in-out infinite alternate; }
+  .sws { animation: sways 4s ease-in-out infinite alternate; }
+  .wing { transform-box: fill-box; animation: flap .42s steps(3) infinite alternate; }
+  .wl { transform-origin: 100% 50%; } .wr { transform-origin: 0 50%; }
+  .float { animation: float 3.4s ease-in-out infinite alternate; }
+  .drift { animation: drift 16s ease-in-out infinite alternate; }
+  .twinkle { animation: twinkle 2.6s steps(1) infinite; }
+  @keyframes bob { 0% { transform: translateY(0); } 100% { transform: translateY(-0.5px); } }
+  @keyframes blink { 0%, 93%, 100% { opacity: 1; } 94%, 98% { opacity: 0; } }
+  @keyframes blinkc { 0%, 93%, 100% { opacity: 0; } 94%, 98% { opacity: 1; } }
+  @keyframes sway { from { transform: rotate(-1.8deg); } to { transform: rotate(1.8deg); } }
+  @keyframes sways { from { transform: rotate(-1deg); } to { transform: rotate(1deg); } }
+  @keyframes flap { from { transform: scaleX(1); } to { transform: scaleX(0.22); } }
+  @keyframes float { from { transform: translateY(0); } to { transform: translateY(-7px); } }
+  @keyframes drift { from { transform: translateX(-24px); } to { transform: translateX(24px); } }
+  @keyframes twinkle { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.25; } }
+  @keyframes hop { 0%, 14%, 100% { transform: translateY(0); } 7% { transform: translateY(-16px); } }
+  @keyframes pop { 0%, 6% { opacity: 0; transform: translateY(0); } 9% { opacity: 1; } 22% { opacity: 0; transform: translateY(-14px); } 100% { opacity: 0; } }
+  @keyframes zed { 0% { opacity: 0; transform: translate(0, 4px); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(8px, -12px); } }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style><g class="sw" style="transform-origin:62.5px 68.0px;animation-delay:0s"><svg x="8" y="8" width="109.1" height="60" viewBox="0 0 20 11" shape-rendering="crispEdges" class=""><path fill="#25694b" d="M8 0h4v1h-4zM6 1h2v1h-2zM12 1h2v1h-2zM4 2h3v1h-3zM13 2h3v1h-3zM2 3h2v1h-2zM16 3h2v1h-2zM1 4h1v1h-1zM18 4h1v1h-1zM1 5h1v1h-1zM18 5h1v1h-1zM0 6h2v1h-2zM18 6h2v1h-2zM0 7h2v1h-2zM18 7h2v1h-2zM1 8h2v1h-2zM12 8h1v1h-1zM17 8h2v1h-2zM1 9h3v1h-3zM6 9h8v1h-8zM16 9h3v1h-3zM2 10h16v1h-16z"/><path fill="#3b8f69" d="M8 1h4v1h-4zM10 2h3v1h-3zM4 3h3v1h-3zM10 3h6v1h-6zM2 4h6v1h-6zM10 4h8v1h-8zM2 5h12v1h-12zM15 5h3v1h-3zM2 6h16v1h-16zM2 7h2v1h-2zM5 7h6v1h-6zM12 7h6v1h-6zM3 8h4v1h-4zM8 8h4v1h-4zM13 8h3v1h-3zM4 9h2v1h-2zM14 9h2v1h-2z"/><path fill="#8fd0a6" d="M7 2h3v1h-3zM7 3h3v1h-3zM8 4h2v1h-2z"/><path fill="#ffcd00" d="M14 5h1v1h-1z"/><path fill="#e5484d" d="M4 7h1v1h-1zM11 7h1v1h-1zM16 8h1v1h-1z"/><path fill="#ff8fae" d="M7 8h1v1h-1z"/></svg></g></svg>

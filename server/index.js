@@ -414,7 +414,7 @@ app.post('/api/profile/letter-preview', route((req, res) => {
   const profile = { ...store.db.profile, letter: { ...store.db.profile.letter, ...(req.body.letter || {}) } };
   if (req.body.cvStyle) profile.cvStyle = { ...profile.cvStyle, ...req.body.cvStyle };
   for (const k of PREVIEW_FIELDS) if (req.body.profile && k in req.body.profile) profile[k] = req.body.profile[k];
-  const sample = { title: profile.headline || 'Alternant Cybersécurité', company: 'Société Exemple', location: 'Paris', description: '', contact: {} };
+  const sample = { title: 'Alternant Analyste SOC H/F', company: 'Société Exemple', location: 'Paris', description: '', contact: {} };
   const L = profile.letter;
   const vars = { ...letterVars(sample), nom: profile.name || 'Camille Martin' };
   const draft = {
@@ -422,7 +422,7 @@ app.post('/api/profile/letter-preview', route((req, res) => {
     place: L.place || profile.location || 'Paris', date: L.showDate === false ? '' : longDateLabel(profile.cvStyle?.docLang), align: L.align || 'right',
     recipient: { name: 'Mme Dupont', role: 'Responsable recrutement', company: sample.company, address: 'Paris' },
   };
-  res.type('html').send(cv.renderLetterFor(profile, draft, profile.headline, true));
+  res.type('html').send(cv.renderLetterFor(profile, draft, adaptTitle(sample.title, profile.titleGender, sample.company), true));
 }));
 
 // ---------- Claude ----------

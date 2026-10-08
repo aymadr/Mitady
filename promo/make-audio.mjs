@@ -80,14 +80,14 @@ function sweep(t0, t1, f0, f1, o = {}) {
 
 // drums
 function kick(t, v = 0.9) {
-  const i0 = Math.round(t * SR), n = Math.round(0.42 * SR);
+  const i0 = Math.round(t * SR), n = Math.round(0.3 * SR);
   let ph = 0;
   for (let i = 0; i < n; i++) {
     const idx = i0 + i;
     if (idx >= N) break;
     const x = i / SR;
-    ph += (46 + 120 * Math.exp(-x / 0.03)) / SR;
-    const y = (Math.sin(TAU * ph) * Math.exp(-x / 0.16) + (x < 0.004 ? (rnd() - 0.5) * 0.6 : 0)) * v;
+    ph += (68 + 110 * Math.exp(-x / 0.025)) / SR;
+    const y = (Math.sin(TAU * ph) * Math.exp(-x / 0.1) + (x < 0.006 ? (rnd() - 0.5) * 0.9 : 0)) * v;
     B.kick.L[idx] += y; B.kick.R[idx] += y;
   }
   kicks.push(t);
@@ -148,14 +148,14 @@ for (let bar = 0; bar * 2 < DUR; bar++) {
       else if (s.kick) hat(t, 0.045 * s.hat);
     }
     if (s.ohat && sub === 2) hat(t, 0.12, true);
-    if (s.kick && (s.half ? sub === 0 && beat % 2 === 0 : sub === 0)) kick(t, 0.85 * Math.min(1, s.kick));
+    if (s.kick && (s.half ? sub === 0 && beat % 2 === 0 : sub === 0)) kick(t, 0.55 * Math.min(1, s.kick));
     if (s.clap && sub === 0 && beat % 2 === 1) clap(t, 0.5);
     if (s.half && s.hat && sub === 0 && beat % 2 === 1) clap(t, 0.32);
     if (s.bass && !s.long && (sub === 0 || sub === 2)) {
-      const m = ch.root + (sub === 2 && !s.stacc ? 12 : 0);
-      note(B.bass, t, s.stacc ? 0.1 : 0.2, mtof(m), { w: 'saw', v: 0.17 * s.bass * (sub === 2 ? 0.7 : 1), a: 0.003, d: 0.12, s: 0.5, r: 0.04 });
+      const m = ch.root + 12 + (sub === 2 && !s.stacc ? 12 : 0);
+      note(B.bass, t, s.stacc ? 0.1 : 0.2, mtof(m), { w: 'saw', v: 0.075 * s.bass * (sub === 2 ? 0.7 : 1), a: 0.003, d: 0.12, s: 0.5, r: 0.04 });
     }
-    if (s.bass && s.long && st === 0) note(B.bass, t, 1.9, mtof(ch.root), { w: 'sine', v: 0.2 * s.bass, a: 0.05, d: 0.5, s: 0.8, r: 0.3 });
+    if (s.bass && s.long && st === 0) note(B.bass, t, 1.9, mtof(ch.root + 12), { w: 'sine', v: 0.1 * s.bass, a: 0.05, d: 0.5, s: 0.8, r: 0.3 });
   }
 }
 // the lead melody, 8th notes over the 4-bar phrase
@@ -182,8 +182,8 @@ function roll(t0, t1) {
 [5, 12, 20, 28, 40, 46, 53, 58, 65].forEach((c, i) => {
   sweep(c - 1.2, c - 0.02, 250, 7000, { v: 0.1, shape: 'rise', p0: -0.5, p1: 0.5 });
   sweep(c - 0.4, c + 0.45, 3500, 500, { v: 0.12, shape: 'bell', p0: -0.7, p1: 0.7 });
-  note(B.sfx, c, 1.3, 55, { v: i === 8 ? 0.6 : 0.4, a: 0.002, d: 0.5, s: 0, slide: -0.35, r: 0.1, send: 0.15 });
-  noise(B.sfx, c, 1.4, { v: i === 8 ? 0.2 : 0.12, hp: 0.2, decay: 0.5, send: 0.4 });
+  note(B.sfx, c, 1.0, 90, { v: i === 8 ? 0.35 : 0.22, a: 0.002, d: 0.4, s: 0, slide: -0.5, r: 0.1, send: 0.15 });
+  noise(B.sfx, c, 1.4, { v: i === 8 ? 0.3 : 0.2, hp: 0.2, decay: 0.5, send: 0.4 });
 });
 
 // ---------- sound effects, placed on the on-screen events ----------
@@ -191,9 +191,15 @@ const PENTA = [72, 74, 76, 79, 81, 84, 86, 88, 91, 93];
 const bell = (t, m, v = 0.12, len = 0.7) => { note(B.sfx, t, len, mtof(m), { v, a: 0.002, d: len, s: 0, r: 0.1, pan: ((m * 7) % 5) / 6 - 0.35, send: 0.4, harm: 0.15 }); note(B.sfx, t, 0.25, mtof(m + 12), { v: v * 0.3, a: 0.002, d: 0.25, s: 0, r: 0.05, send: 0.3 }); };
 const pluck = (t, m, v = 0.1) => note(B.sfx, t, 0.25, mtof(m), { w: 'tri', v, a: 0.002, d: 0.25, s: 0, r: 0.05, pan: ((m * 3) % 7) / 8 - 0.4, send: 0.3 });
 const pop = (t, m = 84, v = 0.14) => note(B.sfx, t, 0.09, mtof(m), { v, a: 0.002, d: 0.09, s: 0, slide: 6, r: 0.03, send: 0.2 });
-const tick = (t, v = 0.05) => note(B.sfx, t, 0.02, 1800 + rnd() * 900, { w: 'pulse', duty: 0.3, v, a: 0.001, d: 0.02, s: 0, r: 0.01, pan: rnd() - 0.5 });
-const click = (t) => { noise(B.sfx, t, 0.03, { v: 0.35, hp: 0.3, decay: 0.008 }); note(B.sfx, t, 0.05, 1500, { v: 0.1, a: 0.001, d: 0.05, s: 0, r: 0.01 }); };
-const thud = (t, v = 0.35) => note(B.sfx, t, 0.22, 95, { v, a: 0.002, d: 0.2, s: 0, slide: -5, r: 0.03 });
+const tick = (t, v = 0.09) => note(B.sfx, t, 0.02, 1800 + rnd() * 900, { w: 'pulse', duty: 0.3, v, a: 0.001, d: 0.02, s: 0, r: 0.01, pan: rnd() - 0.5 });
+const click = (t) => {
+  noise(B.sfx, t, 0.02, { v: 0.55, hp: 0.25, decay: 0.004 });
+  note(B.sfx, t, 0.04, 2400, { v: 0.3, a: 0.0005, d: 0.04, s: 0, r: 0.005 });
+  note(B.sfx, t, 0.06, 520, { v: 0.35, a: 0.0005, d: 0.06, s: 0, slide: -3, r: 0.01 });
+  noise(B.sfx, t + 0.07, 0.015, { v: 0.28, hp: 0.3, decay: 0.003 });
+  note(B.sfx, t + 0.07, 0.025, 3200, { v: 0.14, a: 0.0005, d: 0.025, s: 0, r: 0.005 });
+};
+const thud = (t, v = 0.35) => note(B.sfx, t, 0.22, 150, { v, a: 0.002, d: 0.2, s: 0, slide: -5, r: 0.03 });
 const glide = (t0, t1, m0, m1, v = 0.07) => note(B.sfx, t0, t1 - t0, mtof(m0), { v, a: 0.05, d: t1 - t0, s: 1, slide: (m1 - m0) / 12 / (t1 - t0), r: 0.12, send: 0.3, pan: 0.1 });
 const swish = (t, d = 0.5, up = true, v = 0.09) => sweep(t, t + d, up ? 600 : 3000, up ? 3500 : 500, { v, shape: 'bell', p0: up ? -0.5 : 0.5, p1: up ? 0.5 : -0.5 });
 const sparkle = (t, n = 14, v = 0.08) => { for (let i = 0; i < n; i++) bell(t + i * 0.045 + rnd() * 0.02, PENTA[(i * 3 + 4) % PENTA.length] + 12 * (i % 2), v, 0.5); };
@@ -314,22 +320,39 @@ const revL = new Float32Array(N), revR = new Float32Array(N);
 reverb(B.rev.L, revL, [1557, 1617, 1491, 1422, 1277, 1356], 0.84);
 reverb(B.rev.L, revR, [1601, 1553, 1459, 1381, 1319, 1229], 0.84);
 
+// the music ducks a little under the sound effects so they always come through
+const sduck = new Float32Array(N);
+{
+  const att = 1 - Math.exp(-1 / (0.004 * SR)), rel = 1 - Math.exp(-1 / (0.18 * SR));
+  let e = 0;
+  for (let i = 0; i < N; i++) {
+    const x = Math.abs(B.sfx.L[i]) + Math.abs(B.sfx.R[i]);
+    e += (x > e ? att : rel) * (x - e);
+    sduck[i] = 1 - 0.45 * Math.min(1, e * 3);
+  }
+}
+const SFX_GAIN = 2.1, MUSIC_GAIN = 0.9;
 const L = new Float32Array(N), R = new Float32Array(N);
 for (let i = 0; i < N; i++) {
-  const d = duck[i];
-  L[i] = B.kick.L[i] + B.drum.L[i] + B.sfx.L[i] + (B.bass.L[i] + B.pad.L[i] + B.arp.L[i] + B.lead.L[i]) * d + revL[i] * 0.55;
-  R[i] = B.kick.R[i] + B.drum.R[i] + B.sfx.R[i] + (B.bass.R[i] + B.pad.R[i] + B.arp.R[i] + B.lead.R[i]) * d + revR[i] * 0.55;
+  const d = duck[i] * sduck[i] * MUSIC_GAIN;
+  L[i] = (B.kick.L[i] + B.drum.L[i]) * sduck[i] * MUSIC_GAIN + B.sfx.L[i] * SFX_GAIN + (B.bass.L[i] + B.pad.L[i] + B.arp.L[i] + B.lead.L[i]) * d + revL[i] * 0.55;
+  R[i] = (B.kick.R[i] + B.drum.R[i]) * sduck[i] * MUSIC_GAIN + B.sfx.R[i] * SFX_GAIN + (B.bass.R[i] + B.pad.R[i] + B.arp.R[i] + B.lead.R[i]) * d + revR[i] * 0.55;
 }
-// a gentle limiter, then fades
-let peak = 0;
-for (let i = 0; i < N; i++) { L[i] = Math.tanh(L[i] * 1.2); R[i] = Math.tanh(R[i] * 1.2); peak = Math.max(peak, Math.abs(L[i]), Math.abs(R[i])); }
-const norm = 0.62 / peak;
+// high-pass at ~50 Hz (no rumble), then loudness by RMS and a soft limiter
+{
+  const c = Math.exp((-TAU * 50) / SR);
+  for (const ch of [L, R]) { let x1 = 0, y1 = 0; for (let i = 0; i < N; i++) { const x = ch[i]; y1 = c * (y1 + x - x1); x1 = x; ch[i] = y1; } }
+}
+let sum = 0;
+for (let i = 0; i < N; i++) sum += L[i] * L[i] + R[i] * R[i];
+const norm = 0.13 / Math.sqrt(sum / (2 * N));
+for (let i = 0; i < N; i++) { L[i] = Math.tanh(L[i] * norm * 0.9) / Math.tanh(0.9); R[i] = Math.tanh(R[i] * norm * 0.9) / Math.tanh(0.9); }
 const pcm = Buffer.alloc(N * 4);
 for (let i = 0; i < N; i++) {
   const t = i / SR;
   const f = Math.min(1, t / 0.08) * (t > 69.8 ? Math.max(0, 1 - (t - 69.8) / 2.2) ** 1.5 : 1);
-  pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, L[i] * norm * f)) * 32767), i * 4);
-  pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, R[i] * norm * f)) * 32767), i * 4 + 2);
+  pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, L[i] * 0.95 * f)) * 32767), i * 4);
+  pcm.writeInt16LE(Math.round(Math.max(-1, Math.min(1, R[i] * 0.95 * f)) * 32767), i * 4 + 2);
 }
 const header = Buffer.alloc(44);
 header.write('RIFF', 0); header.writeUInt32LE(36 + pcm.length, 4); header.write('WAVEfmt ', 8);

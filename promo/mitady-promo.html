@@ -770,9 +770,9 @@ function sceneBoard() {
   const cards = DATA.map(([t, c, sc, av]) => {
     const e = el(root, 'div', 'abs card', { left: 0, top: 0, width: '360px', height: '156px', borderRadius: '24px', zIndex: 5 });
     avatar(e, c[0], 80, av).style.cssText += ';left:22px;top:38px';
-    const tt = el(e, 'div', 'abs', { left: '118px', top: '38px', fontSize: '29px', fontWeight: 700, color: '#14281f', whiteSpace: 'nowrap' }); tt.textContent = t;
+    const tt = el(e, 'div', 'abs', { left: '118px', top: '40px', fontSize: '25px', fontWeight: 700, color: '#14281f', whiteSpace: 'nowrap' }); tt.textContent = t;
     const cc = el(e, 'div', 'abs', { left: '118px', top: '84px', fontSize: '23px', color: '#6a7b72' }); cc.textContent = c + ' · Lyon';
-    const r = ring(e, 68, sc >= 80 ? '#2f7d5b' : '#e0a800', 0.34); r.style.left = '280px'; r.style.top = '44px'; r.setScore(sc);
+    const r = ring(e, 62, sc >= 80 ? '#2f7d5b' : '#e0a800', 0.34); r.style.left = '288px'; r.style.top = '46px'; r.setScore(sc);
     return e;
   });
   const wow = el(root, 'div', 'abs disp', { left: colX(3) + 70 + 'px', top: '690px', padding: '14px 28px', borderRadius: '999px', background: '#ffcd00', color: '#2a2438', fontSize: '34px', letterSpacing: 0, zIndex: 12 });

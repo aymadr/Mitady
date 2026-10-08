@@ -201,3 +201,9 @@ a, button, .btn, .chip, .kcard, .item, label { touch-action: manipulation; }
   .nav-inner { height: 46px; }
   main { padding-top: 14px; }
 }
+
+/* search settings: the choices wrap instead of sliding sideways, so none is hidden */
+@media (max-width: 760px) {
+  .pp-radius .segmented, #remote { display: flex; flex-wrap: wrap; overflow: visible; border-radius: 22px; }
+  .pp-radius .segmented button, #remote button { flex: 1 1 auto; }
+}

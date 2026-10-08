@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
+    "test": "node --test server/lib/search.test.js",
     "setup": "npm install && npx playwright install chromium"
   },
   "dependencies": {

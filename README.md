@@ -122,11 +122,32 @@ Le serveur n'écoute que sur ta machine. Tes données restent dans le dossier `d
 
 Au tout premier lancement, un guide plein écran te prend par la main (ton nom, ton animal, ton CV, tes contrats, ton domaine) puis lance la première recherche. Le bouton **?** rouvre le guide, et « Voir la démo en direct » laisse ton animal prendre les commandes du vrai site, sur des offres d'exemple.
 
-1. **Profil** : importe ton CV (PDF ou Word) ou remplis tes rubriques. Choisis ton domaine, ton lieu, tes types de contrat et les sites à interroger.
+1. **Profil** : importe ton CV (PDF ou Word) ou remplis tes rubriques. Choisis ton domaine, tes types de contrat et les sites à interroger, puis règle ta recherche (voir plus bas).
 2. **Chercher** : un clic sur « Chercher des offres ». Tu peux arrêter la recherche à tout moment, les offres déjà trouvées sont gardées.
 3. **Offres** : trie par score, ouvre une offre, ajoute les compétences qui manquent à ton profil.
 4. **CV et lettre** : choisis ce qui part, ajuste le titre, génère les PDF.
 5. **Candidature** : trouve un contact, envoie le message avec les pièces jointes, glisse la carte dans la colonne suivante du **Suivi**.
+
+## 🎯 Régler la recherche
+
+Dans **Profil › Ce que tu cherches** :
+
+| Réglage | Ce qu'il fait |
+|---|---|
+| **Où cherches-tu ?** | Jusqu'à 3 lieux : une ville, un code postal, un département ou une région, avec des suggestions pendant que tu tapes. Chaque lieu lance sa propre recherche. |
+| **Périmètre** | 10, 20, 30, 50, 100 km autour de chaque lieu, ou toute la France. Les offres plus éloignées sont écartées, quel que soit le site qui les publie. Une offre dont le lieu est inconnu (« France », « Rhône »…) n'est jamais écartée à tort. |
+| **Télétravail** | Peu importe, possible (l'annonce en parle), complet (100 % à distance : le périmètre ne l'écarte pas) ou sur place uniquement. |
+| **Plus de réglages** | Publiées depuis (24 h à un mois), nombre d'offres lues par recherche (30 à 150), correspondance minimale (les offres qui demandent trop de compétences que tu n'as pas sont écartées à la recherche). |
+
+Chaque offre indique ensuite sa distance (« Villeurbanne (7 km) »), la liste se trie par **Proches**, et l'export Excel contient la distance et le télétravail. Les distances viennent d'une liste embarquée des communes de France : aucun service en ligne n'est interrogé pour cela, et ça marche hors connexion.
+
+<details>
+<summary>Ce que chaque site comprend</summary>
+
+HelloWork, LinkedIn et Indeed reçoivent le lieu, le rayon et, quand ils le gèrent, la date de publication et le télétravail. Les autres sites passent par un moteur de recherche, qui ne connaît que le nom du lieu. Dans tous les cas, Mitady applique ensuite lui-même le périmètre, le télétravail et la correspondance minimale à chaque offre reçue. La date, elle, n'est connue que là où le site la donne.
+</details>
+
+<img src="docs/divider.svg" alt="" width="100%">
 
 ## 📱 Sur ton téléphone
 
@@ -256,3 +277,7 @@ Pour régénérer les images animées : `node --experimental-default-type=module
 <img src="docs/divider.svg" alt="" width="100%">
 <sub>Fait avec des pixels, un peu de patience et beaucoup de koalas.</sub>
 </div>
+
+---
+
+Les coordonnées et populations des communes viennent de [GeoNames](https://www.geonames.org) (CC BY 4.0), les codes postaux et départements de l'[Etalab](https://github.com/etalab/decoupage-administratif) (Licence Ouverte 2.0). `node scripts/build-communes.mjs` régénère la liste.

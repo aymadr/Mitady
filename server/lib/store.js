@@ -70,7 +70,13 @@ function defaultProfile() {
     search: {
       domain: '',
       keywords: [],
-      location: '',
+      location: '', // the places below, as text (older profiles only had this)
+      places: [], // up to 3: { name, label, kind, lat, lon, slack }, see lib/geo.js
+      radius: 30, // km around each place; 0 = the whole country
+      remote: 'any', // any | hybrid (télétravail possible) | remote (complet) | onsite
+      posted: 0, // only offers published within this many days; 0 = any
+      maxOffers: 60, // new offers read per search
+      minScore: 0, // drop offers matching the profile less than this (%)
       contracts: ['Alternance'],
       sources: null, // null = the sources enabled by default
       excluded: [...DEFAULT_EXCLUDED],

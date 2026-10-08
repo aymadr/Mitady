@@ -1469,3 +1469,19 @@ input.clr { width: 40px; height: 40px; border: 0; border-radius: 50%; padding: 0
 .phone-pin { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
 .phone-pin b { font-family: var(--mono); font-size: 30px; letter-spacing: 0.16em; color: var(--accent-text); }
 @media (max-width: 760px) { .phone-card { grid-template-columns: minmax(0, 1fr); } .phone-qr { width: 180px; height: 180px; } }
+
+/* ---------- Search perimeter: place picker ---------- */
+.pp-field { position: relative; }
+.chip.place { background: var(--green-soft); color: var(--green); font-weight: 600; gap: 6px; }
+.chip.place .pin { display: inline-grid; place-items: center; }
+.pp-input { border: 0; outline: 0; background: transparent; flex: 1; min-width: 180px; padding: 4px 8px; font-size: 14px; }
+.pp-menu { position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px); margin: 0; padding: 6px; list-style: none; background: var(--surface-raised); border-radius: 16px; box-shadow: var(--shadow-lift), 0 0 0 1px var(--line); max-height: 320px; overflow-y: auto; }
+.pp-menu li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 11px; cursor: pointer; font-size: 14.5px; }
+.pp-menu li small { color: var(--text-3); font-size: 12px; }
+.pp-menu li[aria-selected="true"], .pp-menu li:hover { background: var(--accent-soft); }
+.pp-radius { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-top: 14px; }
+.pp-radius .label { margin: 0; }
+.pp-radius.off { opacity: 0.5; }
+.pp-hint { margin-top: 10px; }
+.mode-row { display: flex; flex-wrap: wrap; gap: 6px 18px; }
+@media (max-width: 760px) { .pp-input { min-width: 0; font-size: 16px; } .pp-radius { align-items: flex-start; flex-direction: column; gap: 8px; } .pp-menu li { padding: 13px 12px; } }

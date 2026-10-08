@@ -12,9 +12,15 @@ const scraper = require('./lib/scraper');
 const mailer = require('./lib/mailer');
 const { mergeDuplicates } = require('./lib/dedupe');
 const remote = require('./lib/remote');
+const geo = require('./lib/geo');
+const filters = require('./lib/filters');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+// Older profiles only had a free "location" text: it becomes a place, and the newer search options get their defaults.
+store.db.profile.search = filters.cleanSearch(store.db.profile.search, { legacy: true });
+store.save();
+
 // Only this computer can reach the app, unless the phone access is switched on in Réglages (see lib/remote.js).
 remote.mount(app, { port: PORT, host: process.env.HOST });
 
@@ -43,7 +49,9 @@ function enrich(a) {
   const analysis = analyzeOffer(a, profile);
   const since = a.lastFollowUpAt || a.appliedAt;
   const followUpDue = a.status === 'applied' && since && daysBetween(since, store.today()) >= settings.followUpDays;
-  return { ...a, ...analysis, followUpDue, suggestedHeadline: adaptTitle(a.title, profile.titleGender, a.company) };
+  // How far the offer is from the places searched (null when its place is unknown or only guessed).
+  const away = filters.distance(profile.search || {}, a);
+  return { ...a, ...analysis, followUpDue, distanceKm: away ? away.km : null, distanceApprox: away ? away.slack > 0 : false, suggestedHeadline: adaptTitle(a.title, profile.titleGender, a.company) };
 }
 
 function findApp(id) {
@@ -66,6 +74,13 @@ function publicSecrets() {
 app.get('/api/state', (req, res) => {
   const { profile, settings, applications } = store.db;
   res.json({ profile, settings, secrets: publicSecrets(), domains: domainList(), sources: scraper.SOURCES, contracts: Object.keys(scraper.CONTRACTS), cvStyles: cv.CV_STYLES, applications: applications.map(enrich) });
+});
+
+// ---------- Places (search perimeter) ----------
+
+// Suggestions while typing a city, a postal code, a département or a région.
+app.get('/api/places', (req, res) => {
+  res.json({ places: geo.searchPlaces(String(req.query.q || ''), 8) });
 });
 
 // ---------- Profile ----------
@@ -91,6 +106,7 @@ app.put('/api/profile', route((req, res) => {
     if (!(k in req.body)) continue;
     p[k] = MERGED_FIELDS.includes(k) ? { ...p[k], ...req.body[k] } : req.body[k];
   }
+  if ('search' in req.body) p.search = filters.cleanSearch(p.search, { legacy: !('places' in req.body.search) && !p.search.places?.length });
   if (Array.isArray(p.skills)) {
     const seen = new Set();
     p.skills = p.skills.map((s) => String(s).trim()).filter((s) => s && !seen.has(norm(s)) && seen.add(norm(s)));
@@ -243,6 +259,9 @@ function newApplication(fields) {
     source: fields.source || store.sourceFromLink(fields.link),
     contract: fields.contract || scraper.detectContract(fields),
     description: fields.description || '',
+    ...(fields.remote ? { remote: fields.remote } : {}),
+    ...(fields.postedAt ? { postedAt: String(fields.postedAt).slice(0, 10) } : {}),
+    ...(fields.locationGuess ? { locationGuess: true } : {}),
     status: 'todo',
     addedAt: store.today(),
     appliedAt: '',
@@ -554,6 +573,8 @@ app.get('/api/export.xlsx', (req, res) => {
     Entreprise: a.company,
     Poste: a.title,
     Lieu: a.location,
+    'Distance (km)': a.distanceKm ?? '',
+    Télétravail: { remote: 'Complet', hybrid: 'Possible', onsite: 'Non' }[a.remote] || '',
     Source: a.source,
     Statut: STATUS_LABELS[a.status],
     'Envoyée le': a.appliedAt,

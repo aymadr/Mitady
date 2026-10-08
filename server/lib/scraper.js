@@ -2,9 +2,9 @@
 const { chromium } = require('playwright');
 const { DOMAINS, norm, isExcluded } = require('./skills');
 const { isDuplicate } = require('./dedupe');
+const filters = require('./filters');
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36';
-const MAX_NEW = 60;
 
 // Contract types the user can search for, with what each board calls them.
 const CONTRACTS = {
@@ -65,6 +65,7 @@ async function helloWork(context, keyword, contract, search, log) {
   const params = new URLSearchParams({ k: keyword });
   params.set('c', CONTRACTS[contract].hellowork);
   if (search.location) params.set('l', search.location);
+  if (search.location && search.radius) params.set('ray', String(search.radius));
   const url = `https://www.hellowork.com/fr-fr/emploi/recherche.html?${params}`;
   const page = await context.newPage();
   try {
@@ -109,6 +110,7 @@ function parseLinkedInCards(html) {
         company: li.querySelector('.base-search-card__subtitle, h4')?.textContent.trim() || '',
         link: a.getAttribute('href'),
         location: li.querySelector('.job-search-card__location')?.textContent.trim() || '',
+        postedAt: li.querySelector('time')?.getAttribute('datetime') || '',
         source: 'LinkedIn',
       };
     })
@@ -120,6 +122,11 @@ async function linkedIn(context, keyword, contract, search, log) {
   const c = CONTRACTS[contract];
   const params = new URLSearchParams({ keywords: contract === 'Alternance' ? `${keyword} alternance` : keyword, location: search.location || 'France', start: '0' });
   if (c.linkedin) params.set('f_JT', c.linkedin);
+  if (search.location && search.radius) params.set('distance', String(filters.linkedinMiles(search.radius)));
+  if (search.posted) params.set('f_TPR', `r${search.posted * 86400}`);
+  if (search.remote === 'remote') params.set('f_WT', '2');
+  else if (search.remote === 'hybrid') params.set('f_WT', '2,3');
+  else if (search.remote === 'onsite') params.set('f_WT', '1');
   const page = await context.newPage();
   try {
     const res = await context.request.get(`https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?${params}`, { timeout: 20000 });
@@ -144,6 +151,8 @@ async function indeed(context, keyword, contract, search, log) {
   const q = contract === 'Alternance' ? `${keyword} alternance` : keyword;
   const params = new URLSearchParams({ q, l: search.location || 'France' });
   if (c.indeed) params.set('sc', `0kf:jt(${c.indeed});`);
+  if (search.location && search.radius) params.set('radius', String(filters.indeedKm(search.radius)));
+  if (search.posted) params.set('fromage', String(filters.indeedDays(search.posted)));
   const page = await context.newPage();
   try {
     await page.goto(`https://fr.indeed.com/jobs?${params}`, { waitUntil: 'domcontentloaded', timeout: 20000 });
@@ -205,7 +214,8 @@ async function viaSearchEngine(context, keyword, contract, search, src) {
         }
         const m = r.link.match(/\/companies\/([^/]+)/);
         if (m) company = m[1].replace(/-/g, ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
-        return { title, company: company || 'Entreprise non précisée', link: r.link, location: search.location || '', snippet: r.snippet, source: src.label };
+        // The page itself says nothing about the place: the one searched is a guess, not a measure.
+        return { title, company: company || 'Entreprise non précisée', link: r.link, location: search.location || '', locationGuess: Boolean(search.location), snippet: r.snippet, source: src.label };
       });
   } catch {
     return [];
@@ -266,14 +276,18 @@ function stop() {
 // `progress` receives structured events for the search screen:
 // start, search (one per keyword and contract), filter, dedupe, read.
 async function run(profile, existing, log = () => {}, progress = () => {}) {
-  const search = profile.search || {};
+  const search = filters.cleanSearch(profile.search || {}, { legacy: true });
   const { keywords, hints } = searchPlan(search);
   if (!keywords.length) throw new Error('Choisis un domaine ou ajoute des mots-clés dans ton profil.');
   const contracts = selectedContracts(search);
   const sources = enabledSources(search);
   if (!sources.length) throw new Error('Active au moins un site dans « Sites de recherche » (profil).');
-  // Each extra contract type or site multiplies the number of pages read.
-  const kws = keywords.slice(0, contracts.length > 1 ? 4 : 6);
+  // Each extra contract type, place or site multiplies the number of pages read.
+  const places = (search.places || []).filter((p) => p.name).slice(0, 3);
+  const spots = places.length ? places : [{ name: String(search.location || '').trim() }];
+  const mult = contracts.length * spots.length;
+  const kws = keywords.slice(0, mult > 3 ? 3 : mult > 1 ? 4 : 6);
+  const maxOffers = filters.cleanSearch(search).maxOffers;
 
   const browser = await chromium.launch({ headless: true });
   const ctl = { stopped: false, browser };
@@ -281,24 +295,28 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
   const context = await browser.newContext({ userAgent: UA, locale: 'fr-FR' });
   try {
     let found = [];
-    const total = contracts.length * kws.length;
+    const total = contracts.length * kws.length * spots.length;
     const perSource = Object.fromEntries(sources.map((s) => [s.label, 0]));
     let batchNo = 0;
     progress({ stage: 'start', sources: sources.map((s) => ({ id: s.id, label: s.label })), batches: total });
     try {
     for (const contract of contracts) {
       if (ctl.stopped) break;
+      for (const spot of spots) {
+      if (ctl.stopped) break;
+      // The sites get this one place (and the radius around it); the perimeter is checked again afterwards.
+      const where = { ...search, location: spot.name, radius: spot.kind === 'libre' || spot.kind === 'region' ? 0 : search.radius };
       for (const kw of kws) {
         if (ctl.stopped) break;
-        log(`Recherche « ${kw} » · ${contract}`);
+        log(`Recherche « ${kw} » · ${contract}${spot.name ? ` · ${spot.name}` : ''}`);
         // Direct sites run side by side; search-engine queries go one at a time.
         const direct = sources.filter((s) => s.direct).map(async (s) => {
-          let jobs = await DIRECT[s.id](context, kw, contract, search, log);
-          if (!jobs.length && s.fallbackSite) jobs = await viaSearchEngine(context, kw, contract, search, s);
+          let jobs = await DIRECT[s.id](context, kw, contract, where, log);
+          if (!jobs.length && s.fallbackSite) jobs = await viaSearchEngine(context, kw, contract, where, s);
           return [s, jobs];
         });
         const viaEngine = [];
-        for (const s of sources.filter((x) => x.site)) viaEngine.push([s, await viaSearchEngine(context, kw, contract, search, s)]);
+        for (const s of sources.filter((x) => x.site)) viaEngine.push([s, await viaSearchEngine(context, kw, contract, where, s)]);
         const batches = [...(await Promise.all(direct)), ...viaEngine];
         log('  ' + batches.map(([s, jobs]) => `${s.label} ${jobs.length}`).join(' · '));
         for (const [src, jobs] of batches) {
@@ -307,6 +325,7 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
         }
         batchNo += 1;
         progress({ stage: 'search', batch: batchNo, batches: total, keyword: kw, contract, perSource: { ...perSource }, seen: found.length });
+      }
       }
     }
 
@@ -318,7 +337,12 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
     const before = found.length;
     found = found.filter((j) => j.title.length > 4 && relevant(j.title, hints) && !isExcluded(j.company, search.excluded));
     log(`${before - found.length} offres écartées (hors sujet ou organismes de formation)`);
-    progress({ stage: 'filter', before, kept: found.length });
+    // Too far from the chosen places, or older than asked: dropped before anything is read.
+    const near = filters.prefilter(found, search);
+    found = near.kept;
+    if (near.outside) log(`${near.outside} offres hors périmètre (à plus de ${search.radius} km)`);
+    if (near.old) log(`${near.old} offres trop anciennes (publiées il y a plus de ${search.posted} jours)`);
+    progress({ stage: 'filter', before, kept: found.length, outside: near.outside, old: near.old });
 
     const fresh = [];
     let dupes = 0;
@@ -327,9 +351,9 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
       else fresh.push(job);
     }
     log(`${dupes} doublons ignorés (même offre sur plusieurs sites ou déjà dans ta liste)`);
-    progress({ stage: 'dedupe', dupes, fresh: Math.min(fresh.length, MAX_NEW) });
-    const batch = fresh.slice(0, MAX_NEW);
-    log(`${fresh.length} nouvelles offres${fresh.length > MAX_NEW ? `, ${MAX_NEW} analysées cette fois` : ''}`);
+    progress({ stage: 'dedupe', dupes, fresh: Math.min(fresh.length, maxOffers) });
+    let batch = fresh.slice(0, maxOffers);
+    log(`${fresh.length} nouvelles offres${fresh.length > maxOffers ? `, ${maxOffers} analysées cette fois` : ''}`);
 
     try {
     for (let i = 0; i < batch.length && !ctl.stopped; i += 4) {
@@ -341,8 +365,13 @@ async function run(profile, existing, log = () => {}, progress = () => {}) {
       if (!ctl.stopped) throw e;
     }
     for (const job of batch) job.description ||= job.snippet || '';
+    // Once the announcements are read: working from home, and how well each one matches the profile.
+    const refined = filters.refine(batch, search, profile);
+    batch = refined.kept;
+    if (refined.remoteOut) log(`${refined.remoteOut} offres ne correspondent pas au télétravail demandé`);
+    if (refined.lowScore) log(`${refined.lowScore} offres sous les ${search.minScore} % de correspondance demandés`);
     ctl.result = batch;
-    progress({ stage: 'read', done: batch.length, total: batch.length });
+    progress({ stage: 'read', done: batch.length, total: batch.length, remoteOut: refined.remoteOut, lowScore: refined.lowScore });
     return Object.assign(batch, { stopped: ctl.stopped });
   } finally {
     current = null;
@@ -386,4 +415,4 @@ async function findContacts(company, title = '') {
   }
 }
 
-module.exports = { run, stop, findContacts, isDuplicate, SOURCES, CONTRACTS, detectContract };
+module.exports = { run, stop, findContacts, isDuplicate, SOURCES, CONTRACTS, detectContract, _sites: DIRECT };

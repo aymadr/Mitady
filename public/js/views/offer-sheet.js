@@ -1,7 +1,7 @@
 import { S, upsertApp, go, refreshPage } from '../main.js';
 import { siteLogo } from '../logos.js';
 import { working, cheerStatus, isSent } from '../mascot.js';
-import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, longDate, relDate, norm, STATUS } from '../lib.js';
+import { html, raw, mount, api, fail, toast, icons, avatar, debounce, busy, longDate, relDate, norm, STATUS, whereText, remoteText } from '../lib.js';
 
 const TABS = [
   { id: 'offre', label: 'Offre' },
@@ -66,7 +66,8 @@ function render() {
           <a class="icon-btn" href="#/offres" aria-label="Fermer">${icons.close}</a>
         </div>
         <div class="sheet-meta">
-          ${a.location ? html`<span>${a.location}</span>` : ''}
+          ${a.location ? html`<span>${whereText(a)}</span>` : ''}
+          ${remoteText(a) ? html`<span class="badge">${remoteText(a)}</span>` : ''}
           <span class="src">${siteLogo(a.source, 18)}${a.source}${a.contract ? ` · ${a.contract}` : ''}</span>
           <span>Ajoutée ${relDate(a.addedAt)}</span>
           ${a.link ? html`<a href="${a.link}" target="_blank" rel="noopener">Voir l'annonce ${icons.external}</a>` : ''}

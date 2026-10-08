@@ -1,5 +1,5 @@
 import { S, upsertApp, go } from '../main.js';
-import { html, mount, api, busy, fail, toast, icons, avatar, miniRing, relDate, norm } from '../lib.js';
+import { html, mount, api, busy, fail, toast, icons, avatar, miniRing, relDate, norm, whereText, remoteText } from '../lib.js';
 import { openModal, closeModal } from './modal.js';
 import { siteLogo } from '../logos.js';
 
@@ -39,7 +39,7 @@ function rows(list) {
       ${avatar(a.company)}
       <div class="item-main">
         <div class="item-title">${a.title}</div>
-        <div class="item-sub">${siteLogo(a.source, 20)}${a.company}${a.location ? ` · ${a.location}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
+        <div class="item-sub">${siteLogo(a.source, 20)}${a.company}${a.location ? ` · ${whereText(a)}` : ''}${remoteText(a) ? ` · ${remoteText(a)}` : ''} · ${a.source}${a.contract ? ` · ${a.contract}` : ''} · ${relDate(a.addedAt)}</div>
       </div>
       <div class="item-side">
         ${statusSide(a)}
@@ -55,8 +55,9 @@ function visible() {
   const f = FILTERS.find((x) => x.id === ui.filter);
   const q = norm(ui.query);
   const list = S.applications.filter((a) => f.test(a) && (!q || norm(`${a.title} ${a.company} ${a.location}`).includes(q)));
+  const byScore = (a, b) => (b.score ?? -1) - (a.score ?? -1) || b.addedAt.localeCompare(a.addedAt);
   return list.sort((a, b) =>
-    ui.sort === 'score' ? (b.score ?? -1) - (a.score ?? -1) || b.addedAt.localeCompare(a.addedAt) : b.addedAt.localeCompare(a.addedAt),
+    ui.sort === 'score' ? byScore(a, b) : ui.sort === 'distance' ? (a.distanceKm ?? 1e9) - (b.distanceKm ?? 1e9) || byScore(a, b) : b.addedAt.localeCompare(a.addedAt),
   );
 }
 
@@ -80,6 +81,7 @@ export function renderOffers(view) {
         <div class="segmented" role="group" aria-label="Trier">
           <button aria-pressed="${ui.sort === 'score'}" data-sort="score">Correspondance</button>
           <button aria-pressed="${ui.sort === 'date'}" data-sort="date">Récentes</button>
+          ${S.applications.some((a) => a.distanceKm !== null && a.distanceKm !== undefined) ? html`<button aria-pressed="${ui.sort === 'distance'}" data-sort="distance">Proches</button>` : ''}
         </div>
       </div>
       <div class="group" id="list">${rows(visible())}</div>`,

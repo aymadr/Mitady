@@ -115,7 +115,7 @@ async function addSkillToProfile(skill) {
 function renderOffer(body, a) {
   const pct = a.score ?? 0;
   const ringColor = a.score >= 70 ? 'var(--green)' : a.score >= 45 ? 'var(--accent)' : 'var(--text-3)';
-  const [ga, gb] = a.score >= 70 ? ['#14b87d', '#5ee6b0'] : a.score >= 45 ? ['#5b5bf0', '#ee5fa7'] : ['#8b8aa3', '#8b8aa3'];
+  const [ga, gb] = a.score >= 70 ? ['#14b87d', '#5ee6b0'] : a.score >= 45 ? ['#2f7d5b', '#ffcd00'] : ['#8b8aa3', '#8b8aa3'];
   mount(
     body,
     html`<div class="stack">

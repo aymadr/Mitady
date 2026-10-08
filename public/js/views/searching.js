@@ -8,7 +8,7 @@ import { celebrate } from '../fx.js';
 import { petSvg, petOf, defaultPet, ANIMALS } from '../pet.js';
 
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-const DUST = ['#f5a524', '#ee5fa7', '#5b5bf0', '#22c08b', '#2fa6f0', '#9b5cf6'];
+const DUST = ['#f5a524', '#ffcd00', '#2f7d5b', '#22c08b', '#4a9c78', '#7fdcae'];
 
 let root = null;
 let cast = []; // { el, shadow, logo, plus, pet, src, i, slot }

@@ -43,6 +43,7 @@ const COL = { B: '#a3a9c2', P: '#ffb3cc', L: '#e9ebf5', N: '#2a2438', K: '#2a243
 const paths = {};
 out.forEach((row, y) => { let x = 0; while (x < N) { const c = row[x]; if (c === '.') { x++; continue; } let w = 1; while (row[x + w] === c) w++; (paths[c] ||= []).push(`M${x} ${y}h${w}v1h-${w}z`); x += w; } });
 const body = Object.entries(paths).map(([c, d]) => `<path fill="${COL[c]}" d="${d.join('')}"/>`).join('');
-const svg = (id) => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5cf6"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ee5fa7"/></linearGradient></defs><rect width="28" height="28" rx="8" fill="url(#${id})"/><g transform="translate(2 2.4)" shape-rendering="crispEdges">${body}</g>`;
-require('fs').writeFileSync(require('path').join(__dirname, '..', 'public', 'favicon.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">${svg('g')}</svg>`);
-console.log(svg('mt-g'));
+const TILE = '#2f7d5b'; // eucalyptus
+const svg = () => `<rect width="28" height="28" rx="8" fill="${TILE}"/><g transform="translate(2 2.4)" shape-rendering="crispEdges">${body}</g>`;
+require('fs').writeFileSync(require('path').join(__dirname, '..', 'public', 'favicon.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28">${svg()}</svg>`);
+console.log(svg());

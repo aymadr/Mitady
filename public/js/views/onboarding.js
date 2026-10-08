@@ -468,7 +468,7 @@ const TOUR = [
   {
     icon: 'bell', title: 'Suivi & relances', sub: 'Rien ne tombe dans l\'oubli',
     text: "Suis chaque candidature (à traiter, envoyée, entretien, offre) et reçois une relance quand une réponse tarde. Tout s'exporte en Excel.",
-    art: () => html`<div class="pipeline-bar"><span style="flex:5;background:#8b8aa3"></span><span style="flex:3;background:#5b5bf0"></span><span style="flex:2;background:#a259f7"></span><span style="flex:1;background:#14b87d"></span></div>
+    art: () => html`<div class="pipeline-bar"><span style="flex:5;background:#8b8aa3"></span><span style="flex:3;background:#2f7d5b"></span><span style="flex:2;background:#ffcd00"></span><span style="flex:1;background:#14b87d"></span></div>
       <div class="tour-badges" style="margin-top:22px"><span class="badge orange">${icons.check} À relancer : Airbus</span><span class="badge blue">Entretien · Sekoia.io</span></div><span class="corner-mon">${petSvg(petOf(S.profile), { size: 80, mood: 'party' })}</span>`,
   },
   {

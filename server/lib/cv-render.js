@@ -29,7 +29,7 @@ function boldLead(text) {
 
 function entry(tag, line, cls = '') {
   const { text, date } = withDate(line);
-  const lead = tag === 'li' ? '- ' : '';
+  const lead = '';
   if (!date) return `<${tag} class="${cls}">${lead}${boldLead(text)}</${tag}>`;
   return `<${tag} class="row ${cls}"><span>${lead}${boldLead(text)}</span><em>${escapeHtml(date)}</em></${tag}>`;
 }
@@ -73,6 +73,42 @@ function renderSkills(section, added) {
 }
 
 const isSkills = (s) => /^comp[ée]tences?$/i.test((s.title || '').trim());
+
+// ---------- Defensive input ----------
+// Profiles come from the API, imports and older versions: nothing is trusted to have the right type.
+
+const S_ = (v) => (typeof v === 'string' ? v : v == null || typeof v === 'object' || typeof v === 'function' ? '' : String(v));
+const A_ = (v) => (Array.isArray(v) ? v : []);
+const O_ = (v) => (v && typeof v === 'object' && !Array.isArray(v) ? v : {});
+
+function cleanItem(it) {
+  const o = O_(it);
+  return {
+    ...o,
+    title: S_(o.title), subtitle: S_(o.subtitle), location: S_(o.location), start: S_(o.start), end: S_(o.end), link: S_(o.link),
+    description: S_(o.description), name: S_(o.name), label: S_(o.label), level: Number(o.level) || 0, current: o.current === true, hidden: o.hidden === true,
+  };
+}
+
+function cleanSection(s) {
+  const o = O_(s);
+  return { ...o, type: S_(o.type) || undefined, title: S_(o.title), body: S_(o.body), hidden: o.hidden === true, items: A_(o.items).map(cleanItem) };
+}
+
+function cleanProfile(p) {
+  const o = O_(p);
+  return {
+    ...o,
+    name: S_(o.name), email: S_(o.email), phone: S_(o.phone), location: S_(o.location), summary: S_(o.summary), photo: S_(o.photo), photoData: S_(o.photoData),
+    links: A_(o.links).map(S_).filter(Boolean),
+    skills: A_(o.skills).map(S_).filter(Boolean),
+    skillLevels: O_(o.skillLevels),
+    details: A_(o.details).map(O_).map((d) => ({ label: S_(d.label), value: S_(d.value) })),
+    sections: A_(o.sections).filter((s) => s && typeof s === 'object' && !Array.isArray(s)).map(cleanSection),
+    cvStyle: O_(o.cvStyle),
+    letter: O_(o.letter),
+  };
+}
 
 // ---------- Section types ----------
 
@@ -169,6 +205,17 @@ const icon = (name) => {
   const [vb, d] = ICON_PATHS[name] || ICON_PATHS.link;
   return `<svg class="ic" viewBox="${vb}" width="9" height="9" aria-hidden="true"><path fill="currentColor" d="${d}"/></svg>`;
 };
+// How a link is written: as typed, without the protocol, or by the name of the site.
+function linkLabel(url, mode) {
+  if (!mode) return url;
+  const short = url.replace(/^https?:\/\//i, '').replace(/^www\./i, '').replace(/\/+$/, '');
+  if (mode === 'short') return short;
+  if (/linkedin\./i.test(url)) return 'LinkedIn';
+  if (/github\./i.test(url)) return 'GitHub';
+  if (/^[^@\s]+@[^@\s]+$/.test(url)) return url;
+  return short.split('/')[0];
+}
+
 const linkIcon = (url, ext) =>
   /linkedin/i.test(url) ? 'linkedin' : /github/i.test(url) ? 'github' : /^[^@\s]+@[^@\s]+$/.test(url) ? 'mail' : ext ? 'external' : /https?:|www\.|\.[a-z]{2,}/i.test(url) ? 'globe' : 'link';
 
@@ -233,11 +280,11 @@ const TEMPLATES = {
     label: 'Élégant', ats: true, struct: 'header',
     css: `
   header { flex-direction: column; align-items: center; text-align: center; padding-bottom: 6pt; border-bottom: 1.2pt solid var(--accent); gap: 2mm; }
-  h1 { font-size: 22pt; font-weight: 400; letter-spacing: 0.14em; }
+  h1 { font-size: 22pt; font-weight: 400; letter-spacing: 0.04em; }
   .headline { color: #333; font-weight: 400; font-style: italic; font-size: 12pt; }
   .contact { justify-content: center; }
   .contact span + span::before { content: "·"; }
-  h2 { color: var(--accent); border: 0; text-align: center; letter-spacing: 0.18em; font-size: 10pt; margin-top: 4pt; }
+  h2 { color: var(--accent); border: 0; text-align: center; letter-spacing: 0.05em; font-size: 10pt; margin-top: 4pt; }
   section { margin-top: 8pt; }`,
   },
   minimal: {
@@ -246,7 +293,7 @@ const TEMPLATES = {
   body { font-size: 9pt; line-height: 1.32; color: #1a1a1a; }
   h1 { font-size: 24pt; text-transform: none; font-weight: 300; }
   .headline { font-weight: 400; color: var(--accent); font-size: 11.5pt; }
-  h2 { border: 0; color: var(--accent); font-size: 8.6pt; letter-spacing: 0.16em; margin-bottom: 3pt; }
+  h2 { border: 0; color: var(--accent); font-size: 8.6pt; letter-spacing: 0.05em; margin-bottom: 3pt; }
   h3 { font-size: 9.4pt; }
   section { margin-top: 10pt; }`,
   },
@@ -275,7 +322,7 @@ const TEMPLATES = {
   h1 { text-transform: none; font-size: 22pt; font-weight: 600; letter-spacing: -0.01em; }
   .headline { color: #555; font-weight: 400; font-size: 11pt; }
   .contact { justify-content: center; }
-  h2 { font-size: 8.8pt; letter-spacing: 0.14em; border-bottom: 0.4pt solid #999; color: #222; }
+  h2 { font-size: 8.8pt; letter-spacing: 0.05em; border-bottom: 0.4pt solid #999; color: #222; }
   section { margin-top: 8pt; }`,
   },
   regulier: {
@@ -428,6 +475,14 @@ const DEFAULT_STYLE = {
   entryStruct: '', datePos: '', subPos: '',
   icons: false, linkIcons: false, linkIconType: 'link', linkUnderline: false, linkBlue: false,
   align: '', contactArr: 'line', columns: 'one', summary: true, docLang: 'fr', pageFormat: 'A4',
+  // Advanced: '' / 0 = the template decides.
+  textAlign: '', paraGap: 0, bullet: '',
+  entryGap: 0, titleStyle: '', subStyle: '', dateStyle: '', dateWidth: 0, keepEntries: true,
+  linkColor: '', linkText: '', iconSize: 0,
+  nameWeight: '', nameCaps: '', nameSpacing: '', headlineSize: 0, headlineStyle: '', headerGap: 0,
+  headSize: 0, headSpacing: '', headBelow: 0, ruleWidth: 0,
+  photoBorderColor: '', photoBorderWidth: 0, photoShadow: false,
+  pageNumbers: '',
 };
 
 const clampNum = (v, lo, hi) => (Number(v) > 0 ? Math.min(hi, Math.max(lo, Number(v))) : 0);
@@ -503,6 +558,32 @@ function resolveStyle(style = {}) {
     summary: s.summary !== false,
     docLang: s.docLang === 'en' ? 'en' : 'fr',
     pageFormat: s.pageFormat === 'Letter' ? 'Letter' : 'A4',
+    textAlign: oneOf(s.textAlign, ['left', 'justify']),
+    paraGap: clampNum(s.paraGap, 0.5, 10),
+    bullet: oneOf(s.bullet, ['dash', 'dot', 'arrow', 'square', 'none']),
+    entryGap: clampNum(s.entryGap, 0.5, 16),
+    titleStyle: oneOf(s.titleStyle, ['normal', 'bold']),
+    subStyle: oneOf(s.subStyle, ['normal', 'italic', 'bold']),
+    dateStyle: oneOf(s.dateStyle, ['normal', 'italic', 'bold']),
+    dateWidth: clampNum(s.dateWidth, 16, 44),
+    keepEntries: s.keepEntries !== false,
+    linkColor: hex(s.linkColor),
+    linkText: oneOf(s.linkText, ['short', 'name']),
+    iconSize: clampNum(s.iconSize, 7, 16),
+    nameWeight: oneOf(s.nameWeight, ['light', 'normal', 'bold']),
+    nameCaps: oneOf(s.nameCaps, ['on', 'off']),
+    nameSpacing: oneOf(s.nameSpacing, ['tight', 'normal', 'wide']),
+    headlineSize: clampNum(s.headlineSize, 9, 18),
+    headlineStyle: oneOf(s.headlineStyle, ['normal', 'italic', 'bold']),
+    headerGap: clampNum(s.headerGap, 1, 16),
+    headSize: clampNum(s.headSize, 8, 15),
+    headSpacing: oneOf(s.headSpacing, ['normal', 'wide']),
+    headBelow: clampNum(s.headBelow, 0.5, 12),
+    ruleWidth: clampNum(s.ruleWidth, 0.3, 3),
+    photoBorderColor: hex(s.photoBorderColor),
+    photoBorderWidth: clampNum(s.photoBorderWidth, 0.2, 2),
+    photoShadow: Boolean(s.photoShadow),
+    pageNumbers: oneOf(s.pageNumbers, ['center', 'right']),
   };
 }
 
@@ -570,6 +651,36 @@ function customCss(st) {
     c.push(`.sub { color: ${on.has('entrySubtitle') ? 'var(--accent)' : '#333'}; }`);
     c.push(`.ic.lk { color: ${on.has('linkIcons') ? 'var(--accent)' : 'inherit'}; }`);
   }
+
+  // Advanced
+  const wt = { light: 300, normal: 400, bold: 700 };
+  const fs_ = { normal: 'font-style: normal; font-weight: 400;', italic: 'font-style: italic; font-weight: 400;', bold: 'font-style: normal; font-weight: 700;' };
+  if (st.textAlign) c.push(`.summary, .e-x p, .letter p, .e-x li, p.strong-line { text-align: ${st.textAlign}; }`);
+  if (st.paraGap) c.push(`p { margin-bottom: ${st.paraGap}pt; } li { margin-bottom: ${st.paraGap}pt; } .lt p { margin-bottom: ${st.paraGap + 6}pt; }`);
+  if (st.entryGap) c.push(`.entry { margin-top: ${st.entryGap}pt; } section h2 + .entry { margin-top: 0; }`);
+  if (st.titleStyle) c.push(`.entry h3 { font-weight: ${st.titleStyle === 'bold' ? 700 : 400}; }`);
+  if (st.subStyle) c.push(`.sub { ${fs_[st.subStyle]} }`);
+  if (st.dateStyle) c.push(`.e-d, .row em { ${fs_[st.dateStyle]} }`);
+  if (st.dateWidth) c.push(`.entry { --dw: ${st.dateWidth}mm; }`);
+  if (!st.keepEntries) c.push('.entry { break-inside: auto; }');
+  if (st.linkColor) c.push(`.lnk, .contact .lk, .ic.lk { color: ${st.linkColor}; }`);
+  if (st.iconSize) c.push(`.ic { width: ${st.iconSize}px; height: ${st.iconSize}px; }`);
+  if (st.nameWeight) c.push(`h1 { font-weight: ${wt[st.nameWeight]}; }`);
+  if (st.nameCaps) c.push(`h1 { text-transform: ${st.nameCaps === 'on' ? 'uppercase' : 'none'}; }`);
+  if (st.nameSpacing) c.push(`h1 { letter-spacing: ${{ tight: '-0.015em', normal: '0', wide: '0.04em' }[st.nameSpacing]}; }`);
+  if (st.headlineSize) c.push(`.headline { font-size: ${st.headlineSize}pt; }`);
+  if (st.headlineStyle) c.push(`.headline { ${fs_[st.headlineStyle]} }`);
+  if (st.headerGap) c.push(`header { margin-bottom: ${st.headerGap}mm; }`);
+  if (st.headSize) c.push(`h2 { font-size: ${st.headSize}pt; }`);
+  if (st.headSpacing) c.push(`h2 { letter-spacing: ${st.headSpacing === 'wide' ? '0.05em' : '0'}; }`);
+  if (st.headBelow) c.push(`h2 { margin-bottom: ${st.headBelow}pt; }`);
+  if (st.ruleWidth) {
+    c.push(`${H} { border-bottom-width: ${st.ruleWidth}pt; border-left-width: ${st.ruleWidth * 3}pt; }`);
+    if (st.headStyle === 'short') c.push(`${H}::after { height: ${st.ruleWidth + 0.6}pt; }`);
+  }
+  if (st.photoBorderColor || st.photoBorderWidth) c.push(`.photo.bordered { ${st.photoBorderColor ? `border-color: ${st.photoBorderColor};` : ''} ${st.photoBorderWidth ? `border-width: ${st.photoBorderWidth}mm;` : ''} }`);
+  if (st.photoShadow) c.push('.photo { box-shadow: 0 1.2mm 3mm rgba(0,0,0,.28); }');
+  if (st.pageNumbers) c.push(`@page { @bottom-${st.pageNumbers} { content: counter(page) " / " counter(pages); font: 8pt Arial, sans-serif; color: #666; } }`);
 
   // Colours: text, page / header background, border
   if (st.textColor) c.push('body { color: var(--ink); }');
@@ -683,7 +794,7 @@ function renderDesc(text) {
     const bullet = BULLET.test(l);
     if (bullet !== list) out += list ? '</ul>' : '<ul>';
     list = bullet;
-    out += bullet ? `<li>- ${escapeHtml(l.replace(BULLET, ''))}</li>` : `<p>${escapeHtml(l)}</p>`;
+    out += bullet ? `<li>${escapeHtml(l.replace(BULLET, ''))}</li>` : `<p>${escapeHtml(l)}</p>`;
   }
   return out + (list ? '</ul>' : '');
 }
@@ -696,7 +807,7 @@ function renderEntries(items, st) {
       const dates = entryDates(it, st);
       const title = escapeHtml(it.title || it.subtitle || '');
       const sub = it.title ? escapeHtml(it.subtitle || '') : '';
-      const link = it.link ? `<span class="lnk">${escapeHtml(it.link)}</span>` : '';
+      const link = it.link ? `<span class="lnk">${escapeHtml(linkLabel(it.link, st.linkText))}</span>` : '';
       const subLine = [sub, link].filter(Boolean).join(' · ');
       const same = st.subPos === 'same' && subLine;
       const when = `<div class="e-w">${dates ? `<em class="e-d">${escapeHtml(dates)}</em>` : ''}${it.location ? `<span class="e-l">${escapeHtml(it.location)}</span>` : ''}</div>`;
@@ -733,8 +844,9 @@ function renderLanguages(items, st) {
 }
 
 // Plain-text version of a section (matching, AI prompts).
-function sectionText(s) {
-  if (!s) return '';
+function sectionText(raw) {
+  if (!raw || typeof raw !== 'object') return '';
+  const s = cleanSection(raw);
   const t = s.type || 'text';
   const kind = (SECTION_TYPES[t] || SECTION_TYPES.text).kind;
   if (kind === 'text') return s.body || '';
@@ -807,7 +919,18 @@ function letterBodyHtml(l, st, profile) {
   </div>`;
 }
 
-function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], preview = false, letter = null }) {
+function renderCvHtml(rawProfile, opts = {}) {
+  const profileIn = cleanProfile(rawProfile);
+  let { headline, summary, skills, skillsAdded = [], preview = false, letter = null } = O_(opts);
+  headline = S_(headline);
+  summary = S_(summary);
+  skills = A_(skills).map(S_).filter(Boolean);
+  skillsAdded = A_(skillsAdded).map(S_).filter(Boolean);
+  if (letter) {
+    const l = O_(letter);
+    const r = O_(l.recipient);
+    letter = { ...l, subject: S_(l.subject), opening: S_(l.opening), body: S_(l.body), closing: S_(l.closing), place: S_(l.place), date: S_(l.date), align: l.align === 'left' ? 'left' : 'right', recipient: { name: S_(r.name), role: S_(r.role), company: S_(r.company), address: S_(r.address) } };
+  }
   const empty = !profileIn.name && !(profileIn.sections || []).some((s) => sectionText(s).trim());
   const profile = empty ? { ...profileIn, ...SAMPLE, photo: profileIn.photo, cvStyle: profileIn.cvStyle } : profileIn;
   if (empty) {
@@ -862,7 +985,7 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
     : '';
   const idHtml = `<h1>${escapeHtml(profile.name || 'Ton nom')}</h1>${headline ? `<div class="headline">${escapeHtml(headline)}</div>` : ''}`;
   const span = ([ic, text]) => `<span>${st.icons && ic ? icon(ic) : ''}${escapeHtml(text)}</span>`;
-  const lk = (l) => `<span class="lk">${st.linkIcons ? icon(linkIcon(l, st.linkIconType === 'external')).replace('class="ic"', 'class="ic lk"') : ''}${escapeHtml(l)}</span>`;
+  const lk = (l) => `<span class="lk">${st.linkIcons ? icon(linkIcon(l, st.linkIconType === 'external')).replace('class="ic"', 'class="ic lk"') : ''}${escapeHtml(linkLabel(l, st.linkText))}</span>`;
   const contactHtml = st.contactArr === 'line'
     ? `<div class="contact">${contactItems.map(span).join('')}</div>${links.length ? `<div class="contact links">${links.map(lk).join('')}</div>` : ''}`
     : `<div class="contact links">${contactItems.map(span).join('')}${links.map(lk).join('')}</div>`;
@@ -903,8 +1026,7 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
 
   return `<!doctype html><html lang="${st.docLang}"><head><meta charset="utf-8">
 <style>
-  ${st.imports.map((u) => `@import url('${u}');`).join('\n  ')}
-  :root { --accent: ${st.accent}; --ink: ${ink}; --panel: ${st.panel}; --panel-ink: ${st.panelInk}; }
+  :root { --accent: ${st.accent}; --ink: ${ink}; --panel: ${st.panel}; --panel-ink: ${st.panelInk}; --bul: ${{ dash: '"- "', dot: '"• "', arrow: '"› "', square: '"▪ "', none: '""' }[st.bullet || 'dash']}; }
   @page { size: ${st.pageFormat}; margin: ${(st.tpl.margins || [10, 12]).join('mm ')}mm; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -936,6 +1058,8 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
   p.strong-line { font-weight: 700; }
   ul { list-style: none; margin: 1pt 0 3pt; }
   li { padding-left: 9pt; text-indent: -6pt; margin-bottom: 1pt; break-inside: avoid; }
+  li::before { content: var(--bul); }
+  .bul-none li { padding-left: 0; text-indent: 0; }
   .summary { text-align: justify; }
   .letter { margin-top: 9mm; font-size: 10pt; line-height: 1.45; }
   .lt p { margin: 0 0 8pt; text-align: justify; }
@@ -971,9 +1095,9 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
   .es-full.dp-split .e-w { display: contents; }
   .es-full.dp-split .e-d { grid-area: d; justify-self: end; }
   .es-full.dp-split .e-l { grid-area: l; justify-self: end; }
-  .es-full.dp-left { grid-template-columns: 27mm 1fr; grid-template-areas: "w t" "w s" "x x"; }
-  .es-cols.dp-left { grid-template-columns: 27mm 1fr; grid-template-areas: "w t" "w s" "w x"; }
-  .es-cols.dp-right { grid-template-columns: 1fr 27mm; grid-template-areas: "t w" "s w" "x w"; }
+  .es-full.dp-left { grid-template-columns: var(--dw, 27mm) 1fr; grid-template-areas: "w t" "w s" "x x"; }
+  .es-cols.dp-left { grid-template-columns: var(--dw, 27mm) 1fr; grid-template-areas: "w t" "w s" "w x"; }
+  .es-cols.dp-right { grid-template-columns: 1fr var(--dw, 27mm); grid-template-areas: "t w" "s w" "x w"; }
   .es-cols.dp-right .e-w { text-align: right; }
   .es-cols.dp-split { grid-template-columns: 24mm 1fr 22mm; grid-template-areas: "d t l" "d s l" "d x l"; }
   .es-cols.dp-split .e-w { display: contents; }
@@ -1006,9 +1130,10 @@ function renderCvHtml(profileIn, { headline, summary, skills, skillsAdded = [], 
   ${st.tpl.css}
   ${customCss(st)}
   ${preview ? previewCss(st) : ''}
-</style></head><body class="pp-${pos}">
+</style></head><body class="pp-${pos}${st.bullet === 'none' ? ' bul-none' : ''}">
   ${st.bg && st.bgMode === 'border' ? '<div class="frame"></div>' : ''}
   ${body}
+  ${st.imports.map((u) => `<link rel="stylesheet" href="${u}">`).join('')}
 </body></html>`;
 }
 

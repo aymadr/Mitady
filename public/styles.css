@@ -1445,3 +1445,13 @@ body.ob-open .forest { display: none; }
 .add-card.dashed { background: none; box-shadow: inset 0 0 0 1.5px var(--line-strong); }
 .sx-ico { display: inline-grid; place-items: center; }
 .templates.is-off { opacity: 0.45; pointer-events: none; filter: grayscale(0.4); }
+
+/* Advanced settings */
+.adv { margin-top: 16px; border-top: 1px dashed var(--line-strong); padding-top: 10px; }
+.adv > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; border-radius: 10px; background: var(--fill); font-size: 13.5px; font-weight: 600; color: var(--text-2); user-select: none; }
+.adv > summary::-webkit-details-marker { display: none; }
+.adv > summary::after { content: ""; width: 7px; height: 7px; border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3); transform: rotate(45deg); transition: transform .25s; margin-bottom: 3px; }
+.adv[open] > summary::after { transform: rotate(225deg); margin-bottom: -3px; }
+.adv-body { padding: 14px 4px 2px; display: grid; gap: 14px; }
+.adv-body .field + .field { margin-top: 0; }
+input.clr { width: 40px; height: 40px; border: 0; border-radius: 50%; padding: 0; background: none; cursor: pointer; }

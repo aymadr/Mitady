@@ -71,8 +71,20 @@ app.get('/api/state', (req, res) => {
 const PROFILE_FIELDS = ['name', 'headline', 'email', 'phone', 'location', 'links', 'summary', 'titleGender', 'skills', 'sections', 'docx', 'search', 'cvStyle', 'letter', 'cvMode', 'details', 'skillLevels', 'cvManaged', 'avatar', 'pet', 'photoCrop'];
 const MERGED_FIELDS = ['search', 'docx', 'cvStyle', 'letter'];
 
+// Expected JSON type per profile field: a wrong one is refused instead of breaking every page.
+const FIELD_TYPES = {
+  name: 'string', headline: 'string', email: 'string', phone: 'string', location: 'string', summary: 'string', titleGender: 'string', cvMode: 'string',
+  links: 'array', skills: 'array', sections: 'array', details: 'array',
+  docx: 'object', search: 'object', cvStyle: 'object', letter: 'object', skillLevels: 'object', cvManaged: 'boolean',
+};
+const typeOf = (v) => (Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v);
+
 app.put('/api/profile', route((req, res) => {
   const p = store.db.profile;
+  if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) throw fail(400, 'Requête invalide.');
+  for (const [k, want] of Object.entries(FIELD_TYPES)) {
+    if (k in req.body && typeOf(req.body[k]) !== want) throw fail(400, `Valeur invalide pour « ${k} » (${want} attendu).`);
+  }
   for (const k of PROFILE_FIELDS) {
     if (!(k in req.body)) continue;
     p[k] = MERGED_FIELDS.includes(k) ? { ...p[k], ...req.body[k] } : req.body[k];
@@ -256,8 +268,9 @@ app.put('/api/applications/:id', route((req, res) => {
   }
   Object.assign(a, Object.fromEntries(Object.entries({ notes, title, company, location, link, description }).filter(([, v]) => v !== undefined)));
   if (contact) a.contact = { ...a.contact, ...contact };
-  if (cvDraft) a.cv = { ...(a.cv || {}), ...cvDraft };
-  if (req.body.letterDraft) a.letter = { ...(a.letter || {}), ...req.body.letterDraft, recipient: { ...(a.letter?.recipient || {}), ...(req.body.letterDraft.recipient || {}) } };
+  const plain = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  if (plain(cvDraft)) a.cv = { ...(a.cv || {}), ...cvDraft };
+  if (plain(req.body.letterDraft)) a.letter = { ...(a.letter || {}), ...req.body.letterDraft, recipient: { ...(a.letter?.recipient || {}), ...(req.body.letterDraft.recipient || {}) } };
   store.save();
   res.json(enrich(a));
 }));

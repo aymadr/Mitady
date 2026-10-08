@@ -180,6 +180,15 @@ db.profile = {
   cvStyle: { ...defaultProfile().cvStyle, ...(db.profile || {}).cvStyle },
   letter: { ...defaultProfile().letter, ...(db.profile || {}).letter },
 };
+// Whatever an older or hand-edited file holds, every field keeps the type the pages rely on.
+{
+  const d = defaultProfile();
+  for (const [k, v] of Object.entries(d)) {
+    const have = db.profile[k];
+    const kind = (x) => (Array.isArray(x) ? 'array' : x === null ? 'null' : typeof x);
+    if (v !== null && kind(have) !== kind(v)) db.profile[k] = v;
+  }
+}
 // Photo shapes were square / rounded (both portrait) before: keep their look.
 if (db.profile.cvStyle && !db.profile.cvStyle.photoShapeV2) {
   const m = { carre: 'portrait', arrondi: 'portraitArrondi' };

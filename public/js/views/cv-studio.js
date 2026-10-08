@@ -4,12 +4,19 @@ import { S } from '../main.js';
 import { html, raw, mount, api, fail, debounce, chipInput, fileToBase64, norm, esc, icons } from '../lib.js';
 import { openPhotoEditor } from './photo-editor.js';
 
+const RANGE_UNITS = {
+  fontSize: ' pt', margin: ' mm', gap: ' pt', nameSize: ' pt', lineHeight: '', paraGap: ' pt', headlineSize: ' pt', headerGap: ' mm', photoBorderWidth: ' mm',
+  iconSize: ' px', headSize: ' pt', headBelow: ' pt', ruleWidth: ' pt', entryGap: ' pt', dateWidth: ' mm',
+};
 const RESET_STYLE = {
   layout: 'classique', font: 'calibri', nameFont: '', accent: 'bleu', textColor: '', bgColor: '', bgMode: 'header', colorMode: 'single', accentOn: null,
   photoShape: 'portrait', photoSize: 'm', photoBorder: false, photoGray: false, photoPos: '',
   fontSize: 0, lineHeight: 0, margin: 0, gap: 0, nameSize: 0, headStyle: '', headCaps: '', headIcons: '', skillStyle: 'text', langStyle: 'text',
   entryStruct: '', datePos: '', subPos: '', icons: false, linkIcons: false, linkIconType: 'link', linkUnderline: false, linkBlue: false,
   align: '', contactArr: 'line', columns: 'one', summary: true,
+  textAlign: '', paraGap: 0, bullet: '', entryGap: 0, titleStyle: '', subStyle: '', dateStyle: '', dateWidth: 0, keepEntries: true, linkColor: '', linkText: '', iconSize: 0,
+  nameWeight: '', nameCaps: '', nameSpacing: '', headlineSize: 0, headlineStyle: '', headerGap: 0, headSize: 0, headSpacing: '', headBelow: 0, ruleWidth: 0,
+  photoBorderColor: '', photoBorderWidth: 0, photoShadow: false,
 };
 const uid = () => Math.random().toString(36).slice(2, 8);
 const I = {
@@ -96,7 +103,7 @@ function ensureManaged() {
   const next = (p.sections || []).map((s) => ({ ...s, id: s.id || uid() }));
   const hasSkills = next.some((s) => s.type === 'skills' || isSkillsText(s));
   if (!hasSkills && (p.skills || []).length) next.push({ id: uid(), type: 'skills', title: 'Compétences' });
-  ctx.update({ sections: next, cvManaged: true });
+  ctx.raw({ sections: next, cvManaged: true }); // not an undo step
 }
 
 function edit(fn, rerender = false) {
@@ -262,6 +269,10 @@ const check = (key, label, on) => html`<label class="chk"><input type="checkbox"
 const dcard = (title, body, id = '') => html`<section class="dcard" ${id ? raw(`id="${id}"`) : ''}><h4>${title}</h4>${body}</section>`;
 const range = (cur, key, min, max, step, unit, auto) =>
   html`<div class="rng"><input type="range" min="${min}" max="${max}" step="${step}" data-range="${key}" value="${cur[key] || auto}"><span class="rng-v" data-rv="${key}">${cur[key] ? cur[key] + unit : 'Auto'}</span>${cur[key] ? html`<button type="button" class="btn btn-plain small" data-act="auto" data-key="${key}">Auto</button>` : ''}</div>`;
+const adv = (key, body) => html`<details class="adv" data-key="adv-${key}" ${openKeys.has('adv-' + key) ? raw('open') : ''}><summary>Réglages avancés</summary><div class="adv-body">${body}</div></details>`;
+const field = (label, body) => html`<div class="field"><span class="label">${label}</span>${body}</div>`;
+const colorField = (cur, key, label, fallback) =>
+  html`<div class="field"><span class="label">${label}</span><div class="row"><input type="color" class="clr" data-color="${key}" value="${isHexColor(cur[key]) ? cur[key] : fallback}">${cur[key] ? html`<button type="button" class="btn btn-plain small" data-act="clear-key" data-key="${key}">Auto</button>` : html`<span class="small muted">Auto</span>`}</div></div>`;
 const fontSelect = (st, key, value, withSame) => {
   const groups = ['Sans', 'Serif', 'Slab', 'Mono'];
   return html`<select class="select" data-font="${key}">${withSame ? html`<option value="" ${!value ? raw('selected') : ''}>Comme le corps du texte</option>` : ''}${groups.map((g) => html`<optgroup label="${g === 'Sans' ? 'Sans empattement' : g === 'Serif' ? 'Avec empattement' : g === 'Slab' ? 'Slab' : 'Monospace'}">${Object.entries(st.fonts).filter(([, f]) => f.group === g).map(([k, f]) => html`<option value="${k}" ${value === k ? raw('selected') : ''}>${f.label}</option>`)}</optgroup>`)}</select>`;
@@ -289,7 +300,11 @@ function designPanel() {
       <div class="field"><span class="label">Espace entre rubriques</span>${range(cur, 'gap', 2, 18, 1, ' pt', 6)}</div>
     </div>
     <div class="field"><span class="label">Colonnes</span>${seg('columns', [['one', 'Une colonne'], ['two', 'Deux colonnes']], cur.columns || 'one')}
-      <p class="hint">Deux colonnes : compétences, langues et centres d'intérêt passent à droite.</p></div>`);
+      <p class="hint">Deux colonnes : compétences, langues et centres d'intérêt passent à droite.</p></div>
+    ${adv('layout', html`
+      ${field('Alignement du texte', seg('textAlign', [['', 'Selon le modèle'], ['left', 'Gauche'], ['justify', 'Justifié']], cur.textAlign || ''))}
+      ${field('Espace entre paragraphes', range(cur, 'paraGap', 1, 8, 0.5, ' pt', 1.5))}
+      ${field('Puces', seg('bullet', [['', 'Selon le modèle'], ['dash', 'Tiret'], ['dot', 'Point'], ['arrow', 'Flèche'], ['square', 'Carré'], ['none', 'Aucune']], cur.bullet || ''))}`)}`);
 
   const fonts = dcard('Police', html`
     <div class="field"><span class="label">Texte</span>${fontSelect(st, 'font', cur.font, false)}</div>
@@ -317,28 +332,55 @@ function designPanel() {
   const header = dcard('En-tête', html`
     <div class="field"><span class="label">Alignement du texte</span>${seg('align', [['', 'À gauche'], ['center', 'Centré']], cur.align || '')}</div>
     <div class="field"><span class="label">Arrangement des coordonnées</span>${seg('contactArr', [['line', 'Sur une ligne'], ['cols', 'Deux colonnes'], ['stack', 'En liste']], cur.contactArr || 'line')}</div>
-    <div class="row wrap" style="margin-top:12px">${check('icons', 'Icônes pour e-mail, téléphone, ville', cur.icons)}</div>`);
+    <div class="row wrap" style="margin-top:12px">${check('icons', 'Icônes pour e-mail, téléphone, ville', cur.icons)}</div>
+    ${adv('header', html`
+      ${field('Graisse du nom', seg('nameWeight', [['', 'Selon le modèle'], ['light', 'Fine'], ['normal', 'Normale'], ['bold', 'Grasse']], cur.nameWeight || ''))}
+      ${field('Majuscules du nom', seg('nameCaps', [['', 'Selon le modèle'], ['off', 'Telles quelles'], ['on', 'MAJUSCULES']], cur.nameCaps || ''))}
+      ${field('Espacement des lettres du nom', seg('nameSpacing', [['', 'Selon le modèle'], ['tight', 'Serré'], ['normal', 'Normal'], ['wide', 'Large']], cur.nameSpacing || ''))}
+      ${field('Taille du titre du poste', range(cur, 'headlineSize', 9, 18, 0.5, ' pt', 12))}
+      ${field('Style du titre du poste', seg('headlineStyle', [['', 'Selon le modèle'], ['normal', 'Normal'], ['italic', 'Italique'], ['bold', 'Gras']], cur.headlineStyle || ''))}
+      ${field("Espace sous l'en-tête", range(cur, 'headerGap', 1, 16, 1, ' mm', 4))}`)}`);
 
   const photo = dcard('Photo', html`
     <div class="row wrap">${check('photo', 'Afficher', cur.photo !== false)}${check('photoGray', 'Noir et blanc', cur.photoGray)}${check('photoBorder', 'Cadre', cur.photoBorder)}</div>
     <div class="field" style="margin-top:14px"><span class="label">Position</span>${seg('photoPos', [['', 'Selon le modèle'], ['left', 'Gauche'], ['top', 'Haut'], ['right', 'Droite']], cur.photoPos || '')}</div>
     <div class="field"><span class="label">Taille</span>${seg('photoSize', Object.entries(st.photoSizes), cur.photoSize || 'm')}</div>
-    <div class="field"><span class="label">Forme</span><div class="shapes" data-style="photoShape">${Object.entries(st.photoShapes).map(([k, l]) => html`<button type="button" class="shp shp-${k}" data-v="${k}" aria-pressed="${(cur.photoShape || 'portrait') === k}" title="${l}"><i></i></button>`)}</div></div>`);
+    <div class="field"><span class="label">Forme</span><div class="shapes" data-style="photoShape">${Object.entries(st.photoShapes).map(([k, l]) => html`<button type="button" class="shp shp-${k}" data-v="${k}" aria-pressed="${(cur.photoShape || 'portrait') === k}" title="${l}"><i></i></button>`)}</div></div>
+    ${adv('photo', html`
+      ${colorField(cur, 'photoBorderColor', 'Couleur du cadre', '#1f3a93')}
+      ${field('Épaisseur du cadre', range(cur, 'photoBorderWidth', 0.2, 2, 0.1, ' mm', 0.55))}
+      <div class="row wrap">${check('photoShadow', 'Ombre portée', cur.photoShadow)}</div>`)}`);
 
   const links = dcard('Liens', html`
     <div class="row wrap">${check('linkUnderline', 'Souligné', cur.linkUnderline)}${check('linkBlue', 'En bleu', cur.linkBlue)}${check('linkIcons', 'Logo devant les liens (LinkedIn, GitHub…)', cur.linkIcons)}</div>
-    ${cur.linkIcons ? html`<div class="field" style="margin-top:12px"><span class="label">Icône des autres liens</span>${seg('linkIconType', [['link', 'Chaîne'], ['external', 'Flèche']], cur.linkIconType || 'link')}</div>` : ''}`);
+    ${cur.linkIcons ? html`<div class="field" style="margin-top:12px"><span class="label">Icône des autres liens</span>${seg('linkIconType', [['link', 'Chaîne'], ['external', 'Flèche']], cur.linkIconType || 'link')}</div>` : ''}
+    ${adv('links', html`
+      ${field('Texte des liens', seg('linkText', [['', 'Tel quel'], ['short', 'Sans https://'], ['name', 'Nom du site']], cur.linkText || ''))}
+      ${colorField(cur, 'linkColor', 'Couleur des liens', '#1a56c8')}
+      ${field('Taille des icônes', range(cur, 'iconSize', 7, 16, 1, ' px', 9))}`)}`);
 
   const heads = dcard('Titres de rubrique', html`
     <div class="hstyles" data-style="headStyle">${HEAD_STYLES.map(([k, l]) => html`<button type="button" class="hs hs-${k || 'tpl'}" data-v="${k}" aria-pressed="${(cur.headStyle || '') === k}"><span class="hs-prev"><b>Titre</b><i></i></span><small>${l}</small></button>`)}</div>
     <div class="field" style="margin-top:14px"><span class="label">Majuscules</span>${seg('headCaps', [['', 'Selon le modèle'], ['off', 'Telles quelles'], ['on', 'MAJUSCULES']], cur.headCaps || '')}</div>
-    <div class="field"><span class="label">Icônes</span>${seg('headIcons', [['', 'Selon le modèle'], ['none', 'Aucune'], ['outline', 'Contour'], ['filled', 'Rempli']], cur.headIcons || '')}</div>`);
+    <div class="field"><span class="label">Icônes</span>${seg('headIcons', [['', 'Selon le modèle'], ['none', 'Aucune'], ['outline', 'Contour'], ['filled', 'Rempli']], cur.headIcons || '')}</div>
+    ${adv('heads', html`
+      ${field('Taille des titres', range(cur, 'headSize', 8, 15, 0.5, ' pt', 10.5))}
+      ${field('Espacement des lettres', seg('headSpacing', [['', 'Selon le modèle'], ['normal', 'Normal'], ['wide', 'Large']], cur.headSpacing || ''))}
+      ${field('Espace sous le titre', range(cur, 'headBelow', 1, 12, 0.5, ' pt', 4))}
+      ${field('Épaisseur du trait', range(cur, 'ruleWidth', 0.3, 3, 0.1, ' pt', 0.8))}`)}`);
 
   const entries = dcard('Fiches (expériences, formations…)', html`
     <div class="field"><span class="label">Structure</span>
       <div class="structs" data-style="entryStruct">${[['', 'Selon le modèle', 'full'], ['full', 'Pleine largeur', 'full'], ['cols', 'Colonnes', 'cols']].map(([k, l, ic]) => html`<button type="button" class="struct struct-${ic}" data-v="${k}" aria-pressed="${(cur.entryStruct || '') === k}"><i></i><i></i><i></i><small>${l}</small></button>`)}</div></div>
     <div class="field"><span class="label">Position des dates et du lieu</span>${seg('datePos', [['', 'Selon le modèle'], ['right', 'Droite'], ['left', 'Gauche'], ['split', 'Séparés']], cur.datePos || '')}</div>
-    <div class="field"><span class="label">Sous-titre</span>${seg('subPos', [['', 'Selon le modèle'], ['same', 'Sur la même ligne'], ['below', 'Sous le titre']], cur.subPos || '')}</div>`);
+    <div class="field"><span class="label">Sous-titre</span>${seg('subPos', [['', 'Selon le modèle'], ['same', 'Sur la même ligne'], ['below', 'Sous le titre']], cur.subPos || '')}</div>
+    ${adv('entries', html`
+      ${field('Espace entre les fiches', range(cur, 'entryGap', 1, 16, 0.5, ' pt', 4))}
+      ${field('Titre des fiches', seg('titleStyle', [['', 'Selon le modèle'], ['normal', 'Normal'], ['bold', 'Gras']], cur.titleStyle || ''))}
+      ${field('Sous-titre', seg('subStyle', [['', 'Selon le modèle'], ['normal', 'Normal'], ['italic', 'Italique'], ['bold', 'Gras']], cur.subStyle || ''))}
+      ${field('Dates et lieu', seg('dateStyle', [['', 'Selon le modèle'], ['normal', 'Normal'], ['italic', 'Italique'], ['bold', 'Gras']], cur.dateStyle || ''))}
+      ${field('Largeur de la colonne des dates', range(cur, 'dateWidth', 16, 44, 1, ' mm', 27))}
+      <div class="row wrap">${check('keepEntries', "Ne pas couper une fiche entre deux pages", cur.keepEntries !== false)}</div>`)}`);
 
   const skills = dcard('Compétences et langues', html`
     <div class="field"><span class="label">Compétences</span>${seg('skillStyle', [['text', 'Texte'], ['chips', 'Pastilles'], ['bars', 'Barres'], ['dots', 'Points']], cur.skillStyle || 'text')}</div>
@@ -358,7 +400,9 @@ function documentPanel() {
       <p class="hint">Traduit ce que l'app écrit elle-même (Profil, Contact, « Aujourd'hui », les mois, les niveaux de langue et les titres de rubrique par défaut). Tes propres textes ne sont pas traduits.</p></div>
     <div class="field"><span class="label">Format des dates</span>${seg('dateFormat', Object.entries(st.dateFormats), cur.dateFormat || 'mmyyyy')}</div>
     <div class="field"><span class="label">Format de page</span>${seg('pageFormat', Object.entries(st.pageFormats), cur.pageFormat || 'A4')}
-      <p class="hint">A4 en France et en Europe, Letter aux États-Unis et au Canada.</p></div>`)}`;
+      <p class="hint">A4 en France et en Europe, Letter aux États-Unis et au Canada.</p></div>
+    ${adv('doc', html`${field('Numéros de page', seg('pageNumbers', [['', 'Aucun'], ['center', 'Centrés'], ['right', 'À droite']], cur.pageNumbers || ''))}
+      <p class="hint">Affichés en bas des pages du PDF (« 1 / 2 »), pas dans l'aperçu.</p>`)}`)}`;
 }
 
 // ---------- Section ----------
@@ -394,7 +438,7 @@ export function cvStudioSection(p) {
 function renderContent() {
   const panel = document.querySelector('#studio-panel');
   if (!panel) return;
-  if (sections().some((s) => !s.id)) ctx.update({ sections: sections().map((s) => ({ ...s, id: s.id || uid() })) });
+  if (sections().some((s) => !s.id)) ctx.raw({ sections: sections().map((s) => ({ ...s, id: s.id || uid() })) });
   mount(panel, contentPanel());
   bindContent(panel);
 }
@@ -481,7 +525,12 @@ function stepHistory(from, to) {
   const e = from.pop();
   if (!e) return;
   to.push({ keys: e.keys, sig: e.sig, before: pick(e.keys) });
-  ctx.raw(e.before);
+  // The server merges style objects: options that did not exist before the step are blanked, not left behind.
+  const restore = { ...e.before };
+  for (const k of ['cvStyle', 'letter']) {
+    if (restore[k] && S.profile[k]) restore[k] = { ...Object.fromEntries(Object.keys(S.profile[k]).filter((x) => x !== 'photoShapeV2').map((x) => [x, ''])), ...restore[k] };
+  }
+  ctx.raw(restore);
   lastPush = 0;
   renderTab();
   refreshHistBar();
@@ -777,7 +826,13 @@ function bindContent(panel) {
 
 // ---------- Design bindings ----------
 
+function trackAdv(panel) {
+  panel.querySelectorAll('details.adv').forEach((d) => d.addEventListener('toggle', () => (d.open ? openKeys.add(d.dataset.key) : openKeys.delete(d.dataset.key))));
+}
+
+
 function bindDesign(panel) {
+  trackAdv(panel);
   const set = (patch) => ctx.update({ cvStyle: { ...style(), ...patch } });
   const layouts = panel.querySelector('#layouts');
   layouts.querySelectorAll('iframe').forEach((f) => new ResizeObserver(() => (f.style.transform = `scale(${f.parentElement.clientWidth / 794})`)).observe(f.parentElement));
@@ -814,7 +869,7 @@ function bindDesign(panel) {
   panel.querySelectorAll('[data-range]').forEach((r) =>
     r.addEventListener('input', () => {
       const k = r.dataset.range;
-      const unit = { fontSize: ' pt', margin: ' mm', gap: ' pt', nameSize: ' pt', lineHeight: '' }[k];
+      const unit = RANGE_UNITS[k] ?? '';
       panel.querySelector(`[data-rv="${k}"]`).textContent = r.value + unit;
       set({ [k]: Number(r.value) });
     }),
@@ -839,7 +894,16 @@ function bindDesign(panel) {
     }),
   );
   panel.querySelectorAll('[data-color]').forEach((i) =>
-    i.addEventListener('input', () => set({ [i.dataset.color]: i.value, colorMode: 'multi' })),
+    i.addEventListener('input', () => {
+      set(['textColor', 'bgColor', 'accent'].includes(i.dataset.color) ? { [i.dataset.color]: i.value, colorMode: 'multi' } : { [i.dataset.color]: i.value });
+      i.parentElement.querySelector('.small.muted')?.remove();
+    }),
+  );
+  panel.querySelectorAll('[data-act="clear-key"]').forEach((b) =>
+    b.addEventListener('click', () => {
+      set({ [b.dataset.key]: '' });
+      renderDesign();
+    }),
   );
   panel.querySelector('[data-act="no-bg"]')?.addEventListener('click', () => {
     set({ bgColor: '', colorMode: 'multi' });
@@ -862,6 +926,7 @@ function bindDesign(panel) {
 }
 
 function bindDocument(panel) {
+  trackAdv(panel);
   panel.querySelectorAll('[data-style]').forEach((group) =>
     group.querySelectorAll('[data-v]').forEach((b) =>
       b.addEventListener('click', () => {

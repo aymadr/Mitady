@@ -207,6 +207,8 @@ async function htmlToPdf(html, outPath) {
   const page = await browser.newPage();
   try {
     await page.setContent(html, { waitUntil: 'networkidle', timeout: 15000 }).catch(() => page.setContent(html));
+    // Web fonts load after the stylesheet: wait for them (a failure just means the fallback font).
+    await page.evaluate(() => document.fonts.ready).catch(() => {});
     await page.pdf({ path: outPath, format: 'A4', printBackground: true, preferCSSPageSize: true });
   } finally {
     await page.close();

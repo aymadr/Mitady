@@ -11,10 +11,12 @@ const ai = require('./lib/ai');
 const scraper = require('./lib/scraper');
 const mailer = require('./lib/mailer');
 const { mergeDuplicates } = require('./lib/dedupe');
+const remote = require('./lib/remote');
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const HOST = process.env.HOST || '127.0.0.1';
+// Only this computer can reach the app, unless the phone access is switched on in Réglages (see lib/remote.js).
+remote.mount(app, { port: PORT, host: process.env.HOST });
 
 app.use(express.json({ limit: '25mb' }));
 app.use(express.static(path.resolve(__dirname, '..', 'public')));
@@ -570,6 +572,4 @@ app.get('/api/export.xlsx', (req, res) => {
   res.send(XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' }));
 });
 
-app.listen(PORT, HOST, () => {
-  console.log(`Mitady prêt sur http://localhost:${PORT}`);
-});
+remote.listen();

@@ -16,7 +16,7 @@ export const current = () => root.dataset.theme || stored() || system();
 
 function paint(theme) {
   root.dataset.theme = theme;
-  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0b0a1a' : '#f3f2fb');
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#0a1410' : '#f4f1e8');
   document.querySelectorAll('[data-theme-toggle]').forEach((b) => {
     b.setAttribute('aria-pressed', theme === 'dark');
     b.setAttribute('aria-label', theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre');

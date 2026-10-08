@@ -15,7 +15,7 @@ if (Number(process.versions.node.split('.')[0]) < 18) {
 }
 
 const marker = path.join(ROOT, 'node_modules', '.setup-done');
-if (!fs.existsSync(path.join(ROOT, 'node_modules', 'express'))) {
+if (!fs.existsSync(path.join(ROOT, 'node_modules', 'express')) || !fs.existsSync(path.join(ROOT, 'node_modules', 'qrcode'))) {
   say('Première utilisation : installation (quelques minutes, une seule fois)…');
   if (run('npm', ['install', '--no-audit', '--no-fund']).status !== 0) process.exit(1);
 }

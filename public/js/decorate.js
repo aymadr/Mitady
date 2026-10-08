@@ -21,6 +21,7 @@ const SECTION_ICON = [
   [/competences/, 'layers'],
   [/parcours/, 'briefcase'],
   [/cherches/, 'target'],
+  [/telephone/, 'send'],
   [/adresse|e-mail/, 'mail'],
   [/relance/, 'bell'],
   [/claude/, 'sparkles'],

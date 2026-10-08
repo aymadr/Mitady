@@ -128,6 +128,26 @@ Au tout premier lancement, un guide plein écran te prend par la main (ton nom, 
 4. **CV et lettre** : choisis ce qui part, ajuste le titre, génère les PDF.
 5. **Candidature** : trouve un contact, envoie le message avec les pièces jointes, glisse la carte dans la colonne suivante du **Suivi**.
 
+## 📱 Sur ton téléphone
+
+Le site s'adapte aux petits écrans : une barre d'onglets en bas, le suivi qui se parcourt en glissant, des fenêtres qui remontent du bas. Sur le suivi, **appuie longtemps** sur une carte pour la saisir, puis glisse-la vers une autre colonne (le tableau défile tout seul près des bords).
+
+Un téléphone ne peut pas faire tourner Mitady lui-même : l'appli reste sur ton ordinateur, et le téléphone l'affiche à distance.
+
+1. Lance Mitady sur ton ordinateur, ouvre **Réglages › Sur ton téléphone** et clique sur « Activer l'accès téléphone ». Un QR code et un code à 6 chiffres apparaissent.
+2. Connecte le téléphone au **même Wi-Fi** et scanne le QR code avec l'appareil photo : tu es connecté.
+3. **iPhone** : dans Safari, **Partager › Sur l'écran d'accueil**. Mitady devient une appli avec son icône (Android : menu ⋮ › Installer l'application).
+
+<details>
+<summary>Comment c'est protégé, et hors de chez toi</summary>
+
+- Sans activation, Mitady n'écoute que sur ton ordinateur : rien d'autre ne peut l'atteindre. Une fois activé, tout appareil qui n'est pas l'ordinateur doit saisir le code (5 essais, puis 5 minutes de pause). « Changer le code » déconnecte tous les téléphones, « Désactiver » referme l'accès.
+- Le trafic reste dans ta maison, en HTTP : il ne passe pas par Internet. À éviter sur un Wi-Fi public ou partagé avec des inconnus.
+- L'ordinateur doit rester allumé avec Mitady lancé. Sur Mac ou Windows, accepte la fenêtre du pare-feu qui demande d'autoriser Node.
+- Pour y accéder **en dehors de chez toi**, installe [Tailscale](https://tailscale.com) (gratuit) sur l'ordinateur et le téléphone : l'adresse en `100.x.x.x` qui s'affiche dans les Réglages marche alors partout, toujours avec le code.
+- Sans passer par les Réglages : `HOST=0.0.0.0 npm start` ouvre l'accès au lancement (le code s'affiche dans le terminal).
+</details>
+
 <img src="docs/divider.svg" alt="" width="100%">
 
 ## 🧩 Pour aller plus loin

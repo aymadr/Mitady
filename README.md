@@ -75,8 +75,8 @@ prépare <b>un CV et une lettre de motivation en PDF</b> adaptés à l'offre, et
 ### Avec un terminal
 
 ```bash
-git clone https://github.com/aymadr/Alternance-Automatisation.git
-cd Alternance-Automatisation
+git clone https://github.com/aymadr/Mitady.git
+cd Mitady
 npm run setup     # dépendances + navigateur Chromium (une seule fois)
 npm start         # puis ouvre http://localhost:3000
 ```

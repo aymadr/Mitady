@@ -20,11 +20,11 @@ Le serveur n'écoute que sur ta machine ; tes données restent dans le dossier `
 
 Pour les développeurs : `npm run setup` puis `npm start`.
 
-## Ton compagnon et l'accord du genre
+## Ton animal et l'accord du genre
 
-À l'accueil, tu choisis ton compagnon en pixel art : un animal (chat, chien, renard, lapin, ours, grenouille, pingouin ou hibou), sa couleur, un accessoire et un nom. Il se perche sur le bord des barres de recherche : il dort tant que tu n'écris pas, se réveille quand tu cliques, suit ton texte des yeux, saute sur Entrée et fait une tête perplexe s'il n'y a aucun résultat. Tu le retrouves dans l'en-tête, sur l'accueil et dans les écrans vides. Modifiable dans Profil › Ton compagnon.
+Ton animal est indépendant de toi et de ton CV. À l'accueil, tu donnes d'abord ton nom, puis tu choisis ton animal en pixel art : un koala (la mascotte de Mitady), un chat, un chien, un renard, un lapin, un ours, une grenouille, un pingouin ou un hibou, avec sa couleur, un accessoire et, si tu veux, un nom. Touche-le : il saute, tourne, danse, et s'endort si tu le laisses tranquille. Il se perche sur le bord des barres de recherche : il dort tant que tu n'écris pas, se réveille quand tu cliques, suit ton texte des yeux, saute sur Entrée et fait une tête perplexe s'il n'y a aucun résultat. Tu le retrouves dans l'en-tête, sur l'accueil et dans les écrans vides. Modifiable dans Profil › Ton animal.
 
-Tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le préciser : ça accorde l'intitulé du poste sur ton CV. Une offre « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ».
+À l'accueil, tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le préciser : ça accorde l'intitulé du poste sur ton CV. Une offre « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ».
 
 ## Suivi, recherche et petits moments de joie
 

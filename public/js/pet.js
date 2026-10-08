@@ -6,6 +6,26 @@ import { raw, html } from './lib.js';
 // B body (custom colour) · D body shade · L belly (cream) · W white · K dark · E eye · N nose
 // A cheek · P inner ear · Y beak and feet · '.' transparent
 const SPRITES = {
+  koala: {
+    label: 'Koala', color: '#a3a9c2', fixed: { N: '#2a2438' },
+    grid: [
+      '................',
+      '..BBBB....BBBB..',
+      '.BBPPBB..BBPPBB.',
+      '.BBPPBBBBBBPPBB.',
+      '..BBBBBBBBBBBB..',
+      '..BBBBBBBBBBBB..',
+      '..BBBBBBBBBBBB..',
+      '..BBBEEBBEEBBB..',
+      '..BBBEEBBEEBBB..',
+      '..BBBBBNNBBBBB..',
+      '..BBBBNNNNBBBB..',
+      '..BBBBNNNNBBBB..',
+      '...BBLLLLLLBB...',
+      '....DDDDDDDD....',
+      '...DD......DD...',
+    ],
+  },
   chat: {
     label: 'Chat', color: '#f5a524',
     grid: [
@@ -216,7 +236,7 @@ const ACC = {
 };
 export const ACCESSORIES = Object.entries(ACC).map(([id, a]) => ({ id, label: a.label }));
 
-export const defaultPet = (animal = 'chat') => ({ animal, color: SPRITES[animal]?.color || '#f5a524', accessory: 'aucun', name: '' });
+export const defaultPet = (animal = 'koala') => ({ animal, color: SPRITES[animal]?.color || '#f5a524', accessory: 'aucun', name: '' });
 export const petOf = (profile) => ({ ...defaultPet(profile?.pet?.animal), ...(profile?.pet || {}) });
 
 function mix(hex, amt) {
@@ -244,7 +264,7 @@ function rects(grid, colorOf, only) {
 function art(pet) {
   const sprite = SPRITES[pet.animal] || SPRITES.chat;
   const body = pet.color || sprite.color;
-  const fixed = { L: '#fff3df', W: '#ffffff', K: '#2b2438', N: '#e2557a', A: '#ff8fae', P: '#ffb3cc', Y: '#ffb020' };
+  const fixed = { L: '#fff3df', W: '#ffffff', K: '#2b2438', N: '#e2557a', A: '#ff8fae', P: '#ffb3cc', Y: '#ffb020', ...(sprite.fixed || {}) };
   const colorOf = (ch) => (ch === 'B' ? body : ch === 'D' ? mix(body, -0.22) : ch === 'E' ? null : fixed[ch]);
   const eyes = [];
   sprite.grid.forEach((row, y) => [...row].forEach((ch, x) => ch === 'E' && eyes.push([x, y])));
@@ -263,7 +283,7 @@ export function petSvg(pet, { size = 64, mood = 'idle', label = '' } = {}) {
   const a = art(pet);
   const name = (pet.name || '').trim();
   return raw(
-    `<span class="pet ${mood}" style="--pet:${size}px;--bd:-${(Math.random() * 4.6).toFixed(2)}s" ${name ? `title="${name.replace(/"/g, '')}"` : ''} aria-hidden="true">` +
+    `<span class="pet ${mood}" data-rest="${mood}" style="--pet:${size}px;--bd:-${(Math.random() * 4.6).toFixed(2)}s" ${name ? `title="${name.replace(/"/g, '')}"` : ''} aria-hidden="true">` +
       `<svg viewBox="0 0 16 16" width="100%" height="100%" shape-rendering="crispEdges">` +
       `<g class="pet-body">${a.base}${a.shine}<g class="pet-open">${a.open}</g><g class="pet-closed">${a.closed}</g>${a.accHtml}</g></svg>` +
       `<i class="pet-sh"></i><span class="pet-z z1">z</span><span class="pet-z z2">z</span><span class="pet-q">?</span>` +
@@ -281,40 +301,36 @@ export function petHead(pet, size = 38) {
 
 // ---------- Editor ----------
 
-export function mountPetEditor(el, { pet, gender = 'neutre', onChange, big = true } = {}) {
+export function mountPetEditor(el, { pet, onChange, big = true } = {}) {
   let cfg = { ...petOf({ pet }) };
-  let g = gender;
-  const GENDERS = [['masculin', 'Homme'], ['feminin', 'Femme'], ['neutre', 'Autre']];
-  const emit = () => onChange?.(cfg, g);
+  const emit = () => onChange?.(cfg);
 
   const preview = () => {
     const box = el.querySelector('.pet-stage');
     box.innerHTML = `<div class="pet-mock"><span class="perch-demo">${petSvg(cfg, { size: big ? 112 : 88, mood: 'idle' })}</span><div class="pet-mock-field">${'Rechercher'}</div></div>`;
     const p = box.querySelector('.pet');
-    p.addEventListener('click', () => {
-      p.classList.remove('hop');
-      void p.offsetWidth;
-      p.classList.add('hop');
-    });
+    p.dataset.sleepAfter = '9000';
+    scheduleSleep(p);
+    const z = el.querySelector('[data-sleep]');
+    if (z) z.textContent = 'Dormir';
   };
 
   const draw = () => {
     el.innerHTML = html`<div class="avb pets ${big ? 'big' : ''}">
       <div class="avb-preview">
         <div class="pet-stage"></div>
-        <button type="button" class="btn btn-secondary btn-sm" data-random>Au hasard</button>
+        <p class="hint pet-tip">Touche-le : il saute, danse… et s'endort si tu le laisses tranquille.</p>
+        <div class="row"><button type="button" class="btn btn-secondary btn-sm" data-sleep>Dormir</button><button type="button" class="btn btn-secondary btn-sm" data-random>Au hasard</button></div>
       </div>
       <div class="avb-opts">
         <div class="avb-row"><span class="avb-label">Animal</span>
-          <div class="pet-pick" data-k="animal">${ANIMALS.map((a) => html`<button type="button" class="pet-opt" data-v="${a.id}" aria-pressed="${cfg.animal === a.id}" title="${a.label}">${petHead({ ...cfg, animal: a.id, accessory: 'aucun' }, 40)}<small>${a.label}</small></button>`)}</div></div>
+          <div class="pet-pick" data-k="animal">${ANIMALS.map((a) => html`<button type="button" class="pet-opt" data-v="${a.id}" aria-pressed="${cfg.animal === a.id}" title="${a.label}">${petHead({ ...cfg, animal: a.id, color: a.color, accessory: 'aucun' }, 40)}<small>${a.label}</small></button>`)}</div></div>
         <div class="avb-row"><span class="avb-label">Couleur</span>
           <div class="swatches" data-k="color">${COLORS.map((c) => html`<button type="button" class="swatch" data-v="${c}" aria-pressed="${cfg.color === c}" aria-label="${c}" style="--c:${c}"></button>`)}<label class="swatch custom" title="Autre couleur" style="--c:${cfg.color}"><input type="color" value="${/^#/.test(cfg.color) ? cfg.color : '#f5a524'}" data-custom></label></div></div>
         <div class="avb-row"><span class="avb-label">Accessoire</span>
           <div class="chips" data-k="accessory">${ACCESSORIES.map((a) => html`<button type="button" class="chip ${cfg.accessory === a.id ? 'on' : 'suggest'}" data-v="${a.id}">${a.label}</button>`)}</div></div>
-        <div class="avb-row"><span class="avb-label">Son nom</span>
-          <input class="input input-sm" data-name maxlength="16" placeholder="Comment l'appelles-tu ?" value="${cfg.name}"></div>
-        <div class="avb-row"><span class="avb-label">Je suis</span>
-          <div class="segmented" data-g>${GENDERS.map(([k, l]) => html`<button type="button" data-v="${k}" aria-pressed="${g === k}">${l}</button>`)}</div></div>
+        <div class="avb-row"><span class="avb-label">Nom de l'animal</span>
+          <input class="input input-sm" data-name maxlength="16" placeholder="Facultatif : Mochi, Biscotte…" value="${cfg.name}"></div>
       </div>
     </div>`.toString();
     preview();
@@ -339,13 +355,13 @@ export function mountPetEditor(el, { pet, gender = 'neutre', onChange, big = tru
       cfg = { ...cfg, name: e.target.value };
       emit();
     });
-    el.querySelectorAll('[data-g] [data-v]').forEach((b) =>
-      b.addEventListener('click', () => {
-        g = b.dataset.v;
-        el.querySelectorAll('[data-g] [data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
-        emit();
-      }),
-    );
+    el.querySelector('[data-sleep]').addEventListener('click', (e) => {
+      const p = el.querySelector('.pet-stage .pet');
+      const asleep = p.classList.contains('sleep');
+      if (asleep) playPet(p, 'wave');
+      else sleepPet(p);
+      e.currentTarget.textContent = asleep ? 'Dormir' : 'Réveiller';
+    });
     el.querySelector('[data-random]').addEventListener('click', () => {
       const a = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
       cfg = { ...cfg, animal: a.id, color: COLORS[Math.floor(Math.random() * COLORS.length)], accessory: ACCESSORIES[Math.floor(Math.random() * ACCESSORIES.length)].id };
@@ -354,5 +370,55 @@ export function mountPetEditor(el, { pet, gender = 'neutre', onChange, big = tru
     });
   };
   draw();
-  return { get: () => ({ pet: cfg, gender: g }) };
+  return { get: () => ({ pet: cfg }) };
+}
+
+// ---------- Life: tricks and sleep ----------
+
+const TRICKS = ['hop', 'spin', 'wave', 'party'];
+const LONG = { wave: 1800, party: 1800, spin: 700, hop: 600 };
+
+export function sleepPet(el) {
+  clearTimeout(el._trick);
+  TRICKS.forEach((t) => el.classList.remove(t));
+  el.classList.remove('think');
+  el.classList.add('sleep');
+}
+
+// A pet with data-sleep-after (ms) falls asleep when left alone; one that rests asleep
+// (the perched ones) goes back to sleep a few seconds after being played with.
+function scheduleSleep(el) {
+  clearTimeout(el._nap);
+  const after = Number(el.dataset.sleepAfter) || (el.dataset.rest === 'sleep' ? 5000 : 0);
+  if (!after) return;
+  el._nap = setTimeout(() => {
+    if (!el.isConnected) return;
+    if (el.closest('.search-field')?.querySelector('input:focus')) return scheduleSleep(el);
+    sleepPet(el);
+    const b = document.querySelector('[data-sleep]');
+    if (b && el.closest('.pet-stage')) b.textContent = 'Réveiller';
+  }, after);
+}
+
+export function playPet(el, trick) {
+  if (el.classList.contains('sleep')) {
+    el.classList.remove('sleep');
+    trick = 'wave';
+  }
+  trick ||= TRICKS[Math.floor(Math.random() * TRICKS.length)];
+  clearTimeout(el._trick);
+  TRICKS.forEach((t) => el.classList.remove(t));
+  void el.offsetWidth;
+  el.classList.add(trick);
+  el._trick = setTimeout(() => el.classList.remove(trick), LONG[trick]);
+  scheduleSleep(el);
+}
+
+// Any pet can be touched, anywhere in the app.
+export function initPetPlay() {
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest?.('.pet');
+    if (!el || el.closest('button, a, [data-nopet]')) return;
+    playPet(el);
+  });
 }

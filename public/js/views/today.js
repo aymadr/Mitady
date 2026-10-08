@@ -110,10 +110,10 @@ export function renderToday(view) {
   const total = Object.values(counts).reduce((x, y) => x + y, 0) || 1;
   const stages = [
     ['todo', 'À traiter', '#8b8aa3'],
-    ['applied', 'Envoyées', '#5b5bf0'],
-    ['interview', 'Entretiens', '#a259f7'],
+    ['applied', 'Envoyées', '#2f7d5b'],
+    ['interview', 'Entretiens', '#e0a800'],
     ['offer', 'Offres reçues', '#14b87d'],
-    ['rejected', 'Refus', '#ee5fa7'],
+    ['rejected', 'Refus', '#c9604a'],
   ].filter(([k]) => counts[k]);
 
   mount(

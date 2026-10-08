@@ -205,7 +205,7 @@ export function initFx() {
 }
 
 // ---------- Celebration: confetti burst from a point ----------
-const COLORS = ['#5b5bf0', '#8b5cf6', '#ee5fa7', '#14b87d', '#ffcd00', '#35c8ff', '#ff8a3d'];
+const COLORS = ['#2f7d5b', '#4a9c78', '#ffcd00', '#14b87d', '#f5a524', '#7fdcae', '#ff8a3d'];
 let confettiCanvas = null;
 let confettiParts = [];
 let confettiRaf = 0;

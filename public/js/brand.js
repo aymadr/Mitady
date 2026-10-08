@@ -5,19 +5,9 @@ import { siteLogo } from './logos.js';
 
 export const NAME = 'Mitady';
 
-// Magnifier + spark, on the signature gradient.
+// A pixel koala with a magnifier, on a flat eucalyptus tile (drawn by scripts/koala-logo.js).
 export function logo(size = 32) {
-  return raw(`<svg class="logo" width="${size}" height="${size}" viewBox="0 0 48 48" aria-hidden="true">
-    <defs>
-      <linearGradient id="mt-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a5cf6"/><stop offset=".55" stop-color="#8b5cf6"/><stop offset="1" stop-color="#ee5fa7"/></linearGradient>
-      <linearGradient id="mt-s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
-    </defs>
-    <rect width="48" height="48" rx="14" fill="url(#mt-g)"/>
-    <path d="M0 14C0 6.300 6.300 0 14 0h20c7.700 0 14 6.300 14 14v6C34 28 14 28 0 20V14Z" fill="url(#mt-s)"/>
-    <circle cx="21" cy="22" r="8.500" fill="none" stroke="#fff" stroke-width="3.600"/>
-    <path d="m27.500 28.500 7.500 7.500" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
-    <path d="M34 8.500l1.500 3.800 3.800 1.500-3.800 1.500L34 19.100l-1.500-3.800-3.800-1.500 3.800-1.500L34 8.500Z" fill="#fff"/>
-  </svg>`);
+  return raw(`<svg class="logo" width="${size}" height="${size}" viewBox="0 0 28 28" aria-hidden="true"><rect width="28" height="28" rx="8" fill="#2f7d5b"/><g transform="translate(2 2.4)" shape-rendering="crispEdges"><path fill="#2a2438" d="M2 1h5v1h-5zM15 1h5v1h-5zM1 2h1v1h-1zM7 2h1v1h-1zM14 2h1v1h-1zM20 2h1v1h-1zM0 3h1v1h-1zM8 3h1v1h-1zM13 3h1v1h-1zM21 3h1v1h-1zM8 4h1v1h-1zM13 4h1v1h-1zM22 4h1v1h-1zM9 5h4v1h-4zM22 5h1v1h-1zM22 6h1v1h-1zM22 7h1v1h-1zM22 8h1v1h-1zM0 9h1v1h-1zM21 9h1v1h-1zM1 10h2v1h-2zM19 10h2v1h-2zM2 11h1v1h-1zM19 11h1v1h-1zM2 12h1v1h-1zM19 12h1v1h-1zM2 13h1v1h-1zM20 13h1v1h-1zM2 14h1v1h-1zM21 14h1v1h-1zM2 15h1v1h-1zM21 15h1v1h-1zM3 16h1v1h-1zM22 16h1v1h-1zM3 17h1v1h-1zM22 17h1v1h-1zM4 18h2v1h-2zM21 18h1v1h-1zM6 19h1v1h-1zM21 19h1v1h-1zM7 20h8v1h-8zM22 20h1v1h-1zM15 21h5v1h-5zM23 21h1v1h-1zM20 22h1v1h-1zM21 23h1v1h-1zM23 23h1v1h-1z"/><path fill="#a3a9c2" d="M2 2h5v1h-5zM15 2h5v1h-5zM1 3h2v1h-2zM5 3h3v1h-3zM14 3h3v1h-3zM19 3h2v1h-2zM0 4h2v1h-2zM7 4h1v1h-1zM14 4h1v1h-1zM20 4h2v1h-2zM0 5h1v1h-1zM7 5h2v1h-2zM13 5h2v1h-2zM21 5h1v1h-1zM0 6h1v1h-1zM7 6h8v1h-8zM21 6h1v1h-1zM0 7h2v1h-2zM6 7h10v1h-10zM20 7h2v1h-2zM0 8h2v1h-2zM4 8h14v1h-14zM20 8h2v1h-2zM1 9h5v1h-5zM8 9h6v1h-6zM16 9h5v1h-5zM3 10h3v1h-3zM8 10h6v1h-6zM16 10h3v1h-3zM3 11h6v1h-6zM13 11h6v1h-6zM3 12h5v1h-5zM14 12h1v1h-1zM3 13h4v1h-4zM3 14h3v1h-3zM3 15h3v1h-3zM4 16h2v1h-2zM4 17h3v1h-3zM6 18h3v1h-3zM7 19h6v1h-6z"/><path fill="#e9ebf5" d="M3 3h2v1h-2zM17 3h2v1h-2zM2 4h5v1h-5zM15 4h5v1h-5zM1 5h2v1h-2zM6 5h1v1h-1zM15 5h1v1h-1zM19 5h2v1h-2zM1 6h2v1h-2zM6 6h1v1h-1zM15 6h1v1h-1zM19 6h2v1h-2zM2 7h1v1h-1zM19 7h1v1h-1zM2 8h2v1h-2zM18 8h2v1h-2zM7 13h1v1h-1zM6 14h2v1h-2zM6 15h3v1h-3zM6 16h6v1h-6zM7 17h5v1h-5zM9 18h4v1h-4z"/><path fill="#ffb3cc" d="M3 5h3v1h-3zM16 5h3v1h-3zM3 6h3v1h-3zM16 6h3v1h-3zM3 7h3v1h-3zM16 7h3v1h-3z"/><path fill="#ffffff" d="M6 9h1v1h-1zM14 9h1v1h-1z"/><path fill="#2a2438" d="M7 9h1v1h-1zM15 9h1v1h-1zM6 10h2v1h-2zM14 10h2v1h-2z"/><path fill="#2a2438" d="M9 11h4v1h-4zM8 12h2v1h-2zM11 12h3v1h-3zM8 13h6v1h-6zM8 14h5v1h-5zM9 15h4v1h-4z"/><path fill="#ffffff" d="M10 12h1v1h-1zM15 15h2v1h-2zM15 16h1v1h-1z"/><path fill="#ffcd00" d="M15 12h4v1h-4zM14 13h2v1h-2zM18 13h2v1h-2zM13 14h2v1h-2zM19 14h2v1h-2zM13 15h1v1h-1zM20 15h1v1h-1zM12 16h2v1h-2zM20 16h2v1h-2zM12 17h2v1h-2zM20 17h2v1h-2zM13 18h1v1h-1zM20 18h1v1h-1zM13 19h3v1h-3zM18 19h3v1h-3zM15 20h4v1h-4z"/><path fill="#dff3ff" d="M16 13h2v1h-2zM15 14h4v1h-4zM14 15h1v1h-1zM17 15h3v1h-3zM14 16h1v1h-1zM16 16h4v1h-4zM14 17h6v1h-6zM14 18h6v1h-6zM16 19h2v1h-2z"/><path fill="#a8672d" d="M19 20h3v1h-3zM20 21h3v1h-3zM21 22h3v1h-3zM22 23h1v1h-1z"/></g></svg>`);
 }
 
 const PATH = {
@@ -56,9 +46,9 @@ const PATH = {
 
 // Each icon has its own colour so a page full of them stays lively.
 const HUE = {
-  search: 252, doc: 214, target: 332, send: 168, chat: 282, inbox: 250, pulse: 22, gear: 218, mail: 196, user: 296, sparkles: 44,
-  key: 36, bell: 18, layers: 262, briefcase: 205, rocket: 12, Alternance: 252, Stage: 290, CDI: 168, CDD: 200, Freelance: 40,
-  cyber: 158, finance: 142, data: 205, dev: 262, infra: 222, marketing: 338, rh: 12, commerce: 32, autre: 250, check: 152,
+  search: 152, doc: 168, target: 44, send: 140, chat: 176, inbox: 158, pulse: 18, gear: 190, mail: 172, user: 150, sparkles: 46,
+  key: 40, bell: 28, layers: 162, briefcase: 184, rocket: 16, Alternance: 150, Stage: 168, CDI: 138, CDD: 182, Freelance: 42,
+  cyber: 158, finance: 142, data: 188, dev: 164, infra: 196, marketing: 22, rh: 30, commerce: 38, autre: 160, check: 146,
 };
 
 // A 3D tile: gradient body, a lit top edge, a darker extruded bottom edge, a soft shadow.

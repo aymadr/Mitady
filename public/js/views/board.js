@@ -8,10 +8,10 @@ import { petSvg, petOf } from '../pet.js';
 
 const COLUMNS = [
   { id: 'todo', title: 'À traiter', color: '#8b8aa3', empty: 'Rien à traiter pour le moment.', mood: 'party' },
-  { id: 'applied', title: 'Envoyées', color: '#5b5bf0', empty: 'Glisse ici une offre quand tu as postulé.', mood: 'sleep' },
-  { id: 'interview', title: 'Entretiens', color: '#a259f7', empty: 'Pas encore d’entretien. Ça va venir.', mood: 'sleep' },
+  { id: 'applied', title: 'Envoyées', color: '#2f7d5b', empty: 'Glisse ici une offre quand tu as postulé.', mood: 'sleep' },
+  { id: 'interview', title: 'Entretiens', color: '#e0a800', empty: 'Pas encore d’entretien. Ça va venir.', mood: 'sleep' },
   { id: 'offer', title: 'Offres reçues', color: '#14b87d', empty: 'Ta première offre arrive bientôt.', mood: 'sleep' },
-  { id: 'rejected', title: 'Refusées', color: '#ee5fa7', empty: 'Rien ici, tant mieux.', mood: 'sleep' },
+  { id: 'rejected', title: 'Refusées', color: '#c9604a', empty: 'Rien ici, tant mieux.', mood: 'sleep' },
 ];
 const SENT = ['applied', 'interview', 'offer', 'rejected'];
 const ui = { query: '' };

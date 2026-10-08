@@ -4,14 +4,14 @@ import { S, upsertApp, go } from '../main.js';
 import { html, mount, api, fail, toast, avatar, miniRing, relDate, norm, icons } from '../lib.js';
 import { siteLogo } from '../logos.js';
 import { cheerStatus } from '../mascot.js';
-import { petSvg, petOf } from '../pet.js';
+import { scene } from '../scenery.js';
 
 const COLUMNS = [
-  { id: 'todo', title: 'À traiter', color: '#8b8aa3', empty: 'Rien à traiter pour le moment.', mood: 'party' },
-  { id: 'applied', title: 'Envoyées', color: '#2f7d5b', empty: 'Glisse ici une offre quand tu as postulé.', mood: 'sleep' },
-  { id: 'interview', title: 'Entretiens', color: '#e0a800', empty: 'Pas encore d’entretien. Ça va venir.', mood: 'sleep' },
-  { id: 'offer', title: 'Offres reçues', color: '#14b87d', empty: 'Ta première offre arrive bientôt.', mood: 'sleep' },
-  { id: 'rejected', title: 'Refusées', color: '#c9604a', empty: 'Rien ici, tant mieux.', mood: 'sleep' },
+  { id: 'todo', title: 'À traiter', color: '#8b8aa3', empty: 'Rien à traiter pour le moment.', deco: ['bush', 52] },
+  { id: 'applied', title: 'Envoyées', color: '#2f7d5b', empty: 'Glisse ici une offre quand tu as postulé.', deco: ['flower', 62] },
+  { id: 'interview', title: 'Entretiens', color: '#e0a800', empty: 'Pas encore d’entretien. Ça va venir.', deco: ['mushroom', 56] },
+  { id: 'offer', title: 'Offres reçues', color: '#14b87d', empty: 'Ta première offre arrive bientôt.', deco: ['tree', 86] },
+  { id: 'rejected', title: 'Refusées', color: '#c9604a', empty: 'Rien ici, tant mieux.', deco: ['cloud', 44] },
 ];
 const SENT = ['applied', 'interview', 'offer', 'rejected'];
 const ui = { query: '' };
@@ -36,7 +36,7 @@ function board() {
     const list = visible(c.id);
     return html`<section class="kcol" data-status="${c.id}" style="--c:${c.color};--ci:${ci}">
       <header><i></i><h3>${c.title}</h3><span class="kcount">${list.length}</span></header>
-      <div class="kcol-body">${list.length ? list.map(card) : html`<div class="kempty">${petSvg(petOf(S.profile), { size: 72, mood: c.mood })}<p>${c.empty}</p></div>`}</div>
+      <div class="kcol-body">${list.length ? list.map(card) : html`<div class="kempty">${scene(c.deco[0], { size: c.deco[1] })}<p>${c.empty}</p></div>`}</div>
     </section>`;
   })}</div>`;
 }

@@ -396,7 +396,7 @@ async function script() {
     go('#/profil');
     await waitFor('#avatar-editor .pet-opt');
     await sleep(700);
-    await say('Ton compagnon', 'Choisis ton animal, sa couleur, un accessoire et son nom. Il te suit partout, et ton choix accorde aussi l’intitulé du poste sur ton CV.', { target: '#avatar-editor', mood: 'idle', hold: 4200 });
+    await say('Ton animal', 'Choisis ton animal, sa couleur, un accessoire et, si tu veux, un nom. Il se perche sur tes barres de recherche, dort quand tu es ailleurs et réagit quand tu le touches.', { target: '#avatar-editor', mood: 'idle', hold: 4200 });
     await click('#avatar-editor .pet-opt[data-v="renard"]');
     await sleep(500);
     await click('#avatar-editor [data-k="accessory"] [data-v="fete"]');

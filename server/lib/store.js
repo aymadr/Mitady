@@ -16,6 +16,12 @@ const CV_DIR = path.join(DATA_DIR, 'cvs');
 
 for (const dir of [DATA_DIR, UPLOAD_DIR, CV_DIR]) fs.mkdirSync(dir, { recursive: true });
 
+const DEFAULT_LETTER = `Je me permets de vous adresser ma candidature pour le poste de {{poste}} au sein de {{entreprise}}. Votre offre a retenu toute mon attention : elle correspond au projet professionnel que je construis.
+
+Mon parcours m'a permis de développer des compétences solides, notamment en {{competences}}, que j'ai mises en pratique à travers mes expériences et mes projets. J'aime apprendre vite, travailler en équipe et aller au bout de ce que j'entreprends.
+
+Je serais {{ravi}} de vous présenter plus en détail ma motivation lors d'un échange. Je reste disponible à votre convenance.`;
+
 const DEFAULT_TEMPLATE = `Bonjour {{contact}},
 
 Je vous adresse ma candidature pour le poste {{poste}} chez {{entreprise}}.
@@ -48,8 +54,18 @@ function defaultProfile() {
     photo: null, // path of the CV photo (edited)
     photoOriginal: null, // path of the picture it was cropped from
     photoCrop: null, // { zoom, x, y, rot, bw } to reopen the cropper where it was
+    letter: {
+      layout: '', // '' = same template as the CV
+      subject: 'Candidature : {{poste}}',
+      opening: 'Madame, Monsieur,',
+      body: DEFAULT_LETTER,
+      closing: "Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.",
+      place: '',
+      showDate: true,
+      align: 'right',
+    },
     cvMode: 'own', // 'own' = keep my CV file, 'app' = use the app's templates
-    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'carre', photoSize: 'm', photoBorder: false },
+    cvStyle: { layout: 'classique', font: 'calibri', accent: 'bleu', photo: true, photoShape: 'portrait', photoSize: 'm', photoBorder: false },
     docx: { titleText: '', skillsAnchor: '' },
     search: {
       domain: '',
@@ -162,7 +178,23 @@ db.profile = {
   ...db.profile,
   search: { ...defaultProfile().search, ...(db.profile || {}).search },
   cvStyle: { ...defaultProfile().cvStyle, ...(db.profile || {}).cvStyle },
+  letter: { ...defaultProfile().letter, ...(db.profile || {}).letter },
 };
+// Whatever an older or hand-edited file holds, every field keeps the type the pages rely on.
+{
+  const d = defaultProfile();
+  for (const [k, v] of Object.entries(d)) {
+    const have = db.profile[k];
+    const kind = (x) => (Array.isArray(x) ? 'array' : x === null ? 'null' : typeof x);
+    if (v !== null && kind(have) !== kind(v)) db.profile[k] = v;
+  }
+}
+// Photo shapes were square / rounded (both portrait) before: keep their look.
+if (db.profile.cvStyle && !db.profile.cvStyle.photoShapeV2) {
+  const m = { carre: 'portrait', arrondi: 'portraitArrondi' };
+  db.profile.cvStyle.photoShape = m[db.profile.cvStyle.photoShape] || db.profile.cvStyle.photoShape;
+  db.profile.cvStyle.photoShapeV2 = true;
+}
 db.settings = { ...defaultSettings(), ...db.settings };
 
 let secrets = { ...defaultSecrets(), ...readJson(SECRETS_FILE, {}) };

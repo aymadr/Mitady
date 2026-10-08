@@ -3,6 +3,7 @@
 // Idempotent, and re-run whenever the page content changes.
 import { tile, art } from './brand.js';
 import { petSvg, petOf } from './pet.js';
+import { scene } from './scenery.js';
 import { S } from './main.js';
 import { norm } from './lib.js';
 
@@ -49,12 +50,13 @@ export function decorate(view) {
     const t = norm(el.querySelector('strong')?.textContent || '');
     const mood = /tout est traite/.test(t) ? 'party' : /aucun resultat|injoignable/.test(t) ? 'think' : /aucune|rien/.test(t) ? 'sleep' : 'wave';
     const i = [...t].reduce((a, c) => (a + c.charCodeAt(0)) % 6, 0);
-    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${petSvg(petOf(S.profile), { size: 112, mood: mood === 'wave' ? 'idle' : mood })}</div>`);
+    const [name, size] = mood === 'party' ? ['flower', 92] : [['tree', 'bush', 'mushroom', 'gum', 'flower', 'cloud'][i], [110, 70, 64, 120, 90, 52][i]];
+    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${scene(name, { size })}</div>`);
   });
 
   view.querySelectorAll('.dropzone:not([data-i3d])').forEach((el) => {
     el.dataset.i3d = '1';
-    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${tile('doc', { size: 68, cls: 'float' })}${petSvg(petOf(S.profile), { size: 84, mood: 'idle' })}</div>`);
+    el.insertAdjacentHTML('afterbegin', `<div class="empty-art">${tile('doc', { size: 68, cls: 'float' })}${scene('bush', { size: 60 })}</div>`);
   });
 
   // The user's companion, perched on the edge of each search field: asleep until you click it.

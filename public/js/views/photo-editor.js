@@ -3,8 +3,8 @@
 import { S } from '../main.js';
 import { html, api, fail, esc } from '../lib.js';
 
-const SHAPES = [['carre', 'Carrée'], ['arrondi', 'Arrondie'], ['rond', 'Ronde']];
-const SIZES = [['s', 'Petite'], ['m', 'Moyenne'], ['l', 'Grande']];
+const SHAPES = [['rond', 'Ronde'], ['carre', 'Carrée'], ['arrondi', 'Arrondie'], ['portrait', 'Portrait'], ['portraitArrondi', 'Portrait arrondi']];
+const SIZES = [['xs', 'XS'], ['s', 'S'], ['m', 'M'], ['l', 'L'], ['xl', 'XL']];
 const VIEW_W = 280;
 const EXPORT_W = 600;
 
@@ -40,7 +40,7 @@ export async function openPhotoEditor({ file = null, style = {}, crop = null } =
   }
 
   const st = { zoom: 1, ox: 0, oy: 0, rot: 0, gray: false, ...(file ? {} : crop || {}) };
-  const look = { photoShape: style.photoShape || 'carre', photoSize: style.photoSize || 'm', photoBorder: !!style.photoBorder };
+  const look = { photoShape: style.photoShape || 'portrait', photoSize: style.photoSize || 'm', photoBorder: !!style.photoBorder };
 
   const root = document.createElement('div');
   root.className = 'pe-overlay';
@@ -68,7 +68,7 @@ export async function openPhotoEditor({ file = null, style = {}, crop = null } =
   const canvas = root.querySelector('#pe-canvas');
   const ctx = canvas.getContext('2d');
   const q = (s) => root.querySelector(s);
-  const ratio = () => (look.photoShape === 'rond' ? 1 : 1.25);
+  const ratio = () => (['rond', 'carre', 'arrondi'].includes(look.photoShape) ? 1 : 1.28);
 
   // Draws the picture on a canvas of the given width. Offsets are fractions of the frame.
   function draw(c, w) {
@@ -95,7 +95,7 @@ export async function openPhotoEditor({ file = null, style = {}, crop = null } =
 
   const frame = () => {
     draw(canvas, VIEW_W);
-    canvas.style.borderRadius = look.photoShape === 'rond' ? '50%' : look.photoShape === 'arrondi' ? '16px' : '2px';
+    canvas.style.borderRadius = look.photoShape === 'rond' ? '50%' : look.photoShape.endsWith('rrondi') ? '16px' : '2px';
     canvas.style.outline = look.photoBorder ? '2px solid #1f3a93' : 'none';
   };
 

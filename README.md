@@ -39,6 +39,28 @@ prépare <b>un CV et une lettre de motivation en PDF</b> adaptés à l'offre, et
 <br><sub>Pendant une recherche, chaque site a son animal : il saute, et annonce les nouvelles offres trouvées.</sub>
 </div>
 
+## 🎬 La présentation animée
+
+<p align="center">
+<img src="docs/promo.webp" alt="Extraits de la présentation animée de Mitady : recherche sur tous les sites, score, CV, lettre, suivi" width="90%">
+</p>
+
+Une présentation de 72 secondes, en motion graphique, est incluse : [`promo/mitady-promo.html`](promo/mitady-promo.html). C'est un seul fichier, sans connexion nécessaire : ouvre-le dans ton navigateur (`Espace` pause, `←`/`→` saute de 5 s, `F` plein écran).
+
+<details>
+<summary>La fabriquer ou l'exporter en vidéo</summary>
+
+```bash
+node --experimental-default-type=module promo/build.mjs   # régénère promo/mitady-promo.html
+node promo/export.mjs                                     # rend promo/mitady-promo.mp4 (ffmpeg requis)
+node promo/export.mjs --width 1920 --fps 60               # en Full HD, 60 images par seconde
+```
+
+Chaque image est une fonction du temps : l'export est donc exact, image par image. Les scènes sont dans `promo/scenes.js`, le moteur dans `promo/template.html`.
+</details>
+
+<img src="docs/divider.svg" alt="" width="100%">
+
 ## 📸 Aperçu
 
 <p align="center">

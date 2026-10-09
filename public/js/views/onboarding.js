@@ -515,7 +515,7 @@ const TOUR = [
   },
   {
     icon: 'sparkles', title: 'À ta façon', sub: 'Sombre, Claude, avatar',
-    text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar depuis le profil, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
+    text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar dans les réglages, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
     art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div><span class="corner-mon">${scene('bush', { size: 62 })}</span>`,
   },
 ];

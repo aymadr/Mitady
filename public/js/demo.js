@@ -408,7 +408,7 @@ async function script() {
 
   step(11);
   await safe(async () => {
-    go('#/profil');
+    go('#/reglages');
     await waitFor('#avatar-editor .pet-opt');
     await sleep(700);
     await say('Ton animal', 'Choisis ton animal, sa couleur, un accessoire et, si tu veux, un nom. Il se perche sur tes barres de recherche, dort quand tu es ailleurs et réagit quand tu le touches.', { target: '#avatar-editor', mood: 'idle', hold: 4200 });

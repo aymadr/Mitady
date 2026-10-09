@@ -81,7 +81,7 @@ scraper
   .catch((e) => console.error('ERREUR :', e.message));
 ```
 
-**Avant**, dans l'appli (Profil › Ce que tu cherches) : domaine « Cybersécurité » (ou le tien), lieu **Lyon** (ou ta ville), périmètre **30 km**, contrat **Alternance**. Utilise la même variable `DATA_DIR` que pour `npm start`.
+**Avant**, dans l'appli (page Recherche) : domaine « Cybersécurité » (ou le tien), lieu **Lyon** (ou ta ville), périmètre **30 km**, contrat **Alternance**. Utilise la même variable `DATA_DIR` que pour `npm start`.
 
 ### 1.1 Site par site
 
@@ -183,12 +183,12 @@ Ouvre l'adresse que Mitady construit, dans ton navigateur habituel, et compare. 
 ### 2.3 L'affichage sur téléphone
 Parcours chaque page, en portrait puis en paysage :
 
-- [ ] Barre d'onglets en bas (Accueil, Offres, Suivi, CV, Profil, Réglages), jamais cachée par la barre du navigateur ni par la zone du bouton d'accueil
+- [ ] Barre d'onglets en bas (Accueil, Offres, Suivi, CV, Recherche, Réglages), jamais cachée par la barre du navigateur ni par la zone du bouton d'accueil
 - [ ] **Aucun défilement horizontal** de la page (sauf les colonnes du suivi, volontaire)
 - [ ] Toucher un champ de texte **ne zoome pas** la page
 - [ ] **Suivi** : balayer fait défiler le tableau ; **appui long** sur une carte la soulève (vibration légère sur Android), on la glisse vers une autre colonne ; près du bord de l'écran le tableau défile tout seul
 - [ ] Un simple **toucher** sur une carte ouvre l'offre
-- [ ] **CV** : l'éditeur (contenu, design, document, lettre), l'éditeur de photo ; **Profil** : la recherche de lieu (suggestions qui s'affichent et se touchent)
+- [ ] **CV** : l'éditeur (contenu, design, document, lettre), l'éditeur de photo ; **Recherche** : la recherche de lieu (suggestions qui s'affichent et se touchent)
 - [ ] **Onboarding** complet si tu repars de zéro (`DATA_DIR` vide) : toutes les étapes lisibles, bouton « Continuer » toujours accessible
 - [ ] Le **guide** (bouton ?) et la **démo en direct**
 

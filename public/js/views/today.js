@@ -51,7 +51,7 @@ function onboarding(view) {
       </div></div>
       <div class="group steps">
         ${step(hasCv, 1, 'Importe ou écris ton CV', "Un PDF ou un Word, analysé automatiquement. Ou saisis ton parcours à la main : l'app le met en forme au format ATS.", html`<a class="btn btn-primary btn-sm" href="#/cv">Commencer</a>`)}
-        ${step(hasSearch, 2, 'Choisis ton domaine', 'Cybersécurité, finance, data, marketing… et le type de contrat recherché.', html`<a class="btn btn-secondary btn-sm" href="#/profil/recherche">Définir</a>`)}
+        ${step(hasSearch, 2, 'Choisis ton domaine', 'Cybersécurité, finance, data, marketing… et le type de contrat recherché.', html`<a class="btn btn-secondary btn-sm" href="#/recherche">Définir</a>`)}
         ${step(hasOffers, 3, 'Lance une première recherche', 'HelloWork, LinkedIn, Indeed, Welcome to the Jungle et plus encore.', html`<button class="btn btn-secondary btn-sm" data-search>Chercher</button>`)}
       </div>`,
   );

@@ -1,5 +1,8 @@
-import { S } from '../main.js';
+import { S, refreshNav } from '../main.js';
 import { html, raw, mount, api, fail, toast, busy } from '../lib.js';
+import { mountPetEditor } from '../pet.js';
+import { update } from '../profile-store.js';
+import { refreshPerches } from '../decorate.js';
 
 const SERVICES = [
   ['gmail', 'Gmail'],
@@ -16,7 +19,12 @@ export function renderSettings(view) {
     view,
     html`<div class="page-head"><div><h1 class="page-title">Réglages</h1></div></div>
 
-      <section id="mobile-section" hidden></section>
+      <section>
+        <div class="section-head"><h2 class="section-title">Ton animal</h2></div>
+        <div class="card" id="avatar-editor"></div>
+      </section>
+
+      <section class="section" id="mobile-section" hidden></section>
 
       <section class="section">
         <div class="section-head"><h2 class="section-title">Adresse d'envoi</h2></div>
@@ -84,6 +92,15 @@ export function renderSettings(view) {
       </section>`,
   );
 
+  mountPetEditor(view.querySelector('#avatar-editor'), {
+    pet: S.profile.pet,
+    big: false,
+    onChange: (pet) => {
+      update({ pet });
+      refreshNav();
+      refreshPerches();
+    },
+  });
   renderPhone(view.querySelector('#mobile-section'));
 
   const saveSettings = async (body, message = 'Enregistré') => {

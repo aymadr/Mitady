@@ -11,7 +11,7 @@ const PAGE_ART = {
   '': ['search', 'doc', 'target'],
   suivi: ['target', 'send', 'chat'],
   cv: ['doc', 'sparkles', 'user'],
-  profil: ['target', 'user', 'sparkles'],
+  recherche: ['search', 'target', 'sparkles'],
   reglages: ['gear', 'mail', 'key'],
 };
 

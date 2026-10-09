@@ -123,7 +123,7 @@ Le serveur n'écoute que sur ta machine. Tes données restent dans le dossier `d
 Au tout premier lancement, un guide plein écran te prend par la main (ton nom, ton animal, ton CV, tes contrats, ton domaine) puis lance la première recherche. Le bouton **?** rouvre le guide, et « Voir la démo en direct » laisse ton animal prendre les commandes du vrai site, sur des offres d'exemple.
 
 1. **CV** : importe ton CV (PDF ou Word) ou remplis tes rubriques dans l'éditeur, choisis son design, prépare ta lettre.
-2. **Profil** : choisis ton domaine, tes types de contrat et les sites à interroger, puis règle ta recherche (voir plus bas).
+2. **Recherche** : choisis ton domaine, tes types de contrat et les sites à interroger, puis règle ta recherche (voir plus bas).
 3. **Chercher** : un clic sur « Chercher des offres ». Tu peux arrêter la recherche à tout moment, les offres déjà trouvées sont gardées.
 4. **Offres** : trie par score, ouvre une offre, ajoute les compétences qui manquent à ton CV.
 5. **Pour chaque offre** : choisis ce qui part, ajuste le titre, génère le CV et la lettre en PDF.
@@ -131,7 +131,7 @@ Au tout premier lancement, un guide plein écran te prend par la main (ton nom, 
 
 ## 🎯 Régler la recherche
 
-Dans **Profil › Ce que tu cherches** :
+Dans la page **Recherche** :
 
 | Réglage | Ce qu'il fait |
 |---|---|
@@ -208,7 +208,7 @@ Pour chaque offre, l'onglet **Lettre** de la fiche reprend ce modèle déjà rem
 
 <p align="center"><img src="docs/gang.svg" alt="Les neuf animaux : koala, chat, chien, renard, lapin, ours, grenouille, pingouin, hibou" width="100%"></p>
 
-Ton animal est indépendant de toi et de ton CV : choisis l'espèce, la couleur, un accessoire et, si tu veux, un nom. Il se perche sur les barres de recherche, s'endort quand tu es ailleurs et saute, tourne ou danse quand tu le touches. Le décor (arbres, buissons, fleurs, champignons, papillon) est dessiné de la même façon.
+Ton animal est indépendant de toi et de ton CV (Réglages › Ton animal) : choisis l'espèce, la couleur, un accessoire et, si tu veux, un nom. Il se perche sur les barres de recherche, s'endort quand tu es ailleurs et saute, tourne ou danse quand tu le touches. Le décor (arbres, buissons, fleurs, champignons, papillon) est dessiné de la même façon.
 
 À l'accueil, tu indiques aussi si tu es un homme, une femme ou si tu préfères ne pas le préciser : ça accorde l'intitulé du poste sur ton CV. « Alternant(e) Chargé(e) de projet » devient « Alternant Chargé de projet » ou « Alternante Chargée de projet ».
 

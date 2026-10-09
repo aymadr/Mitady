@@ -1,8 +1,6 @@
-import { S, refreshNav } from '../main.js';
+import { S } from '../main.js';
 import { siteLogo } from '../logos.js';
-import { mountPetEditor } from '../pet.js';
 import { update, setSaveIndicator } from '../profile-store.js';
-import { refreshPerches } from '../decorate.js';
 import { placePicker } from '../places.js';
 import { html, raw, mount, chipInput } from '../lib.js';
 
@@ -19,23 +17,18 @@ const MIN_SCORE = [[0, 'Toutes les offres'], [30, '30 % ou plus'], [50, '50 % ou
 const MAX_OFFERS = [[30, '30 (recherche rapide)'], [60, '60'], [100, '100'], [150, '150 (plus long)']];
 const SEARCH_DEFAULTS = { posted: 0, maxOffers: 60, minScore: 0 };
 
-export function renderProfile(view) {
+export function renderSearch(view) {
   const p = S.profile;
   const domain = S.domains.find((d) => d.id === p.search.domain);
 
   mount(
     view,
     html`<div class="page-head">
-        <div><h1 class="page-title">Profil</h1><p class="page-sub">Ce que tu cherches, et ton compagnon. Ton CV et ta lettre ont leur propre page.</p></div>
+        <div><h1 class="page-title">Recherche</h1><p class="page-sub">Ce que tu cherches, où, et comment. Ton CV et ta lettre ont leur propre page.</p></div>
         <span class="saved" id="saved"></span>
       </div>
 
-      <section>
-        <div class="section-head"><h2 class="section-title">Ton animal</h2><span class="section-note">Il se perche sur tes barres de recherche</span></div>
-        <div class="card" id="avatar-editor"></div>
-      </section>
-
-      <section class="section" id="recherche">
+      <section id="recherche">
         <div class="section-head"><h2 class="section-title">Ce que tu cherches</h2></div>
         <div class="card">
           <label class="field"><span class="label">Domaine</span>
@@ -80,15 +73,6 @@ export function renderProfile(view) {
   );
 
   setSaveIndicator(view.querySelector('#saved'));
-  mountPetEditor(view.querySelector('#avatar-editor'), {
-    pet: p.pet,
-    big: false,
-    onChange: (pet) => {
-      update({ pet });
-      refreshNav();
-      refreshPerches();
-    },
-  });
   const search = (patch) => update({ search: { ...S.profile.search, ...patch } });
   view.querySelector('#domain').addEventListener('change', (e) => {
     search({ domain: e.target.value });
@@ -112,7 +96,6 @@ export function renderProfile(view) {
   chipInput(view.querySelector('#keywords'), [...p.search.keywords], (keywords) => search({ keywords }), { placeholder: 'Ajouter un mot-clé' });
   chipInput(view.querySelector('#excluded'), [...p.search.excluded], (excluded) => search({ excluded }), { placeholder: 'Ajouter une entreprise' });
 
-  if (location.hash.endsWith('/recherche')) view.querySelector('#recherche').scrollIntoView({ block: 'start' });
 }
 
 const activeSources = (p) => (Array.isArray(p.search.sources) ? p.search.sources : S.sources.filter((x) => x.on).map((x) => x.id));

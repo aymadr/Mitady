@@ -97,7 +97,7 @@ async function demoApi(path, { method, body }) {
     stopFake?.();
     return { ok: true };
   }
-  if (path.startsWith('/profile/cv-preview') || path.startsWith('/state')) return undefined; // harmless: let it through
+  if (path.startsWith('/profile/cv-preview') || path.startsWith('/profile/letter-preview') || path.startsWith('/state')) return undefined; // harmless: let it through
   throw new Error('Pas disponible pendant la démonstration.');
 }
 
@@ -274,7 +274,7 @@ async function say(title, text, { mood = 'idle', target = null, hold } = {}) {
 
 // ---------- The script ----------
 
-const STEPS = 11;
+const STEPS = 12;
 async function script() {
   const name = (S.profile.name || '').split(' ')[0] || 'toi';
   const step = (n) => (ui.count.textContent = `${n} / ${STEPS}`);
@@ -393,6 +393,21 @@ async function script() {
 
   step(10);
   await safe(async () => {
+    go('#/cv');
+    await waitFor('#studio-tabs');
+    await sleep(900);
+    await say('Ton CV a sa propre page', 'Importe ton CV ou construis-le ici : contenu, design (21 modèles, couleurs, polices) et réglages du document. L’aperçu se met à jour à chaque frappe.', { target: '#studio', mood: 'idle', hold: 4600 });
+    await click('#studio-tabs [data-v="design"]');
+    await sleep(1800);
+    await click('#studio-tabs [data-v="letter"]');
+    await sleep(1500);
+    await say('Et ta lettre de motivation', 'Le même éditeur prépare ta lettre, assortie à ton CV. Elle part en PDF avec ta candidature.', { target: '#studio-tabs', mood: 'idle', hold: 3400 });
+    await click('#studio-tabs [data-v="content"]');
+    await sleep(700);
+  });
+
+  step(11);
+  await safe(async () => {
     go('#/profil');
     await waitFor('#avatar-editor .pet-opt');
     await sleep(700);
@@ -404,7 +419,7 @@ async function script() {
     await sleep(900); // let the edit settle before the real profile comes back
   });
 
-  step(11);
+  step(12);
   go('#/');
   await sleep(600);
   celebrate({ y: innerHeight * 0.4, count: 160, power: 1.3 });

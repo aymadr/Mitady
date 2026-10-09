@@ -223,7 +223,7 @@ function resultCard() {
   return html`<div class="ob-result">
     <div class="ob-result-head">
       <span class="avatar lg" style="--h:${hue(p.name || 'x')}">${(p.name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('')}</span>
-      <div class="grow"><b>${p.name || 'Ton nom'}</b><small>${p.headline || 'Ajoute un titre depuis ton profil'}</small></div>
+      <div class="grow"><b>${p.name || 'Ton nom'}</b><small>${p.headline || 'Ajoute un titre depuis la page CV'}</small></div>
       <span class="ob-check">${icons.check}</span>
     </div>
     ${p.skills.length
@@ -395,7 +395,7 @@ function ready(stage) {
   const label = S.domains.find((d) => d.id === p.search.domain)?.label || 'Domaine personnalisé';
   const items = [
     [p.name ? `Profil de ${p.name}` : 'Profil créé', true],
-    [p.skills.length ? `${p.skills.length} compétences prêtes à être comparées` : 'Compétences à compléter dans ton profil', p.skills.length > 0],
+    [p.skills.length ? `${p.skills.length} compétences prêtes à être comparées` : 'Compétences à compléter dans ton CV', p.skills.length > 0],
     [`${(p.search.contracts || []).join(' + ') || 'Alternance'}${p.search.location ? ` · ${p.search.location}${p.search.radius && p.search.places?.length ? ` (${p.search.radius} km)` : ''}` : ''}`, true],
     [label, true],
   ];

@@ -8,6 +8,7 @@ html { -webkit-tap-highlight-color: transparent; background: var(--bg); overflow
 main { overflow-x: clip; } /* decorative pieces that peek out of a card must not widen the page */
 a, button, .btn, .chip, .kcard, .item, label { touch-action: manipulation; }
 .nav-ic { display: none; }
+.lbl-short { display: none; }
 
 /* a tap is not a hover: no card stuck "lifted" after touching it */
 @media (hover: none) {
@@ -36,21 +37,23 @@ a, button, .btn, .chip, .kcard, .item, label { touch-action: manipulation; }
   /* ----- bottom tab bar ----- */
   .nav-links {
     position: fixed; left: 10px; right: 10px; bottom: calc(10px + var(--safe-b)); z-index: 25;
-    height: var(--tab-h); padding: 6px; gap: 2px; flex: none; overflow: visible;
-    display: grid; grid-template-columns: repeat(5, 1fr);
+    height: var(--tab-h); padding: 6px 4px; gap: 0; flex: none; overflow: visible;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
     background: color-mix(in srgb, var(--surface-raised) 95%, transparent); border-radius: 26px; pointer-events: auto;
     backdrop-filter: saturate(190%) blur(24px); -webkit-backdrop-filter: saturate(190%) blur(24px);
     box-shadow: var(--shadow), var(--glass-edge), 0 0 0 1px var(--line);
   }
   .nav-links a {
     display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
-    padding: 4px 0; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0; color: var(--text-2);
+    padding: 4px 0; border-radius: 18px; font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-2);
     min-width: 0;
   }
   .nav-links a span { white-space: nowrap; }
   .nav-links a:hover { background: none; }
   .nav-links a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); box-shadow: none; }
   .nav-ic { display: block; }
+  .lbl-full { display: none; }
+  .lbl-short { display: inline; }
 
   /* ----- layout ----- */
   main { padding: 22px 16px calc(var(--tab-h) + 36px + var(--safe-b)); }
@@ -188,7 +191,7 @@ a, button, .btn, .chip, .kcard, .item, label { touch-action: manipulation; }
 
 @media (max-width: 380px) {
   .page-title { font-size: 36px; }
-  .nav-links a { font-size: 10.5px; }
+  .nav-links a { font-size: 10px; }
   .nav-inner { gap: 4px; }
 }
 

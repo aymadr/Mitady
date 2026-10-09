@@ -3,6 +3,7 @@ import { renderToday } from './views/today.js';
 import { renderOffers } from './views/offers.js';
 import { renderBoard } from './views/board.js';
 import { renderProfile } from './views/profile.js';
+import { renderCv } from './views/cv.js';
 import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
 import { needsOnboarding, startOnboarding } from './views/onboarding.js';
@@ -29,6 +30,7 @@ const routes = {
   '': renderToday,
   offres: renderOffers,
   suivi: renderBoard,
+  cv: renderCv,
   profil: renderProfile,
   reglages: renderSettings,
 };
@@ -36,7 +38,7 @@ const routes = {
 let currentPage = null;
 let booted = false;
 
-// Hash routes: #/offres, #/offres/<id>, #/profil, #/reglages
+// Hash routes: #/offres, #/offres/<id>, #/cv (and #/cv/lettre…), #/profil, #/reglages
 export function route() {
   const [page = '', id, tab] = location.hash.replace(/^#\/?/, '').split('/');
   const view = document.getElementById('view');

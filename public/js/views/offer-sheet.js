@@ -263,7 +263,7 @@ function renderCv(body, a) {
     body,
     html`<div class="stack">
       ${!S.profile.name
-        ? html`<div class="callout blue">Complète d'abord ton <a href="#/profil">profil</a> (nom, parcours, compétences) : c'est la base de chaque CV.</div>`
+        ? html`<div class="callout blue">Complète d'abord ton <a href="#/cv">CV</a> (nom, parcours, compétences) : c'est la base de chaque candidature.</div>`
         : ''}
       <section class="card">
         ${hasFile
@@ -276,10 +276,10 @@ function renderCv(body, a) {
               <p class="hint">${{
                 original: "Ton fichier, sans aucun changement (converti en PDF si c'est un Word). Rien à générer : il est joint tel quel.",
                 docx: "Ton fichier Word, mise en page conservée : seuls le titre, le paragraphe de profil et les compétences ajoutées changent. Livré en PDF.",
-                builtin: "Le CV est reconstruit avec le modèle et la photo choisis dans ton profil. Livré en PDF.",
+                builtin: "Le CV est reconstruit avec le modèle et la photo choisis dans la page CV. Livré en PDF.",
               }[d.template]}</p>
             </div>`
-          : html`<p class="hint" style="margin-bottom:12px">CV généré par l'app (PDF). Importe ton propre CV dans ton profil pour pouvoir aussi l'envoyer tel quel.</p>`}
+          : html`<p class="hint" style="margin-bottom:12px">CV généré par l'app (PDF). Importe ton propre CV dans la page CV pour pouvoir aussi l'envoyer tel quel.</p>`}
         ${d.template === 'original'
           ? html`<div class="file-row"><div class="grow"><strong>${S.profile.cvFile.name}</strong>Ce CV est joint tel quel à ta candidature, rien à générer.</div>
               <a class="btn btn-secondary btn-sm" href="/api/profile/cv/pdf" target="_blank">Ouvrir</a>
@@ -396,7 +396,7 @@ async function renderLetter(body, a) {
   mount(
     body,
     html`<div class="stack">
-      ${!S.profile.name ? html`<div class="callout blue">Complète d'abord ton <a href="#/profil">profil</a> : ton nom et tes coordonnées figurent sur la lettre.</div>` : ''}
+      ${!S.profile.name ? html`<div class="callout blue">Complète d'abord ton <a href="#/cv">CV</a> : ton nom et tes coordonnées figurent sur la lettre.</div>` : ''}
       <section class="card">
         <div class="row" style="margin-bottom:12px"><strong class="grow">Lettre de motivation</strong>
           ${aiOn ? html`<button class="btn btn-secondary btn-sm" id="l-ai" data-busy="Claude écrit…">Rédiger avec Claude</button>` : ''}
@@ -408,7 +408,7 @@ async function renderLetter(body, a) {
         <label class="field" style="margin-top:12px"><span class="label">Objet</span><input class="input" id="l-subject" value="${draft.subject}"></label>
         <label class="field"><span class="label">Formule d'appel</span><input class="input" id="l-opening" value="${draft.opening}"></label>
         <label class="field"><span class="label">Lettre</span><textarea class="textarea" id="l-body" rows="12">${draft.body}</textarea>
-          <span class="hint">Une ligne vide sépare deux paragraphes. Le modèle se règle dans Profil › Modifier mon CV › Lettre.</span></label>
+          <span class="hint">Une ligne vide sépare deux paragraphes. Le modèle se règle dans CV › Lettre.</span></label>
         <label class="field"><span class="label">Formule de politesse</span><textarea class="textarea" id="l-closing" rows="2">${draft.closing}</textarea></label>
         <div class="form-foot"><button class="btn btn-primary" id="l-generate" data-busy="Génération…">${generated ? 'Régénérer le PDF' : 'Générer le PDF'}</button></div>
       </section>

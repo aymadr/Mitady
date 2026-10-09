@@ -1485,3 +1485,10 @@ input.clr { width: 40px; height: 40px; border: 0; border-radius: 50%; padding: 0
 .pp-hint { margin-top: 10px; }
 .mode-row { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 @media (max-width: 760px) { .pp-input { min-width: 0; font-size: 16px; } .pp-radius { align-items: flex-start; flex-direction: column; gap: 8px; } .pp-menu li { padding: 13px 12px; } }
+
+/* ---------- CV page: import bar ---------- */
+.import-bar { display: flex; align-items: center; gap: 18px; padding: 16px 20px; border-radius: 22px; border: 1.5px dashed var(--line-strong); background: var(--surface); cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+.import-bar:hover, .import-bar.over { border-color: var(--accent); background: var(--accent-soft); }
+.import-bar b { display: block; font-family: var(--font-display); font-size: 18px; letter-spacing: -0.02em; }
+.import-bar small { display: block; margin-top: 2px; font-size: 13.5px; line-height: 1.4; color: var(--text-2); }
+@media (max-width: 760px) { .import-bar { flex-direction: column; align-items: stretch; text-align: left; } .import-bar .btn { align-self: flex-start; } }

@@ -183,12 +183,12 @@ Ouvre l'adresse que Mitady construit, dans ton navigateur habituel, et compare. 
 ### 2.3 L'affichage sur téléphone
 Parcours chaque page, en portrait puis en paysage :
 
-- [ ] Barre d'onglets en bas (Aujourd'hui, Offres, Suivi, Profil, Réglages), jamais cachée par la barre du navigateur ni par la zone du bouton d'accueil
+- [ ] Barre d'onglets en bas (Accueil, Offres, Suivi, CV, Profil, Réglages), jamais cachée par la barre du navigateur ni par la zone du bouton d'accueil
 - [ ] **Aucun défilement horizontal** de la page (sauf les colonnes du suivi, volontaire)
 - [ ] Toucher un champ de texte **ne zoome pas** la page
 - [ ] **Suivi** : balayer fait défiler le tableau ; **appui long** sur une carte la soulève (vibration légère sur Android), on la glisse vers une autre colonne ; près du bord de l'écran le tableau défile tout seul
 - [ ] Un simple **toucher** sur une carte ouvre l'offre
-- [ ] **Profil** : l'éditeur de CV, l'éditeur de photo, la recherche de lieu (suggestions qui s'affichent et se touchent)
+- [ ] **CV** : l'éditeur (contenu, design, document, lettre), l'éditeur de photo ; **Profil** : la recherche de lieu (suggestions qui s'affichent et se touchent)
 - [ ] **Onboarding** complet si tu repars de zéro (`DATA_DIR` vide) : toutes les étapes lisibles, bouton « Continuer » toujours accessible
 - [ ] Le **guide** (bouton ?) et la **démo en direct**
 
@@ -209,7 +209,7 @@ Avec des données de test vides (`DATA_DIR` neuf) :
 
 - [ ] Premier lancement : le guide plein écran, choix du nom, de l'animal, du CV, du contrat, du domaine, du lieu **avec rayon**
 - [ ] Importer un CV (PDF ou Word) : nom, compétences, parcours remplis
-- [ ] Créer un **CV en PDF** (Profil › éditeur) et une **lettre de motivation en PDF**
+- [ ] Créer un **CV en PDF** (page CV) et une **lettre de motivation en PDF**
 - [ ] Glisser une carte du suivi avec la souris, mode sombre, bouton « Voir la démo en direct »
 - [ ] Envoyer un e-mail de test (Réglages › adresse d'envoi › Tester) si tu as un mot de passe d'application
 

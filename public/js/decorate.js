@@ -10,7 +10,8 @@ import { norm } from './lib.js';
 const PAGE_ART = {
   '': ['search', 'doc', 'target'],
   suivi: ['target', 'send', 'chat'],
-  profil: ['user', 'doc', 'sparkles'],
+  cv: ['doc', 'sparkles', 'user'],
+  profil: ['target', 'user', 'sparkles'],
   reglages: ['gear', 'mail', 'key'],
 };
 

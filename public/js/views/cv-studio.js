@@ -31,6 +31,7 @@ const TYPE_ICON = { employment: '💼', education: '🎓', projects: '🧩', cer
 
 let ctx = null; // { update, rerender } of the page currently showing the studio
 let tab = 'content';
+const TAB_NAMES = { contenu: 'content', design: 'design', document: 'doc', lettre: 'letter' }; // as written in #/cv/lettre
 const openKeys = new Set();
 let previewEl = null;
 
@@ -410,8 +411,8 @@ function documentPanel() {
 export function cvStudioSection(p) {
   const hasFile = Boolean(p.cvFile);
   const own = p.cvFile?.type === 'docx' ? 'ton fichier Word, adapté à chaque offre' : 'ton PDF tel quel';
-  return html`<section class="section" id="studio">
-    <div class="section-head"><h2 class="section-title">Modifier mon CV</h2><span class="section-note">Toujours envoyé en PDF</span></div>
+  return html`<section class="section" id="studio" style="margin-top:32px">
+    <div class="section-head"><h2 class="section-title">Éditeur</h2><span class="section-note">Toujours envoyé en PDF</span></div>
     <div class="card" style="margin-bottom:16px">
       <div class="field"><span class="label">Quel CV utiliser ?</span>
         <div class="segmented" id="cv-mode">
@@ -550,6 +551,8 @@ export function bindCvStudio(view, c) {
       if (e.key === 'y' || e.key === 'Y') { e.preventDefault(); stepHistory(future, past); }
     });
   }
+  const wanted = TAB_NAMES[location.hash.replace(/^#\/?/, '').split('/')[1]];
+  if (wanted) tab = wanted;
   refreshHistBar();
   ensureManaged();
   loadFonts();
@@ -563,6 +566,8 @@ export function bindCvStudio(view, c) {
   tabs.querySelectorAll('[data-v]').forEach((b) =>
     b.addEventListener('click', () => {
       tab = b.dataset.v;
+      // remembered in the address (no page change): a reload or a link comes back to the same tab
+      history.replaceState(null, '', '#/cv/' + (Object.entries(TAB_NAMES).find(([, v]) => v === tab)?.[0] || ''));
       tabs.querySelectorAll('[data-v]').forEach((x) => x.setAttribute('aria-pressed', x === b));
       render();
       refreshPreview();

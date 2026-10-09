@@ -122,11 +122,12 @@ Le serveur n'écoute que sur ta machine. Tes données restent dans le dossier `d
 
 Au tout premier lancement, un guide plein écran te prend par la main (ton nom, ton animal, ton CV, tes contrats, ton domaine) puis lance la première recherche. Le bouton **?** rouvre le guide, et « Voir la démo en direct » laisse ton animal prendre les commandes du vrai site, sur des offres d'exemple.
 
-1. **Profil** : importe ton CV (PDF ou Word) ou remplis tes rubriques. Choisis ton domaine, tes types de contrat et les sites à interroger, puis règle ta recherche (voir plus bas).
-2. **Chercher** : un clic sur « Chercher des offres ». Tu peux arrêter la recherche à tout moment, les offres déjà trouvées sont gardées.
-3. **Offres** : trie par score, ouvre une offre, ajoute les compétences qui manquent à ton profil.
-4. **CV et lettre** : choisis ce qui part, ajuste le titre, génère les PDF.
-5. **Candidature** : trouve un contact, envoie le message avec les pièces jointes, glisse la carte dans la colonne suivante du **Suivi**.
+1. **CV** : importe ton CV (PDF ou Word) ou remplis tes rubriques dans l'éditeur, choisis son design, prépare ta lettre.
+2. **Profil** : choisis ton domaine, tes types de contrat et les sites à interroger, puis règle ta recherche (voir plus bas).
+3. **Chercher** : un clic sur « Chercher des offres ». Tu peux arrêter la recherche à tout moment, les offres déjà trouvées sont gardées.
+4. **Offres** : trie par score, ouvre une offre, ajoute les compétences qui manquent à ton CV.
+5. **Pour chaque offre** : choisis ce qui part, ajuste le titre, génère le CV et la lettre en PDF.
+6. **Candidature** : trouve un contact, envoie le message avec les pièces jointes, glisse la carte dans la colonne suivante du **Suivi**.
 
 ## 🎯 Régler la recherche
 
@@ -174,7 +175,7 @@ Un téléphone ne peut pas faire tourner Mitady lui-même : l'appli reste sur to
 ## 🧩 Pour aller plus loin
 
 <details>
-<summary><b>L'éditeur de CV</b> (Profil › Modifier mon CV)</summary>
+<summary><b>L'éditeur de CV</b> (la page CV)</summary>
 
 <br>
 

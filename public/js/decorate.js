@@ -10,7 +10,8 @@ import { norm } from './lib.js';
 const PAGE_ART = {
   '': ['search', 'doc', 'target'],
   suivi: ['target', 'send', 'chat'],
-  profil: ['user', 'doc', 'sparkles'],
+  cv: ['doc', 'sparkles', 'user'],
+  recherche: ['search', 'target', 'sparkles'],
   reglages: ['gear', 'mail', 'key'],
 };
 
@@ -21,6 +22,7 @@ const SECTION_ICON = [
   [/competences/, 'layers'],
   [/parcours/, 'briefcase'],
   [/cherches/, 'target'],
+  [/telephone/, 'send'],
   [/adresse|e-mail/, 'mail'],
   [/relance/, 'bell'],
   [/claude/, 'sparkles'],

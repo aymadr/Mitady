@@ -1,0 +1,219 @@
+/* =====================================================================
+   Phone layout (loaded after styles.css, so it wins).
+   Bottom tab bar, single-column pages, bottom-sheet dialogs, touch-sized controls,
+   and the notch / home-indicator safe areas of an iPhone.
+   ===================================================================== */
+:root { --tab-h: 66px; --safe-t: env(safe-area-inset-top, 0px); --safe-b: env(safe-area-inset-bottom, 0px); }
+html { -webkit-tap-highlight-color: transparent; background: var(--bg); overflow-x: hidden; }
+main { overflow-x: clip; } /* decorative pieces that peek out of a card must not widen the page */
+a, button, .btn, .chip, .kcard, .item, label { touch-action: manipulation; }
+.nav-ic { display: none; }
+.lbl-short { display: none; }
+
+/* a tap is not a hover: no card stuck "lifted" after touching it */
+@media (hover: none) {
+  .btn:hover, button.chip:hover, .kcard:hover, .item:hover, .card:hover { transform: none; }
+  .btn-primary:hover::after, .ob-cta:hover::after { left: -60%; }
+}
+
+@media (max-width: 760px) {
+  body { font-size: 16px; }
+
+  /* ----- top bar: logo and a few buttons; the pages live in the tab bar below ----- */
+  .nav { padding: calc(8px + var(--safe-t)) 10px 0; }
+  .nav-inner {
+    position: relative; isolation: isolate; height: 52px; gap: 6px; padding: 0 8px 0 10px;
+    /* the blur sits on a pseudo-element: a backdrop-filter here would trap the fixed tab bar inside the pill */
+    backdrop-filter: none; -webkit-backdrop-filter: none;
+    background: color-mix(in srgb, var(--surface-raised) 94%, transparent);
+  }
+  .nav-inner::before { content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; backdrop-filter: saturate(190%) blur(24px); -webkit-backdrop-filter: saturate(190%) blur(24px); }
+  .nav-inner .brand { margin-right: auto; }
+  .brand-name { display: none; }
+  #search-btn { width: 38px; height: 38px; padding: 0; }
+  #search-btn > span { display: none; }
+  .guide-btn { width: 38px; height: 38px; }
+
+  /* ----- bottom tab bar ----- */
+  .nav-links {
+    position: fixed; left: 10px; right: 10px; bottom: calc(10px + var(--safe-b)); z-index: 25;
+    height: var(--tab-h); padding: 6px 4px; gap: 0; flex: none; overflow: visible;
+    display: grid; grid-template-columns: repeat(6, minmax(0, 1fr));
+    background: color-mix(in srgb, var(--surface-raised) 95%, transparent); border-radius: 26px; pointer-events: auto;
+    backdrop-filter: saturate(190%) blur(24px); -webkit-backdrop-filter: saturate(190%) blur(24px);
+    box-shadow: var(--shadow), var(--glass-edge), 0 0 0 1px var(--line);
+  }
+  .nav-links a {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    padding: 4px 0; border-radius: 18px; font-size: 10.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text-2);
+    min-width: 0;
+  }
+  .nav-links a span { white-space: nowrap; }
+  .nav-links a:hover { background: none; }
+  .nav-links a[aria-current="page"] { background: var(--accent-soft); color: var(--accent-text); box-shadow: none; }
+  .nav-ic { display: block; }
+  .lbl-full { display: none; }
+  .lbl-short { display: inline; }
+
+  /* ----- layout ----- */
+  main { padding: 22px 16px calc(var(--tab-h) + 36px + var(--safe-b)); }
+  .page-head { margin-bottom: 22px; gap: 14px; }
+  .page-title { font-size: 40px; }
+  .page-sub { font-size: 17px; margin-top: 8px; }
+  .page-head .row, .toolbar { flex-wrap: wrap; }
+  .page-head .row > .btn, .toolbar > .btn { flex: none; }
+  .section { margin-top: 38px; }
+  .section-title { font-size: 22px; }
+  .forest { height: 130px; }
+
+  /* ----- floating things sit above the tab bar ----- */
+  .activity { left: 10px; right: 10px; width: auto; bottom: calc(var(--tab-h) + 22px + var(--safe-b)); }
+  .toast { bottom: calc(var(--tab-h) + 26px + var(--safe-b)); }
+
+  /* ----- forms: 16px stops iOS from zooming the page when a field is focused ----- */
+  .input, .textarea, .select, .input-sm, .chip-input input, .search-field .input, input, select, textarea { font-size: 16px; }
+  .input, .select { min-height: 46px; }
+  .input-sm { height: 42px; }
+  .btn { height: 44px; }
+  .btn-sm { height: 40px; padding: 0 16px; }
+  .btn-plain, .btn-danger { height: auto; min-height: 36px; }
+  .search-field { max-width: none; min-width: 0; flex-basis: 100%; }
+  .chip { min-height: 34px; }
+  .chip .x { width: 28px; height: 28px; }
+
+  /* ----- offer sheet: the whole screen ----- */
+  .sheet { width: 100vw; height: 100vh; height: 100dvh; }
+  .sheet-head { padding: calc(16px + var(--safe-t)) 16px 14px; }
+  .sheet-title { font-size: 24px; }
+  .sheet-body { padding: 18px 16px calc(40px + var(--safe-b)); }
+  .sheet-tabs { overflow-x: auto; scrollbar-width: none; }
+  .sheet-actions { gap: 8px; }
+
+  /* ----- dialogs rise from the bottom ----- */
+  .modal { padding: 0; place-items: end center; }
+  .modal-card {
+    width: 100%; max-height: 92vh; max-height: 92dvh; border-radius: 28px 28px 0 0;
+    padding: 24px 18px calc(22px + var(--safe-b)); animation: sheet-up 0.45s var(--ease);
+  }
+  .modal-title { font-size: 24px; margin-bottom: 16px; }
+  @keyframes sheet-up { from { transform: translateY(40px); opacity: 0; } }
+
+  /* ----- tracking board: one column and a half per screen, swipe sideways ----- */
+  main:has(.board) { padding-left: 0; padding-right: 0; }
+  main:has(.board) > :not(.board) { margin-left: 16px; margin-right: 16px; }
+  .board {
+    grid-template-columns: repeat(5, minmax(78vw, 78vw)); gap: 12px;
+    padding: 6px 16px 28px; scroll-padding: 0 16px; scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch; overscroll-behavior-x: contain;
+  }
+  .kcol { min-height: 0; }
+  .kcol-body { min-height: 120px; }
+  .kcard { touch-action: pan-x pan-y; -webkit-touch-callout: none; -webkit-user-select: none; }
+  .kcard.lift { transform: scale(1.03); box-shadow: var(--shadow-lift), 0 0 0 2px var(--accent); }
+  body.dragging .board { scroll-snap-type: none; }
+
+  /* ----- stats, greeting, onboarding bits that were built for width ----- */
+  .stats { grid-template-columns: 1fr 1fr; }
+  .tour-tabs { overflow-x: auto; }
+}
+
+/* photo editor: a bottom sheet whose content never exceeds its width */
+@media (max-width: 760px) {
+  .pe-overlay { padding: 0; place-items: end center; }
+  .pe { grid-template-columns: minmax(0, 1fr); max-height: 94vh; max-height: 94dvh; border-radius: 26px 26px 0 0; padding: 20px 16px calc(20px + var(--safe-b)); gap: 16px; }
+  .pe { background: var(--surface-raised); }
+  .pe-main, .pe-side { min-width: 0; }
+  .pe-stage { padding: 8px; }
+  .pe-stage canvas { max-width: 100%; height: auto !important; }
+  .pe-row .segmented { flex: 1 1 100%; }
+  .pe-actions { position: sticky; bottom: calc(-20px - var(--safe-b)); padding: 12px 0 0; background: linear-gradient(transparent, var(--surface, #fff) 30%); }
+  /* messages are short sentences, not pills */
+  .toast { border-radius: 18px; padding: 12px 16px; font-size: 14px; line-height: 1.35; text-align: left; width: max-content; max-width: calc(100vw - 24px); display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+/* the CV editor's undo / redo pill rides above the tab bar */
+@media (max-width: 760px) {
+  .studio-hist { left: auto; right: 14px; transform: none; bottom: calc(var(--tab-h) + 22px + var(--safe-b)); z-index: 26; }
+  .nav { background: linear-gradient(var(--bg) 62%, transparent); padding-bottom: 8px; }
+}
+
+/* onboarding: the welcome grid and its logo marquee must not stretch the page */
+@media (max-width: 900px) {
+  .ob-welcome { grid-template-columns: minmax(0, 1fr); }
+  .ob-copy, .ob-marquee, .ob-step { min-width: 0; }
+  .ob-marquee { overflow: hidden; }
+  .ob-stage { place-items: start center; padding-top: 12px; }
+  /* the guide's topics become a row of chips you swipe through */
+  .tour-tabs { display: flex; overflow-x: auto; gap: 8px; margin: 0; padding: 4px 0 10px; scrollbar-width: none; scroll-snap-type: x proximity; }
+  .tour-tabs::-webkit-scrollbar { display: none; }
+  .tour-tab { flex: none; scroll-snap-align: start; white-space: nowrap; }
+  .tour-tab { min-width: 0; gap: 10px; padding: 8px 10px 8px 8px; }
+  .tour-tab b { font-size: 15px; line-height: 1.15; }
+  .tour-tab .i3d { --s: 38px !important; }
+  .tour-tab[aria-selected="true"] { transform: none; }
+  .tour { min-width: 0; }
+}
+@media (max-width: 760px) {
+  .avb, .avb.pets { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .avb-row, .avb.pets .avb-row { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .avb-opts { grid-template-columns: minmax(0, 1fr); min-width: 0; }
+  .avb-row > *, .avb-opts > * { min-width: 0; }
+  .avb-row .input-sm { max-width: none; }
+  .pet-pick { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .avb-preview { position: static; }
+  /* the Continue button stays reachable while a long step scrolls */
+  .ob-nav { position: sticky; bottom: 0; z-index: 3; margin-top: 28px; padding: 14px 0 calc(14px + var(--safe-b)); background: linear-gradient(transparent, var(--bg) 38%); }
+  .ob-top { padding-top: calc(12px + var(--safe-t)); gap: 12px; }
+  /* choice cards: two per row, with the icon beside the title */
+  .ob-cards { margin-top: 22px; gap: 10px; }
+  .ob-cards.dense { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+  .ob-cards.dense .ob-choice { min-height: 0; padding: 14px 14px 12px; }
+  .ob-cards.dense .ob-choice small { display: none; }
+  .ob-cards.dense .ob-choice .i3d, .ob-cards.dense .ob-choice-icon { margin-bottom: 6px; }
+  .ob-cards.dense .ob-choice b { font-size: 16px; }
+  .ob-choice { min-width: 0; }
+  .ob-mega { font-size: 40px; }
+  .ob-title { font-size: 34px; }
+}
+
+/* narrow windows and tablets: the search button keeps only its icon so the bar never squeezes the label */
+@media (max-width: 900px) {
+  #search-btn { width: 38px; height: 38px; padding: 0; }
+  #search-btn > span { display: none; }
+}
+/* six links: on a tablet the top bar drops the name and tightens up so it always fits */
+@media (min-width: 761px) and (max-width: 1000px) {
+  .brand-name { display: none; }
+  .nav-inner { gap: 10px; }
+  .nav-links { gap: 0; }
+  .nav-links a { padding: 7px 10px; }
+}
+
+/* tablets and phones: the CV editor stacks, and nothing in it may be wider than the screen */
+@media (max-width: 980px) {
+  .studio { grid-template-columns: minmax(0, 1fr); }
+  .studio > *, .studio-edit, .studio-prev { min-width: 0; }
+  .studio-prev { position: static; max-height: none; }
+}
+
+@media (max-width: 380px) {
+  .page-title { font-size: 36px; }
+  .nav-links a { font-size: 10px; }
+  .nav-inner { gap: 4px; }
+}
+
+/* a phone turned sideways: little height, so a slimmer tab bar and no pet label */
+@media (max-width: 760px) and (max-height: 480px) {
+  :root { --tab-h: 52px; }
+  .nav-links a { flex-direction: row; gap: 6px; font-size: 12px; }
+  .nav-links a svg { width: 20px; height: 20px; }
+  .nav { padding-top: calc(4px + var(--safe-t)); }
+  .nav-inner { height: 46px; }
+  main { padding-top: 14px; }
+}
+
+/* search settings: the choices wrap instead of sliding sideways, so none is hidden */
+@media (max-width: 760px) {
+  .pp-radius .segmented, #remote { display: flex; flex-wrap: wrap; overflow: visible; border-radius: 22px; }
+  .pp-radius .segmented button, #remote button { flex: 1 1 auto; }
+}

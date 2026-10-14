@@ -2,7 +2,8 @@ import { api, fail, toast, hooks } from './lib.js';
 import { renderToday } from './views/today.js';
 import { renderOffers } from './views/offers.js';
 import { renderBoard } from './views/board.js';
-import { renderProfile } from './views/profile.js';
+import { renderSearch } from './views/search.js';
+import { renderCv } from './views/cv.js';
 import { renderSettings } from './views/settings.js';
 import { openOffer, closeOffer } from './views/offer-sheet.js';
 import { needsOnboarding, startOnboarding } from './views/onboarding.js';
@@ -29,15 +30,17 @@ const routes = {
   '': renderToday,
   offres: renderOffers,
   suivi: renderBoard,
-  profil: renderProfile,
+  cv: renderCv,
+  recherche: renderSearch,
   reglages: renderSettings,
 };
 
 let currentPage = null;
 let booted = false;
 
-// Hash routes: #/offres, #/offres/<id>, #/profil, #/reglages
+// Hash routes: #/offres, #/offres/<id>, #/cv (and #/cv/lettre…), #/recherche, #/reglages  (#/profil, its old name, still works)
 export function route() {
+  if (/^#\/profil(\/|$)/.test(location.hash)) history.replaceState(null, '', '#/recherche'); // the old name of the page
   const [page = '', id, tab] = location.hash.replace(/^#\/?/, '').split('/');
   const view = document.getElementById('view');
   if (page !== currentPage || !id) {
@@ -61,7 +64,7 @@ export function route() {
 
 // Re-renders the current page without touching the sheet.
 export function refreshPage() {
-  const page = location.hash.replace(/^#\/?/, '').split('/')[0];
+  const page = location.hash.replace(/^#\/?/, '').split('/')[0].replace(/^profil$/, 'recherche');
   (routes[page] || renderToday)(document.getElementById('view'));
 }
 
@@ -80,8 +83,8 @@ export function startSearch() {
     return;
   }
   if (!S.profile.search.domain && !S.profile.search.keywords.length) {
-    toast('Choisis d\'abord un domaine ou des mots-clés dans ton profil.');
-    go('#/profil');
+    toast('Choisis d\'abord un domaine ou des mots-clés dans Recherche.');
+    go('#/recherche');
     return;
   }
   const box = document.getElementById('activity');

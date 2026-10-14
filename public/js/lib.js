@@ -193,3 +193,12 @@ export function fileToBase64(file) {
     r.readAsDataURL(file);
   });
 }
+
+// "Lyon 3e · à 12 km": where an offer is, and how far from the places searched (only when that is known).
+export function whereText(a) {
+  if (!a.location) return '';
+  const km = a.distanceKm;
+  return km === null || km === undefined || km < 3 ? a.location : `${a.location} (${a.distanceApprox ? '≈ ' : ''}${km} km)`;
+}
+export const remoteText = (a) => ({ remote: 'Télétravail complet', hybrid: 'Télétravail possible' }[a.remote] || '');
+

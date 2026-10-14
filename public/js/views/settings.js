@@ -1,5 +1,8 @@
-import { S } from '../main.js';
+import { S, refreshNav } from '../main.js';
 import { html, raw, mount, api, fail, toast, busy } from '../lib.js';
+import { mountPetEditor } from '../pet.js';
+import { update } from '../profile-store.js';
+import { refreshPerches } from '../decorate.js';
 
 const SERVICES = [
   ['gmail', 'Gmail'],
@@ -17,6 +20,13 @@ export function renderSettings(view) {
     html`<div class="page-head"><div><h1 class="page-title">Réglages</h1></div></div>
 
       <section>
+        <div class="section-head"><h2 class="section-title">Ton animal</h2></div>
+        <div class="card" id="avatar-editor"></div>
+      </section>
+
+      <section class="section" id="mobile-section" hidden></section>
+
+      <section class="section">
         <div class="section-head"><h2 class="section-title">Adresse d'envoi</h2></div>
         <form class="card" id="smtp">
           <div class="grid-2">
@@ -81,6 +91,17 @@ export function renderSettings(view) {
         </div>
       </section>`,
   );
+
+  mountPetEditor(view.querySelector('#avatar-editor'), {
+    pet: S.profile.pet,
+    big: false,
+    onChange: (pet) => {
+      update({ pet });
+      refreshNav();
+      refreshPerches();
+    },
+  });
+  renderPhone(view.querySelector('#mobile-section'));
 
   const saveSettings = async (body, message = 'Enregistré') => {
     const res = await api('/settings', { method: 'PUT', body });
@@ -153,4 +174,66 @@ export function renderSettings(view) {
       fail(err);
     }
   });
+}
+
+// ---------- Sur ton téléphone ----------
+// Opens the app to the local network, behind a 6-digit code (server/lib/remote.js). Only shown on the computer
+// that runs Mitady: from a phone the server answers 403 and the card stays hidden.
+
+async function renderPhone(sec) {
+  let info;
+  try {
+    info = await api('/mobile');
+  } catch {
+    return;
+  }
+  const draw = (i) => {
+    sec.hidden = false;
+    const pin = i.pin ? `${i.pin.slice(0, 3)} ${i.pin.slice(3)}` : '';
+    mount(
+      sec,
+      html`<div class="section-head"><h2 class="section-title">Sur ton téléphone</h2><span class="section-note">${i.enabled ? 'Activé' : 'Désactivé'}</span></div>
+        <div class="card phone-card">
+          ${i.enabled
+            ? html`${i.qr ? html`<div class="phone-qr" aria-label="QR code pour ouvrir Mitady sur le téléphone">${raw(i.qr)}</div>` : ''}
+              <div class="phone-body">
+                <ol class="phone-steps">
+                  <li>Connecte ton téléphone au <b>même Wi-Fi</b> que cet ordinateur, puis ${i.qr ? html`<b>scanne le QR code</b> avec l'appareil photo` : 'ouvre l\'adresse ci-dessous'}.</li>
+                  <li>Sur iPhone, dans Safari : <b>Partager › Sur l'écran d'accueil</b>. Mitady devient une appli, avec son icône.</li>
+                </ol>
+                ${i.urls.length
+                  ? html`<div class="phone-urls">${i.urls.map((u) => html`<div class="phone-url"><div class="grow"><code>${u.url}</code><small>${u.label}</small></div><button type="button" class="btn btn-secondary btn-sm" data-copy="${u.url}">Copier</button></div>`)}</div>`
+                  : html`<p class="hint">Aucune adresse réseau trouvée : connecte cet ordinateur à un Wi-Fi ou à un câble réseau.</p>`}
+                <div class="phone-pin"><span class="label">Code à saisir sur le téléphone</span><b>${pin}</b></div>
+                <p class="hint">L'ordinateur doit rester allumé avec Mitady lancé. Le téléphone parle directement à ton ordinateur : rien ne passe par Internet. Le code est demandé une fois par téléphone.</p>
+                <div class="form-foot"><button type="button" class="btn btn-secondary btn-sm" id="phone-regen">Changer le code</button>${i.fromSettings ? html`<button type="button" class="btn btn-plain small" id="phone-off">Désactiver</button>` : html`<span class="hint">Ouvert par HOST au lancement : relance sans HOST pour le refermer.</span>`}</div>
+              </div>`
+            : html`<div class="phone-body">
+                <p style="margin-bottom:6px"><b>Retrouve Mitady sur ton iPhone ou ton Android.</b></p>
+                <p class="small muted">Un iPhone ne peut pas faire tourner Mitady lui-même : l'appli reste sur cet ordinateur, et le téléphone l'affiche à distance, tant que les deux sont sur le même Wi-Fi. L'accès est protégé par un code à 6 chiffres.</p>
+                <div class="form-foot"><button type="button" class="btn btn-primary" id="phone-on">Activer l'accès téléphone</button></div>
+              </div>`}
+        </div>`,
+    );
+    sec.querySelector('#phone-on')?.addEventListener('click', (e) => busy(e.currentTarget, () => change('/mobile/enable', 'Accès téléphone activé')));
+    sec.querySelector('#phone-off')?.addEventListener('click', () => change('/mobile/disable', 'Accès téléphone désactivé'));
+    sec.querySelector('#phone-regen')?.addEventListener('click', () => change('/mobile/regenerate', 'Nouveau code : les téléphones doivent le ressaisir'));
+    sec.querySelectorAll('[data-copy]').forEach((b) =>
+      b.addEventListener('click', async () => {
+        await navigator.clipboard?.writeText(b.dataset.copy).catch(() => {});
+        toast('Adresse copiée');
+      }),
+    );
+  };
+  const change = async (path, message) => {
+    try {
+      draw(await api(path, { method: 'POST' }));
+      toast(message);
+      // the server re-opens its door a moment after answering: read the addresses once it is done
+      setTimeout(() => api('/mobile').then(draw).catch(() => {}), 900);
+    } catch (err) {
+      fail(err);
+    }
+  };
+  draw(info);
 }

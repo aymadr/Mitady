@@ -286,7 +286,7 @@ export function handleProgress(e) {
     }
     state.perSource = e.perSource;
   } else if (e.stage === 'filter') {
-    set('#srch-action', ACTIONS.filter);
+    set('#srch-action', e.outside ? `J'écarte ${e.outside} offre${e.outside > 1 ? 's' : ''} hors de ton périmètre…` : ACTIONS.filter);
     setPct(64);
   } else if (e.stage === 'dedupe') {
     set('#srch-action', ACTIONS.dedupe);

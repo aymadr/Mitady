@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mitady, présentation</title>
+<style>
+  /*__FONT__*/
+  :root { --g0: #0b1511; --g1: #14281f; --green: #2f7d5b; --green2: #3b9370; --mint: #7fdcae; --cream: #f4f1e8; --gold: #ffcd00; --ink: #14281f; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #000; overflow: hidden; }
+  body { font-family: Inter, 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  #viewport { position: fixed; inset: 0; }
+  #stage { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; overflow: hidden; background: var(--g0); }
+  .scene { position: absolute; inset: 0; overflow: hidden; display: none; }
+  .scene.on { display: block; }
+  .abs { position: absolute; }
+  .disp { font-family: 'Bricolage Grotesque', Inter, system-ui, sans-serif; font-weight: 800; letter-spacing: -0.035em; line-height: 1; }
+  .spr { display: inline-block; position: absolute; }
+  .spr svg { display: block; }
+  .px { image-rendering: pixelated; }
+  .card { background: #fff; border-radius: 28px; box-shadow: 0 30px 80px -20px rgba(10, 40, 25, .35), 0 2px 0 rgba(255,255,255,.8) inset; }
+  .ring { border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--c, #2f7d5b) calc(var(--v, 0) * 1%), rgba(20, 40, 31, .1) 0); }
+  .ring > b { width: calc(100% - 18px); height: calc(100% - 18px); border-radius: 50%; background: #fff; display: grid; place-items: center; font-family: 'Bricolage Grotesque', Inter, sans-serif; font-weight: 800; color: var(--ink); letter-spacing: -0.03em; }
+  .chip { display: inline-flex; align-items: center; gap: 10px; padding: 14px 24px; border-radius: 999px; font-size: 30px; font-weight: 600; background: rgba(47, 125, 91, .12); color: #1d5e3a; white-space: nowrap; }
+  .chip.miss { background: transparent; border: 3px dashed #d8a900; color: #8a6a00; }
+  .chip.ok { background: var(--green); color: #fff; }
+  .badge { display: inline-block; padding: 8px 18px; border-radius: 999px; font-weight: 700; font-size: 24px; background: var(--gold); color: #2a2438; }
+  .wm { overflow: hidden; display: block; }
+
+  /* the animated sprites follow the master clock (so scrubbing and video export are exact) */
+  #stage * { animation-play-state: paused !important; animation-delay: calc(var(--now, 0) * -1s + var(--d, 0s)) !important; }
+  .pet-body { transform-box: view-box; animation: bob 1.3s steps(2, jump-none) infinite; }
+  .pet-open { animation: blink 4.6s steps(1) infinite; }
+  .pet-closed { opacity: 0; animation: blinkc 4.6s steps(1) infinite; }
+  .zz .pet-open { opacity: 0; animation: none !important; } .zz .pet-closed { opacity: 1; animation: none !important; }
+  .wing { transform-box: fill-box; animation: flap .42s steps(3) infinite alternate; }
+  .wl { transform-origin: 100% 50%; } .wr { transform-origin: 0 50%; }
+  .tw { animation: twinkle 2.6s steps(1) infinite; }
+  @keyframes bob { 0% { transform: translateY(0); } 100% { transform: translateY(-0.5px); } }
+  @keyframes blink { 0%, 93%, 100% { opacity: 1; } 94%, 98% { opacity: 0; } }
+  @keyframes blinkc { 0%, 93%, 100% { opacity: 0; } 94%, 98% { opacity: 1; } }
+  @keyframes flap { from { transform: scaleX(1); } to { transform: scaleX(0.22); } }
+  @keyframes twinkle { 0%, 60% { opacity: 1; } 61%, 100% { opacity: 0.2; } }
+
+  /* controls */
+  #ui { position: fixed; left: 0; right: 0; bottom: 0; padding: 18px 28px 22px; display: flex; gap: 16px; align-items: center; color: #fff; background: linear-gradient(transparent, rgba(0, 0, 0, .55)); opacity: 0; transition: opacity .3s; z-index: 5; font-size: 14px; }
+  body:hover #ui, #ui.show { opacity: 1; }
+  #ui button { background: rgba(255, 255, 255, .14); color: #fff; border: 0; border-radius: 999px; height: 36px; padding: 0 16px; font: inherit; font-weight: 600; cursor: pointer; backdrop-filter: blur(8px); }
+  #ui input[type=range] { flex: 1; accent-color: #ffcd00; }
+  #ui .t { font-variant-numeric: tabular-nums; min-width: 92px; text-align: right; opacity: .85; }
+  #sound { position: fixed; top: 18px; right: 18px; z-index: 6; display: none; }
+  #sound button { background: rgba(0, 0, 0, .6); color: #fff; border: 1px solid rgba(255, 255, 255, .25); border-radius: 999px; height: 44px; padding: 0 20px; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer; backdrop-filter: blur(10px); }
+  #sound button:hover { background: rgba(47, 125, 91, .9); }
+  body.has-audio #sound { display: block; }
+  body.sound-on #sound { display: none; }
+  body.export #ui, body.export #sound { display: none; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage"></div></div>
+<div id="sound"><button id="enable-sound">🔊 Activer le son</button></div>
+<div id="ui">
+  <button id="play">Pause</button>
+  <input id="seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Position">
+  <span class="t" id="time">0:00</span>
+  <button id="snd">Son : non</button>
+  <button id="full">Plein écran</button>
+</div>
+<script>
+/*__ASSETS__*/
+
+// ---------- engine ----------
+const W = 1920, H = 1080;
+const stage = document.getElementById('stage');
+const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const E = {
+  lin: (t) => t,
+  out: (t) => 1 - (1 - t) ** 3,
+  out5: (t) => 1 - (1 - t) ** 5,
+  in: (t) => t * t * t,
+  inout: (t) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2),
+  back: (t) => (t <= 0 ? 0 : t >= 1 ? 1 : 1 + 2.70158 * (t - 1) ** 3 + 1.70158 * (t - 1) ** 2),
+  spring: (t) => (t >= 1 ? 1 : 1 - Math.cos(t * Math.PI * 3.5) * Math.exp(-t * 6)),
+};
+const P = (t, a, b, e = E.out) => e(clamp((t - a) / (b - a)));
+const rnd = (() => { let s = 7; return () => ((s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296); })();
+function el(parent, tag = 'div', cls = '', css) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (css) Object.assign(e.style, css);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function put(e, { x = 0, y = 0, s = 1, sx, sy, r = 0, o = 1, b = 0, rx = 0, ry = 0 } = {}) {
+  e.style.transform = `translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) rotate(${r.toFixed(2)}deg) ${rx || ry ? `rotateX(${rx.toFixed(2)}deg) rotateY(${ry.toFixed(2)}deg) ` : ''}scale(${(sx ?? s).toFixed(4)},${(sy ?? s).toFixed(4)})`;
+  e.style.opacity = o.toFixed(3);
+  e.style.filter = b > 0.05 ? `blur(${b.toFixed(1)}px)` : 'none';
+}
+function sprite(kind, name, h, { sleep = false } = {}) {
+  const a = kind === 'pet' ? (sleep ? ASSETS.petsSleep : ASSETS.pets[name]) : ASSETS.scenery[name];
+  const [, , w0, h0] = a.vb.split(' ').map(Number);
+  const s = el(null, 'span', 'spr' + (sleep ? ' zz' : ''));
+  s.style.width = ((h * w0) / h0).toFixed(1) + 'px';
+  s.style.height = h + 'px';
+  s.innerHTML = `<svg viewBox="${a.vb}" width="100%" height="100%" shape-rendering="crispEdges" style="overflow:visible">${a.inner}</svg>`;
+  return s;
+}
+const place = (s, parent, x, y) => { s.style.left = x + 'px'; s.style.top = y + 'px'; parent.appendChild(s); return s; };
+const money = (n) => Math.round(n).toLocaleString('fr-FR');
+
+// the transition: a field of pixels that grows, then melts away
+const wipeCanvas = el(null, 'canvas');
+wipeCanvas.width = 1920; wipeCanvas.height = 1080;
+Object.assign(wipeCanvas.style, { position: 'absolute', left: 0, top: 0, width: '1920px', height: '1080px', pointerEvents: 'none', zIndex: 50 });
+const wctx = wipeCanvas.getContext('2d');
+const WCOL = ['#2f7d5b', '#3b9370', '#25694b', '#2f7d5b', '#3b9370', '#ffcd00'];
+function drawWipe(w, origin) {
+  wctx.clearRect(0, 0, W, H);
+  if (w <= 0 || w >= 1) return;
+  const N = 60, cols = 32, rows = 18;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const ox = origin ? 1 - i / cols : i / cols;
+    const d = (ox * 0.7 + (j / rows) * 0.3);
+    const p1 = clamp((w - d * 0.3) / 0.2);
+    const p2 = clamp((w - 0.5 - d * 0.3) / 0.2);
+    const k = E.out(p1) * (1 - E.in(p2));
+    if (k <= 0.01) continue;
+    const c = WCOL[(i * 7 + j * 13) % WCOL.length];
+    wctx.fillStyle = c;
+    const s = k >= 0.97 ? N : N * k;
+    wctx.fillRect(i * N + (N - s) / 2 - 0.3, j * N + (N - s) / 2 - 0.3, s + 0.6, s + 0.6);
+  }
+}
+
+const SCENES = [];
+let DURATION = 0;
+const TRANSITIONS = []; // [centre time, origin flip]
+/*__SCENES__*/
+
+const BOUNDS = SCENES.map((s) => s.from);
+SCENES.forEach((s) => { s.root.classList.add('scene'); stage.appendChild(s.root); });
+stage.appendChild(wipeCanvas);
+DURATION = SCENES[SCENES.length - 1].to;
+
+function render(t) {
+  stage.style.setProperty('--now', (t / 1000).toFixed(3));
+  const sec = t / 1000;
+  for (const s of SCENES) {
+    // a scene is shown until the middle of the pixel wipe that follows it
+    const on = sec >= s.from - 0.0001 && sec < s.to + 0.0001;
+    if (on !== s.root.classList.contains('on')) s.root.classList.toggle('on', on);
+    if (on) {
+      s.update(sec - s.from, sec);
+      // a slow camera push (or pull) over each scene, alternating
+      const k = clamp((sec - s.from) / (s.to - s.from));
+      s.root.style.transform = `scale(${(s.i % 2 ? lerp(1, 1.035, k) : lerp(1.035, 1, k)).toFixed(4)})`;
+    }
+  }
+  let w = 0, flip = false;
+  for (const [c, f] of TRANSITIONS) { const k = (sec - (c - 0.4)) / 0.8; if (k > 0 && k < 1) { w = k; flip = f; } }
+  drawWipe(w, flip);
+}
+
+// ---------- clock and controls ----------
+let T = 0, playing = true, last = performance.now();
+const params = new URLSearchParams(location.search);
+const seek = (ms) => { T = clamp(ms, 0, DURATION * 1000 - 1); render(T); updateUi(); syncAudio(true); };
+window.seek = seek;
+window.DURATION = () => DURATION;
+const playBtn = document.getElementById('play'), range = document.getElementById('seek'), timeEl = document.getElementById('time');
+function updateUi() {
+  range.value = Math.round((T / (DURATION * 1000)) * 1000);
+  const s = Math.floor(T / 1000);
+  timeEl.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} / ${Math.floor(DURATION / 60)}:${String(Math.floor(DURATION % 60)).padStart(2, '0')}`;
+}
+function fit() {
+  const k = Math.min(innerWidth / W, innerHeight / H);
+  stage.style.transform = `translate(${(innerWidth - W * k) / 2}px, ${(innerHeight - H * k) / 2}px) scale(${k})`;
+}
+addEventListener('resize', fit); fit();
+// soundtrack: an <audio> element kept in step with the clock (browsers only allow sound after a click)
+const bgm = ASSETS.audio ? new Audio(ASSETS.audio) : null;
+let soundOn = false;
+if (bgm && !params.has('export')) document.body.classList.add('has-audio');
+function syncAudio(force) {
+  if (!bgm) return;
+  const want = T / 1000;
+  if (!soundOn || !playing) { if (!bgm.paused) bgm.pause(); return; }
+  if (bgm.paused) { bgm.currentTime = want; bgm.play().catch(() => {}); }
+  else if (force || Math.abs(bgm.currentTime - want) > 0.25) bgm.currentTime = want;
+}
+function setSound(on) {
+  soundOn = on;
+  document.body.classList.toggle('sound-on', on);
+  document.getElementById('snd').textContent = on ? 'Son : oui' : 'Son : non';
+  syncAudio(true);
+}
+document.getElementById('enable-sound').onclick = () => setSound(true);
+document.getElementById('snd').onclick = () => setSound(!soundOn);
+playBtn.onclick = () => { playing = !playing; playBtn.textContent = playing ? 'Pause' : 'Lecture'; last = performance.now(); syncAudio(true); };
+range.oninput = () => seek((range.value / 1000) * DURATION * 1000);
+document.getElementById('full').onclick = () => (document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen());
+addEventListener('keydown', (e) => {
+  if (e.code === 'Space') { e.preventDefault(); playBtn.click(); }
+  if (e.key === 'ArrowRight') seek(T + 5000);
+  if (e.key === 'ArrowLeft') seek(T - 5000);
+  if (e.key === 'f' || e.key === 'F') document.getElementById('full').click();
+  if (e.key === 'm' || e.key === 'M') document.getElementById('snd').click();
+  if (e.key === 'r' || e.key === 'R') seek(0);
+});
+if (params.has('export')) { document.body.classList.add('export'); playing = false; }
+if (params.has('t')) T = Number(params.get('t')) * 1000;
+render(T); updateUi();
+(function loop(now) {
+  if (playing) {
+    T += Math.min(now - last, 100);
+    if (T >= DURATION * 1000) T = 0;
+    render(T); updateUi(); syncAudio(false);
+  }
+  last = now;
+  requestAnimationFrame(loop);
+})(performance.now());
+</script>
+</body>
+</html>

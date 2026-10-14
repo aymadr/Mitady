@@ -16,6 +16,9 @@ const COLUMNS = [
 const SENT = ['applied', 'interview', 'offer', 'rejected'];
 const ui = { query: '' };
 let view = null;
+// A finger that is dragging a card must not also scroll the page. iOS only honours this from a non-passive listener.
+let touchDragging = false;
+addEventListener('touchmove', (e) => { if (touchDragging && e.cancelable) e.preventDefault(); }, { passive: false });
 
 function card(a) {
   return html`<article class="kcard" data-id="${a.id}" tabindex="0" aria-label="${a.title}, ${a.company}">
@@ -87,14 +90,19 @@ function bind() {
   const boardEl = view.querySelector('#board');
   boardEl.querySelectorAll('.kcard').forEach((c) => {
     c.addEventListener('pointerdown', (e) => startPress(e, c));
+    if (matchMedia('(pointer: coarse)').matches) c.addEventListener('contextmenu', (e) => e.preventDefault());
     c.addEventListener('keydown', (e) => e.key === 'Enter' && go(`#/offres/${c.dataset.id}`));
   });
 }
 
 function startPress(e, cardEl) {
   if (e.button !== 0 || e.target.closest('a')) return;
+  const touch = e.pointerType === 'touch' || e.pointerType === 'pen';
   const startX = e.clientX;
   const startY = e.clientY;
+  let pointer = { x: startX, y: startY };
+  let timer = null;
+  let raf = 0;
   let dragging = false;
   let ghost = null;
   let lastX = e.clientX;
@@ -113,22 +121,75 @@ function startPress(e, cardEl) {
     cardEl.classList.add('ph');
     document.body.classList.add('dragging');
     view.querySelector('#board').classList.add('drag');
+    if (touch) {
+      touchDragging = true;
+      navigator.vibrate?.(12);
+      place(startX, startY);
+      lastFrame = 0;
+      scrollLoop();
+    }
   };
-  const move = (ev) => {
-    if (!dragging && Math.hypot(ev.clientX - startX, ev.clientY - startY) > 6) begin();
-    if (!dragging) return;
-    ev.preventDefault();
-    tilt += ((ev.clientX - lastX) * 0.9 - tilt) * 0.3;
-    lastX = ev.clientX;
-    ghost.style.transform = `translate3d(${ev.clientX - offX}px, ${ev.clientY - offY}px, 0) rotate(${Math.max(-14, Math.min(14, tilt))}deg) scale(1.04)`;
-    const col = document.elementFromPoint(ev.clientX, ev.clientY)?.closest?.('.kcol') || null;
+  const place = (x, y) => {
+    ghost.style.transform = `translate3d(${x - offX}px, ${y - offY}px, 0) rotate(${Math.max(-14, Math.min(14, tilt))}deg) scale(1.04)`;
+  };
+  // The column under the finger, or the nearest one when it is in a gap or at the screen edge.
+  const columnAt = (x, y) => {
+    let best = null;
+    let bd = 60;
+    view.querySelectorAll('.kcol').forEach((c) => {
+      const r = c.getBoundingClientRect();
+      const d = (x < r.left ? r.left - x : x > r.right ? x - r.right : 0) + (y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0);
+      if (d < bd) { bd = d; best = c; }
+    });
+    return best;
+  };
+  const hover = (x, y) => {
+    const col = columnAt(x, y);
     if (col !== over) {
       over?.classList.remove('over');
       col?.classList.add('over');
       over = col;
     }
   };
+  // Near the screen edge the board scrolls by itself, so a card can reach the columns that are off-screen.
+  let lastFrame = 0;
+  const scrollLoop = (now = performance.now()) => {
+    if (!dragging) return;
+    const f = lastFrame ? Math.min(3, (now - lastFrame) / (1000 / 60)) : 1; // same speed on a 60 and a 240 Hz screen
+    lastFrame = now;
+    const boardEl = view.querySelector('#board');
+    const edge = 64;
+    const step = pointer.x < edge ? -Math.ceil((edge - pointer.x) / 3) : pointer.x > innerWidth - edge ? Math.ceil((pointer.x - (innerWidth - edge)) / 3) : 0;
+    const dx = Math.round(step * f);
+    if (dx && boardEl) {
+      boardEl.scrollLeft += dx;
+      hover(pointer.x, pointer.y);
+    }
+    raf = requestAnimationFrame(scrollLoop);
+  };
+  const move = (ev) => {
+    pointer = { x: ev.clientX, y: ev.clientY };
+    const far = Math.hypot(ev.clientX - startX, ev.clientY - startY) > (touch ? 9 : 6);
+    if (!dragging && touch && far) {
+      // the finger moved before the long press: it is a swipe, let the page or the board scroll
+      clearTimeout(timer);
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
+      removeEventListener('pointercancel', up);
+      return;
+    }
+    if (!dragging && far) begin();
+    if (!dragging) return;
+    ev.preventDefault();
+    tilt += ((ev.clientX - lastX) * 0.9 - tilt) * 0.3;
+    lastX = ev.clientX;
+    place(ev.clientX, ev.clientY);
+    hover(ev.clientX, ev.clientY);
+  };
   const up = async (ev) => {
+    clearTimeout(timer);
+    cancelAnimationFrame(raf);
+    touchDragging = false;
     removeEventListener('pointermove', move);
     removeEventListener('pointerup', up);
     removeEventListener('pointercancel', up);
@@ -172,6 +233,7 @@ function startPress(e, cardEl) {
   addEventListener('pointermove', move, { passive: false });
   addEventListener('pointerup', up);
   addEventListener('pointercancel', up);
+  if (touch) timer = setTimeout(begin, 320); // long press: the card is picked up
 }
 
 // A moment of joy when something good happens.

@@ -5,6 +5,7 @@
   "main": "server/index.js",
   "scripts": {
     "start": "node server/index.js",
+    "test": "node --test server/lib/search.test.js",
     "setup": "npm install && npx playwright install chromium"
   },
   "dependencies": {
@@ -13,6 +14,7 @@
     "nodemailer": "^6.9.13",
     "pdf-parse": "^1.1.1",
     "playwright": "^1.44.0",
+    "qrcode": "^1.5.4",
     "xlsx": "^0.18.5"
   },
   "private": true

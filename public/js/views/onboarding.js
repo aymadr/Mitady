@@ -8,6 +8,7 @@ import { scene } from '../scenery.js';
 import { celebrate } from '../fx.js';
 import { mountPetEditor, petSvg, petOf, defaultPet } from '../pet.js';
 import { siteLogo } from '../logos.js';
+import { placePicker } from '../places.js';
 import { toggleHtml } from '../theme.js';
 
 const KEY = 'candidatures.onboarded';
@@ -222,7 +223,7 @@ function resultCard() {
   return html`<div class="ob-result">
     <div class="ob-result-head">
       <span class="avatar lg" style="--h:${hue(p.name || 'x')}">${(p.name || '?').split(' ').map((w) => w[0]).slice(0, 2).join('')}</span>
-      <div class="grow"><b>${p.name || 'Ton nom'}</b><small>${p.headline || 'Ajoute un titre depuis ton profil'}</small></div>
+      <div class="grow"><b>${p.name || 'Ton nom'}</b><small>${p.headline || 'Ajoute un titre depuis la page CV'}</small></div>
       <span class="ob-check">${icons.check}</span>
     </div>
     ${p.skills.length
@@ -353,7 +354,7 @@ function field(stage) {
         <span class="ob-label">Tes mots-clés (un intitulé ou un métier par mot-clé)</span>
         <div id="ob-kw-input"></div>
       </div>
-      <label class="ob-field wide"><span>Où cherches-tu ?</span><input id="ob-where" value="${cur.location || S.profile.location || ''}" placeholder="Paris, Lyon, Île-de-France…" autocomplete="off"></label>
+      <div class="ob-field wide"><span>Où cherches-tu ?</span><div id="ob-places"></div></div>
       ${nav(true, true, 'Continuer', !domain)}
     </section>`,
   );
@@ -362,6 +363,16 @@ function field(stage) {
   const kw = stage.querySelector('#ob-kw');
   const sync = () => (next.disabled = !domain || (domain === 'autre' && !keywords.length));
   chipInput(stage.querySelector('#ob-kw-input'), keywords, (v) => ((keywords = v), sync()), { placeholder: 'Ex. chargé de projet, UX designer…' });
+  // Where, and how far around: the city found in the CV is suggested if nothing was chosen yet.
+  let places = [...(cur.places || [])];
+  let radius = cur.radius ?? 30;
+  const drawPlaces = () => placePicker(stage.querySelector('#ob-places'), { places, radius, onChange: (v) => ((places = v.places), (radius = v.radius)) });
+  drawPlaces();
+  if (!places.length && S.profile.location) {
+    api(`/places?q=${encodeURIComponent(S.profile.location)}`).then((r) => {
+      if (r.places[0] && !places.length && stage.querySelector('#ob-places')) { places = [r.places[0]]; drawPlaces(); }
+    }).catch(() => {});
+  }
   group.querySelectorAll('[data-v]').forEach((b) =>
     b.addEventListener('click', () => {
       domain = b.dataset.v;
@@ -371,7 +382,7 @@ function field(stage) {
     }),
   );
   next.addEventListener('click', async () => {
-    await patch({ search: { domain, keywords, location: stage.querySelector('#ob-where').value.trim() } }).catch(fail);
+    await patch({ search: { domain, keywords, places, radius, location: places.map((x) => x.name).join(', ') } }).catch(fail);
     go(step + 1);
   });
 }
@@ -384,8 +395,8 @@ function ready(stage) {
   const label = S.domains.find((d) => d.id === p.search.domain)?.label || 'Domaine personnalisé';
   const items = [
     [p.name ? `Profil de ${p.name}` : 'Profil créé', true],
-    [p.skills.length ? `${p.skills.length} compétences prêtes à être comparées` : 'Compétences à compléter dans ton profil', p.skills.length > 0],
-    [`${(p.search.contracts || []).join(' + ') || 'Alternance'}${p.search.location ? ` · ${p.search.location}` : ''}`, true],
+    [p.skills.length ? `${p.skills.length} compétences prêtes à être comparées` : 'Compétences à compléter dans ton CV', p.skills.length > 0],
+    [`${(p.search.contracts || []).join(' + ') || 'Alternance'}${p.search.location ? ` · ${p.search.location}${p.search.radius && p.search.places?.length ? ` (${p.search.radius} km)` : ''}` : ''}`, true],
     [label, true],
   ];
   mount(
@@ -504,7 +515,7 @@ const TOUR = [
   },
   {
     icon: 'sparkles', title: 'À ta façon', sub: 'Sombre, Claude, avatar',
-    text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar depuis le profil, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
+    text: "Passe en mode sombre quand tu veux (le bouton en haut à droite), refais ton avatar dans les réglages, et ajoute une clé Claude dans les réglages si tu veux des titres, résumés et e-mails rédigés pour toi. C'est facultatif.",
     art: () => html`<div class="tour-misc"><span class="hint-tile">${tile('sparkles', { size: 74, cls: 'float' })}</span><span>${raw(toggleHtml)}</span><span class="hint-tile">${tile('user', { size: 60, cls: 'float' })}</span></div><span class="corner-mon">${scene('bush', { size: 62 })}</span>`,
   },
 ];

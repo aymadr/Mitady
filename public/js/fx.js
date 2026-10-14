@@ -25,9 +25,13 @@ function cursorGlow() {
     glow.style.opacity = 1;
   }, { passive: true });
   document.addEventListener('pointerleave', () => (glow.style.opacity = 0));
-  (function loop() {
-    x += (tx - x) * 0.12;
-    y += (ty - y) * 0.12;
+  // Eases toward the pointer at the same pace on a 60 Hz and a 240 Hz screen (0.12 per frame at 60 Hz).
+  let last = performance.now();
+  (function loop(now = last) {
+    const k = 1 - Math.pow(1 - 0.12, Math.min(now - last, 100) / (1000 / 60));
+    last = now;
+    x += (tx - x) * k;
+    y += (ty - y) * k;
     glow.style.transform = `translate3d(${x}px, ${y}px, 0)`;
     requestAnimationFrame(loop);
   })();
@@ -209,18 +213,23 @@ const COLORS = ['#2f7d5b', '#4a9c78', '#ffcd00', '#14b87d', '#f5a524', '#7fdcae'
 let confettiCanvas = null;
 let confettiParts = [];
 let confettiRaf = 0;
+let confettiLast = 0;
 
-function confettiLoop() {
+// The physics below is tuned for 60 frames per second; `f` is how many 60 Hz frames went by, so a 144 or 240 Hz
+// screen sees the same burst instead of one that flies four times too fast.
+function confettiLoop(now = performance.now()) {
+  const f = confettiLast ? Math.min(3, (now - confettiLast) / (1000 / 60)) : 1;
+  confettiLast = now;
   const ctx = confettiCanvas.getContext('2d');
   ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
   confettiParts = confettiParts.filter((p) => p.life > 0 && p.y < confettiCanvas.height + 40);
   for (const p of confettiParts) {
-    p.vy += 0.32;
-    p.vx *= 0.992;
-    p.x += p.vx;
-    p.y += p.vy;
-    p.r += p.vr;
-    p.life -= 1;
+    p.vy += 0.32 * f;
+    p.vx *= Math.pow(0.992, f);
+    p.x += p.vx * f;
+    p.y += p.vy * f;
+    p.r += p.vr * f;
+    p.life -= f;
     ctx.save();
     ctx.translate(p.x, p.y);
     ctx.rotate(p.r);
@@ -243,6 +252,7 @@ function confettiLoop() {
     confettiCanvas.remove();
     confettiCanvas = null;
     confettiRaf = 0;
+    confettiLast = 0;
   }
 }
 

@@ -125,6 +125,7 @@ function startPress(e, cardEl) {
       touchDragging = true;
       navigator.vibrate?.(12);
       place(startX, startY);
+      lastFrame = 0;
       scrollLoop();
     }
   };
@@ -151,11 +152,15 @@ function startPress(e, cardEl) {
     }
   };
   // Near the screen edge the board scrolls by itself, so a card can reach the columns that are off-screen.
-  const scrollLoop = () => {
+  let lastFrame = 0;
+  const scrollLoop = (now = performance.now()) => {
     if (!dragging) return;
+    const f = lastFrame ? Math.min(3, (now - lastFrame) / (1000 / 60)) : 1; // same speed on a 60 and a 240 Hz screen
+    lastFrame = now;
     const boardEl = view.querySelector('#board');
     const edge = 64;
-    const dx = pointer.x < edge ? -Math.ceil((edge - pointer.x) / 3) : pointer.x > innerWidth - edge ? Math.ceil((pointer.x - (innerWidth - edge)) / 3) : 0;
+    const step = pointer.x < edge ? -Math.ceil((edge - pointer.x) / 3) : pointer.x > innerWidth - edge ? Math.ceil((pointer.x - (innerWidth - edge)) / 3) : 0;
+    const dx = Math.round(step * f);
     if (dx && boardEl) {
       boardEl.scrollLeft += dx;
       hover(pointer.x, pointer.y);

@@ -590,8 +590,12 @@ button.chip.suggest:hover { color: var(--accent-text); box-shadow: inset 0 0 0 1
   .card { padding: 20px; }
 }
 
+/* Reduced motion (Windows "animation effects" off, battery saver, remote desktop…): entrances jump to their end state and
+   the decorative loops stand still. The iteration count matters: a 0.01 ms animation that repeats forever is a strobe,
+   not a calm page. Spinners keep turning at their own pace, they say "busy". */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0s !important; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-delay: 0s !important; animation-iteration-count: 1 !important; }
+  .spinner, .ob-drop.busy .ob-drop-icon { animation-duration: 1.4s !important; animation-iteration-count: infinite !important; }
 }
 
 /* =====================================================================

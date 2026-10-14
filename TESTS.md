@@ -212,6 +212,7 @@ Avec des données de test vides (`DATA_DIR` neuf) :
 - [ ] Créer un **CV en PDF** (page CV) et une **lettre de motivation en PDF**
 - [ ] Glisser une carte du suivi avec la souris, mode sombre, bouton « Voir la démo en direct »
 - [ ] Envoyer un e-mail de test (Réglages › adresse d'envoi › Tester) si tu as un mot de passe d'application
+- [ ] **Animations** : la page d'accueil (mot qui change, feuilles, cartes) bouge à vitesse normale, y compris sur un écran 120/144/240 Hz. Si Windows a « Effets d'animation » coupé (Paramètres › Accessibilité › Effets visuels), l'appli doit s'afficher **calme et lisible**, sans rien qui clignote
 
 ## 4. La présentation animée
 
